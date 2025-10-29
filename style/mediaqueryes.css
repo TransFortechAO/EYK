@@ -1,0 +1,236 @@
+/* Responsividade */
+
+/* Dispositivos muito pequenos (até 480px - celulares pequenos) */
+@media (max-width: 480px) {
+    .landing {
+        background-size: cover;
+        padding: 1rem 0.5rem;
+        height: 100%;
+    }
+
+    .welcome h1 {
+        font-size: 1.5rem;
+        text-align: center;
+    }
+
+    .welcome q, .welcome div {
+        text-align: center;
+    }
+
+    .welcome div {
+        display: none;
+    }
+
+    .navbar {
+        padding: 0.5rem;
+    }
+
+    .navbar .logotype {
+        width: 60px;
+    }
+
+    .navbar .navbar-nav {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .navbar .nav-link {
+        margin: 0.5rem 0;
+    }
+
+    .navbar .form-control {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .navbar .btn-outline-success {
+        width: 100%;
+    }
+
+    .navbar .dropdown-toggle img {
+        width: 30px;
+        height: 30px;
+    }
+
+    .btn-custom {
+        padding: 5px 8px;
+        font-size: 14px;
+    }
+
+    .lead {
+        text-align: left;
+    }
+
+    .login-lead {
+        display: block;
+    }
+
+    .sec-text {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .estdprof img {
+        width: 90%;
+        margin-bottom: 10px;
+    }
+
+    .container-maskote img {
+        width: 100%;
+    }
+}
+
+/* Dispositivos pequenos (480px a 768px - celulares grandes e tablets em pé) */
+@media (min-width: 481px) and (max-width: 768px) {
+    .landing {
+        background-size: cover;
+        padding: 1rem;
+        height: 100%;
+    }
+
+    .welcome h1 {
+        font-size: 2rem;
+        text-align: center;
+    }
+
+    .navbar {
+        padding: 0.5rem;
+    }
+
+    .navbar .navbar-nav {
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .navbar .nav-link {
+        margin: 0 0.5rem;
+    }
+
+    .navbar .form-control {
+        width: 200px;
+    }
+
+    .sec-text {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .estdprof img {
+        width: 45%;
+        margin: 5px;
+    }
+
+    .container-maskote img {
+        width: 90%;
+    }
+}
+
+/* Dispositivos médios (769px a 1024px - tablets em paisagem e laptops pequenos) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .welcome h1 {
+        font-size: 2.5rem;
+    }
+
+    .navbar .form-control {
+        width: 250px;
+    }
+
+    .sec-text {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 30px;
+    }
+
+    .sec-text div {
+        flex: 1 1 250px;
+        text-align: center;
+    }
+
+    .estdprof {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .estdprof img {
+        width: 40%;
+    }
+}
+
+/* Dispositivos grandes (1025px ou mais - desktops) */
+@media (min-width: 1025px) {
+    .landing {
+        background-size: 100%;
+    }
+
+    .welcome h1 {
+        font-size: 3rem;
+    }
+
+    .navbar .form-control {
+        width: 300px;
+    }
+
+    .sec-text {
+        display: flex;
+        justify-content: space-around;
+        gap: 40px;
+    }
+
+    .sec-text div {
+        max-width: 300px;
+    }
+
+    .estdprof {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .estdprof img {
+        width: 45%;
+    }
+}
+
+/* Login e Registro */
+@media (max-width: 768px) {
+    .container-login {
+        flex-direction: column;
+    }
+
+    video {
+        display: none;
+    }
+
+    .container {
+        padding: 2rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 1.5rem 1rem;
+    }
+
+    .container h2 {
+        font-size: 1.5rem;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+    }
+
+    .form-control {
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        font-size: 0.95rem;
+        padding: 0.6rem;
+    }
+
+    video {
+        display: none;
+    }
+}
