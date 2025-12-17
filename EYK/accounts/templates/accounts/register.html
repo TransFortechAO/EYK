@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Criar conta de estudante</h2>
+<form method="POST" class="register-form">
+  {% csrf_token %}
+
+  <div class="form-group">
+    <label for="username">Nome de usuário</label>
+    {{ form.username }}
+    {{ form.username.errors }}
+  </div>
+
+  <div class="form-group">
+    <label for="email">E-mail</label>
+    {{ form.email }}
+    {{ form.email.errors }}
+  </div>
+
+  <div class="form-group">
+    <label for="password1">Senha</label>
+    {{ form.password1 }}
+    {{ form.password1.errors }}
+  </div>
+
+  <div class="form-group">
+    <label for="password2">Confirmar Senha</label>
+    {{ form.password2 }}
+    {{ form.password2.errors }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Registrar</button>
+</form>
+
+<hr>
+<p>Quer ser professor na EYK?</p>
+<p>
+  <a href='https://forms.gle/puLkdWGfdRdUyyyN7' target='_blank' class='btn btn-outline-primary'>
+    Preencher Formulário de Professor
+  </a>
+</p>
+
+<p>Já tem uma conta? <a href="{% url 'accounts:login' %}">Entrar</a></p>
+{% endblock %}
