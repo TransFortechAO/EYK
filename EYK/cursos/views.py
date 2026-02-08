@@ -58,6 +58,6 @@ def curso_detalhado_professor(request, curso_id):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def feed_aluno(request):
-    cursos = Cusro.object.all().order_by('-criado_em')[:10]
+    cursos = Curso.object.all().order_by('-criado_em')[:10]
     serializer = CursoSerializer(cursos, many=True)
     return Response(serializer.data)
