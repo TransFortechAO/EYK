@@ -19,12 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-<<<<<<< HEAD
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('api/', include('cursos.urls', namespace='cursos')),
     path('', include('feed.urls')),
-=======
-    path('accounts/', include('accounts.urls', namespace='accounts'))
-
->>>>>>> d7578308a3a152693c4d44b74e2c02eef6709314
 ]

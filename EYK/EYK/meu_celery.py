@@ -3,7 +3,7 @@ import os
 from celery import Celery
 
     
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'EYK_settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'EYK.settings')
 
 app = Celery('EYK')
 

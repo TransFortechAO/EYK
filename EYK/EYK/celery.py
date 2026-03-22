@@ -1,15 +1,13 @@
-from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery
 
-"""Configuração da app Celery do projecto.
+# Defina a configuração padrão do Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'eyk.settings')
 
-Corrige o DJANGO_SETTINGS_MODULE para apontar para o módulo de settings do Django.
-"""
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'EYK.settings')
+app = Celery('eyk')
 
-app = Celery('EYK')
-
+# Carregue configurações do Django
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
+# Descubra tasks automaticamente
 app.autodiscover_tasks()

@@ -1,23 +1,62 @@
-{% extends "base.html" %}
+{% load static %}
 {% block content %}
-<h2>Entrar</h2>
-<form method="POST" class="login-form">
-  {% csrf_token %}
 
-  <div class="form-group">
-    <label for="id_username">Usuário</label>
-    {{ form.username }}
-    {{ form.username.errors }}
+
+
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar</title>
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+  <!-- Estilo personalizado -->
+  <link rel="stylesheet" href="{% static 'auth.css' %}">
+
+</head>
+
+<body>
+  <div class="container-login">
+    <div class=logo-login><video src="{% static 'imagens/media/eyk-effet-panorama.mp4' %}" autoplay loop muted
+        playsinline disablePictureInPicture></video></div>
+    <div class="container mt-5">
+      <h2 class="text-center">Iniciar sessão</h2>
+      <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="id_username">Usuário</label>
+          {{ form.username }}
+          <span class="text-danger">
+            {{ form.username.errors }}
+          </span>
+        </div>
+
+
+        <div class="form-group">
+          <label for="id_password">Senha</label>
+          {{ form.password }}
+          <span class="text-danger">
+            {{ form.password.errors }}
+          </span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
+      </form>
+      <p style="text-align:center;font-weight:bold;">Não tem uma conta ? <br><a href="{% url 'accounts:register' %}"
+          class="">Se inscreva
+          gratuitamente</a></p>
+    </div>
   </div>
+ 
 
-  <div class="form-group">
-    <label for="id_password">Senha</label>
-    {{ form.password }}
-    {{ form.password.errors }}
-  </div>
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 
-  <button type="submit" class="btn btn-success">Entrar</button>
-</form>
-
-<p>Não tem conta? <a href="{% url 'accounts:register' %}">Criar conta</a></p>
+</html>
 {% endblock %}

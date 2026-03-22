@@ -1,0 +1,41 @@
+        *{
+            margin:0;
+            padding:0px;
+            box-sizing:border-box;
+        }
+        body {
+            background-color: white;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 400px; /* Limita o tamanho do formulário */
+            width: 100%;
+            margin-right: 10%;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #343a40;
+            text-align: center;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .btn-primary {
+            background-color: #daa520;
+            border-color: #daa520;
+            width: 100%;
+            padding: 10px;
+        }
+        .container-login{
+            display:flex;
+            height: 100%;
+            margin: 5%;
+        }
