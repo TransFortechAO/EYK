@@ -1,29 +1,3 @@
-:root {
-    --primary-gold: #DAA520;
-    --dark-gray: #333333;
-    --accent-dark: #111111;
-    --background-light: #f8f9fa;
-    --card-bg: #ffffff;
-    --text-primary: #333333;
-    --text-secondary: #555555;
-    --border-light: #e0e0e0;
-    --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 8px 25px rgba(218, 165, 32, 0.12);
-}
-
-body {
-    background-color: var(--background-light);
-    color: var(--text-primary);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
 /* Header */
 .library-header {
     background: linear-gradient(135deg, rgba(218, 165, 32, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
@@ -327,3 +301,4 @@ body {
         font-size: 2.5rem;
     }
 }
+
