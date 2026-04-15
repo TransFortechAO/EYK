@@ -13,4 +13,4 @@ class Professor(models.Model):
 
 
     def __str__(self):
-        return self.user.nome_publico
+        return self.nome_publico  # ✅ Corrigido: era self.user.nome_publico (nome_publico é do Professor, não do User)

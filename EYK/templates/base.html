@@ -342,30 +342,39 @@
                     <i class="fas fa-graduation-cap"></i> Eyk
                 </a>
 
-                <!-- Cards de Estatísticas do Usuário (Moeda e Ofensiva) -->
-                <div class="user-stats">
-                    <div class="stat-card">
-                        <i class="fas fa-coins stat-icon coin"></i>
-                        <div>
-                            <span class="stat-value">1,250</span>
-                            <span class="stat-label">EYK Coins</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-fire stat-icon streak"></i>
-                        <div>
-                            <span class="stat-value">15</span>
-                            <span class="stat-label">dias de ofensiva</span>
-                        </div>
-                    </div>
-                </div>
 
                 <ul class="nav-menu">
                     {% if user.is_authenticated %}
+                        {% if user.is_teacher %}
+                            <li class="nav-item">
+                                <a href="{% url 'professores:perfil' %}" class="nav-link">
+                                    <i class="fas fa-user-tie"></i> Perfil
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'professores:meus-cursos' %}" class="nav-link">
+                                    <i class="fas fa-book-open"></i> Meus Cursos
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a href="{% url 'feed:home' %}" class="nav-link">
+                                    <i class="fas fa-home"></i> Início
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if user.is_staff %}
+                            <li class="nav-item">
+                                <a href="{% url 'accounts:dashboard-professores' %}" class="nav-link">
+                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                </a>
+                            </li>
+                        {% endif %}
                         <li class="nav-item">
-                            <a href="{% url 'accounts:profile' %}" class="nav-link">
-                                <i class="fas fa-user"></i> Perfil
-                            </a>
+                            <span class="nav-link" style="cursor:default; color: var(--primary-gold) !important;">
+                                <i class="fas fa-user-circle"></i>
+                                {% if user.is_teacher %}{{ user.professor.nome_publico }}{% else %}{{ user.username }}{% endif %}
+                            </span>
                         </li>
                         <li class="nav-item">
                             <a href="{% url 'accounts:logout' %}" class="nav-link">

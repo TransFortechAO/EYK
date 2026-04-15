@@ -1,0 +1,146 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil de Professor | EYK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --gold: #DAA520;
+            --dark: #111111;
+            --gray: #333333;
+        }
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 16px;
+        }
+        .setup-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 560px;
+            width: 100%;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        }
+        .setup-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--gold), #e6b422);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 28px;
+            color: var(--dark);
+        }
+        h1 { font-size: 1.6rem; font-weight: 700; color: var(--dark); }
+        .subtitle { color: #666; font-size: 0.95rem; margin-bottom: 32px; }
+        .form-label { font-weight: 600; color: var(--gray); font-size: 0.9rem; }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), #e6b422);
+            border: none;
+            color: var(--dark);
+            font-weight: 700;
+            padding: 12px 32px;
+            border-radius: 50px;
+            width: 100%;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(218,165,32,0.35); }
+        #preview-img {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--gold);
+            display: none;
+            margin: 12px auto 0;
+        }
+        .photo-wrap { text-align: center; }
+        .badge-teacher {
+            display: inline-block;
+            background: rgba(218,165,32,0.12);
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-card">
+        <div class="setup-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+        <div class="text-center">
+            <span class="badge-teacher"><i class="fas fa-star me-1"></i> Professor</span>
+        </div>
+        <h1 class="text-center mt-2">Configura o teu perfil</h1>
+        <p class="subtitle text-center">Preenche os teus dados para que os alunos possam conhecer o teu trabalho.</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-3 photo-wrap">
+                <label class="form-label d-block text-start">{{ form.foto.label }}</label>
+                {{ form.foto }}
+                <img id="preview-img" src="#" alt="Pré-visualização">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.nome_publico.label }}</label>
+                {{ form.nome_publico }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">{{ form.area.label }}</label>
+                {{ form.area }}
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">{{ form.bio.label }}</label>
+                {{ form.bio }}
+            </div>
+
+            <button type="submit" class="btn btn-gold">
+                <i class="fas fa-check me-2"></i> Guardar e ir para a plataforma
+            </button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelector('input[type=file]').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const img = document.getElementById('preview-img');
+                    img.src = ev.target.result;
+                    img.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>

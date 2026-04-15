@@ -1,0 +1,253 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Início | EYK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --gold: #DAA520;
+            --dark: #111111;
+            --gray: #333333;
+        }
+        body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
+            padding: 1rem 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,.15);
+            position: sticky; top: 0; z-index: 1000;
+        }
+        .navbar-brand { color: var(--gold) !important; font-size: 1.7rem; font-weight: 800; text-decoration: none; }
+        .nav-link-custom { color: #fff !important; text-decoration: none; font-weight: 500; padding: .5rem 0; transition: color .25s; display: flex; align-items: center; gap: 7px; }
+        .nav-link-custom:hover { color: var(--gold) !important; }
+        .btn-logout-nav {
+            background: transparent; border: 2px solid #dc3545; color: #dc3545;
+            padding: 6px 18px; border-radius: 30px; font-weight: 600; text-decoration: none; font-size: .85rem; transition: all .25s;
+        }
+        .btn-logout-nav:hover { background: #dc3545; color: #fff; }
+        .btn-login-nav {
+            border: 2px solid var(--gold); color: var(--gold);
+            padding: 6px 18px; border-radius: 30px; font-weight: 600; text-decoration: none; font-size: .85rem; transition: all .25s; background: transparent;
+        }
+        .btn-login-nav:hover { background: var(--gold); color: var(--dark); }
+        .avatar-sm {
+            width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
+            border: 2px solid var(--gold);
+        }
+        .avatar-sm-placeholder {
+            width: 34px; height: 34px; border-radius: 50%; background: var(--gold);
+            display: inline-flex; align-items: center; justify-content: center;
+            color: var(--dark); font-weight: 700; font-size: .85rem;
+        }
+
+        /* ── SECÇÕES ── */
+        .section-title {
+            font-size: 1.5rem; font-weight: 700; color: var(--dark);
+            margin-bottom: 24px; padding-bottom: 10px;
+            border-bottom: 3px solid var(--gold); display: inline-block;
+        }
+        .badge-cat {
+            background: rgba(218,165,32,.12); color: var(--gold);
+            border: 1px solid var(--gold); padding: 3px 10px;
+            border-radius: 20px; font-size: .78rem; font-weight: 600;
+        }
+
+        /* ── CARDS DE CURSO ── */
+        .curso-card { border-radius: 14px; overflow: hidden; transition: transform .3s, box-shadow .3s; border: 1px solid #e0e0e0; height: 100%; }
+        .curso-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(218,165,32,.15); border-color: var(--gold); }
+        .curso-card img { height: 175px; object-fit: cover; width: 100%; }
+        .curso-card .card-body { padding: 18px; }
+        .curso-card .titulo { font-size: 1rem; font-weight: 700; color: var(--dark); margin: 8px 0 6px; }
+        .curso-card .descricao { font-size: .85rem; color: #666; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .curso-card .meta { font-size: .8rem; color: #888; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .curso-card .preco { font-weight: 800; color: var(--gold); font-size: 1rem; }
+        .btn-ver { background: linear-gradient(135deg, var(--gold), #e6b422); border: none; color: var(--dark); font-weight: 700; padding: 7px 18px; border-radius: 25px; font-size: .85rem; transition: all .25s; text-decoration: none; display: inline-block; margin-top: 12px; }
+        .btn-ver:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(218,165,32,.35); color: var(--dark); }
+
+        /* ── CARDS DE PROFESSOR ── */
+        .prof-card { border-radius: 16px; text-align: center; padding: 28px 20px; border: 1px solid #e0e0e0; transition: all .3s; height: 100%; }
+        .prof-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(218,165,32,.12); border-color: var(--gold); }
+        .prof-card img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--gold); margin-bottom: 14px; }
+        .prof-card .prof-avatar-placeholder { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), #e6b422); display: inline-flex; align-items: center; justify-content: center; color: var(--dark); font-size: 1.8rem; font-weight: 800; margin-bottom: 14px; }
+        .prof-card h6 { font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+        .prof-card .area { font-size: .82rem; color: var(--gold); font-weight: 600; margin-bottom: 8px; }
+        .prof-card .bio-preview { font-size: .83rem; color: #666; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .btn-perfil { border: 2px solid var(--gold); color: var(--gold); background: transparent; padding: 6px 20px; border-radius: 25px; font-weight: 600; font-size: .85rem; text-decoration: none; transition: all .25s; display: inline-block; margin-top: 12px; }
+        .btn-perfil:hover { background: var(--gold); color: var(--dark); }
+
+        /* ── EMPTY STATE ── */
+        .empty-state { text-align: center; padding: 50px 20px; background: #fff; border-radius: 16px; border: 2px dashed #e0e0e0; }
+        .empty-state i { font-size: 2.5rem; color: var(--gold); margin-bottom: 12px; }
+        .empty-state p { color: #888; }
+    </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <a href="{% url 'feed:home' %}" class="navbar-brand">
+            <i class="fas fa-graduation-cap me-1"></i> EYK
+        </a>
+
+        <ul class="list-unstyled d-flex align-items-center gap-4 mb-0">
+            {% if user.is_authenticated %}
+                {% if user.is_teacher %}
+                    <li>
+                        <a href="{% url 'professores:meus-cursos' %}" class="nav-link-custom">
+                            <i class="fas fa-book-open"></i> Meus Cursos
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'professores:perfil' %}" class="nav-link-custom">
+                            <i class="fas fa-user-tie"></i> Perfil
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="{% url 'feed:home' %}" class="nav-link-custom">
+                            <i class="fas fa-home"></i> Início
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if user.is_staff %}
+                    <li>
+                        <a href="{% url 'accounts:dashboard-professores' %}" class="nav-link-custom">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                {% endif %}
+
+                <li class="d-flex align-items-center gap-2">
+                    {% if user.is_teacher %}
+                        {% with prof=user.professor %}
+                            {% if prof.foto %}
+                                <img src="{{ prof.foto.url }}" class="avatar-sm" alt="foto">
+                            {% else %}
+                                <span class="avatar-sm-placeholder">{{ user.username|first|upper }}</span>
+                            {% endif %}
+                            <span class="text-white fw-semibold" style="font-size:.9rem;">{{ prof.nome_publico }}</span>
+                        {% endwith %}
+                    {% else %}
+                        <span class="avatar-sm-placeholder">{{ user.username|first|upper }}</span>
+                        <span class="text-white fw-semibold" style="font-size:.9rem;">{{ user.username }}</span>
+                    {% endif %}
+                </li>
+
+                <li>
+                    <a href="{% url 'accounts:logout' %}" class="btn-logout-nav">
+                        <i class="fas fa-sign-out-alt me-1"></i> Sair
+                    </a>
+                </li>
+            {% else %}
+                <li><a href="{% url 'accounts:login' %}" class="btn-login-nav"><i class="fas fa-sign-in-alt me-1"></i> Entrar</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+<!-- ── MENSAGENS ── -->
+{% if messages %}
+<div class="container mt-3">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── CONTEÚDO ── -->
+<div class="container py-4">
+
+    <!-- Saudação personalizada -->
+    {% if user.is_authenticated %}
+    <div class="mb-4">
+        <h1 class="fw-bold" style="color: var(--dark);">
+            Olá, {% if user.is_teacher %}{{ user.professor.nome_publico }}{% else %}{{ user.username }}{% endif %}! 👋
+        </h1>
+        <p class="text-muted">Bem-vindo à plataforma EYK. Explora os cursos em destaque.</p>
+    </div>
+    {% endif %}
+
+    <!-- ── CURSOS ── -->
+    <h2 class="section-title"><i class="fas fa-book me-2" style="color:var(--gold)"></i>Cursos em Destaque</h2>
+
+    {% if cursos %}
+    <div class="row g-4 mb-5">
+        {% for curso in cursos %}
+        <div class="col-md-4 col-sm-6">
+            <div class="card curso-card shadow-sm">
+                {% if curso.thumbnail %}
+                    <img src="{{ curso.thumbnail.url }}" alt="{{ curso.titulo }}">
+                {% else %}
+                    <img src="https://via.placeholder.com/400x175/111111/DAA520?text={{ curso.titulo|urlencode }}" alt="{{ curso.titulo }}">
+                {% endif %}
+                <div class="card-body">
+                    {% if curso.categoria %}
+                        <span class="badge-cat">{{ curso.categoria.nome }}</span>
+                    {% endif %}
+                    <p class="titulo">{{ curso.titulo }}</p>
+                    <p class="descricao">{{ curso.descricao }}</p>
+                    <div class="meta">
+                        <span><i class="fas fa-chalkboard-teacher me-1"></i>{{ curso.professor.nome_publico }}</span>
+                        {% if curso.duracao %}<span><i class="fas fa-clock me-1"></i>{{ curso.duracao }}</span>{% endif %}
+                    </div>
+                    {% if curso.preco %}
+                        <div class="preco mt-2">{{ curso.preco }} Kz</div>
+                    {% endif %}
+                    <a href="#" class="btn-ver">Ver Curso</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state mb-5">
+        <i class="fas fa-book-open d-block"></i>
+        <p>Nenhum curso disponível no momento.</p>
+    </div>
+    {% endif %}
+
+    <!-- ── PROFESSORES ── -->
+    <h2 class="section-title"><i class="fas fa-users me-2" style="color:var(--gold)"></i>Professores em Destaque</h2>
+
+    {% if professores %}
+    <div class="row g-4">
+        {% for prof in professores %}
+        <div class="col-md-4 col-sm-6">
+            <div class="card prof-card shadow-sm">
+                {% if prof.foto %}
+                    <img src="{{ prof.foto.url }}" alt="{{ prof.nome_publico }}">
+                {% else %}
+                    <div class="prof-avatar-placeholder">{{ prof.nome_publico|first|upper }}</div>
+                {% endif %}
+                <h6>{{ prof.nome_publico }}</h6>
+                <p class="area"><i class="fas fa-tag me-1"></i>{{ prof.area }}</p>
+                {% if prof.bio %}
+                    <p class="bio-preview">{{ prof.bio }}</p>
+                {% endif %}
+                <a href="#" class="btn-perfil">Ver Perfil</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-user-tie d-block"></i>
+        <p>Nenhum professor disponível no momento.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

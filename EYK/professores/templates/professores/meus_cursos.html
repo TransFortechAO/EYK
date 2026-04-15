@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Cursos | EYK</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --gold: #DAA520; --dark: #111; }
+        body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+
+        .navbar { background: linear-gradient(135deg, var(--dark), #1a1a1a); padding: 1rem 0; box-shadow: 0 4px 20px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 1000; }
+        .navbar-brand { color: var(--gold) !important; font-size: 1.7rem; font-weight: 800; text-decoration: none; }
+        .nav-link-custom { color: #fff !important; text-decoration: none; font-weight: 500; transition: color .25s; display: flex; align-items: center; gap: 7px; }
+        .nav-link-custom:hover { color: var(--gold) !important; }
+        .btn-logout-nav { background: transparent; border: 2px solid #dc3545; color: #dc3545; padding: 6px 18px; border-radius: 30px; font-weight: 600; text-decoration: none; font-size: .85rem; transition: all .25s; }
+        .btn-logout-nav:hover { background: #dc3545; color: #fff; }
+
+        .page-header { background: linear-gradient(135deg, var(--dark), #2a2a2a); color: #fff; padding: 36px 0 28px; margin-bottom: 32px; }
+        .page-header h1 { font-size: 1.8rem; font-weight: 800; }
+        .page-header .sub { color: rgba(255,255,255,.6); font-size: .9rem; margin-top: 4px; }
+        .avatar-sm { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); }
+        .avatar-placeholder-sm { width: 38px; height: 38px; border-radius: 50%; background: var(--gold); display: inline-flex; align-items: center; justify-content: center; color: var(--dark); font-weight: 700; font-size: .9rem; }
+
+        .stats-bar { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+        .stat-box { background: #fff; border-radius: 14px; padding: 18px 24px; border: 1px solid #e0e0e0; flex: 1; min-width: 130px; text-align: center; }
+        .stat-box .n { font-size: 1.8rem; font-weight: 800; color: var(--gold); }
+        .stat-box .l { font-size: .8rem; color: #777; margin-top: 2px; }
+
+        .btn-novo { background: linear-gradient(135deg, var(--gold), #e6b422); border: none; color: var(--dark); font-weight: 700; padding: 10px 24px; border-radius: 50px; text-decoration: none; font-size: .9rem; transition: all .25s; display: inline-flex; align-items: center; gap: 7px; }
+        .btn-novo:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(218,165,32,.3); color: var(--dark); }
+
+        .course-card { border-radius: 16px; overflow: hidden; border: 1px solid #e0e0e0; transition: all .3s; height: 100%; background: #fff; }
+        .course-card:hover { transform: translateY(-5px); box-shadow: 0 10px 28px rgba(218,165,32,.13); border-color: var(--gold); }
+        .course-card img { height: 170px; object-fit: cover; width: 100%; }
+        .course-card .c-body { padding: 20px; }
+        .course-card .c-title { font-size: 1rem; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+        .course-card .c-desc { font-size: .83rem; color: #666; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; }
+        .badge-ativo { background: #d4edda; color: #155724; padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+        .badge-inativo { background: #f8d7da; color: #721c24; padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+        .c-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+        .c-price { font-weight: 800; color: var(--gold); }
+        .actions { display: flex; gap: 8px; margin-top: 14px; }
+        .btn-edit { border: 2px solid var(--gold); color: var(--gold); background: transparent; padding: 5px 14px; border-radius: 20px; font-size: .8rem; font-weight: 600; text-decoration: none; transition: all .25s; }
+        .btn-edit:hover { background: var(--gold); color: var(--dark); }
+        .btn-del { border: 2px solid #dc3545; color: #dc3545; background: transparent; padding: 5px 14px; border-radius: 20px; font-size: .8rem; font-weight: 600; text-decoration: none; transition: all .25s; }
+        .btn-del:hover { background: #dc3545; color: #fff; }
+
+        .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 18px; border: 2px dashed #e0e0e0; }
+        .empty-state i { font-size: 3rem; color: var(--gold); margin-bottom: 14px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <a href="{% url 'feed:home' %}" class="navbar-brand"><i class="fas fa-graduation-cap me-1"></i> EYK</a>
+        <ul class="list-unstyled d-flex align-items-center gap-4 mb-0">
+            <li><a href="{% url 'professores:perfil' %}" class="nav-link-custom"><i class="fas fa-user-tie"></i> Perfil</a></li>
+            <li><a href="{% url 'professores:criar-curso' %}" class="nav-link-custom"><i class="fas fa-plus-circle"></i> Novo Curso</a></li>
+            {% if user.is_staff %}<li><a href="{% url 'accounts:dashboard-professores' %}" class="nav-link-custom"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>{% endif %}
+            <li>
+                {% if professor.foto %}
+                    <img src="{{ professor.foto.url }}" class="avatar-sm" alt="foto">
+                {% else %}
+                    <span class="avatar-placeholder-sm">{{ professor.nome_publico|first|upper }}</span>
+                {% endif %}
+            </li>
+            <li><a href="{% url 'accounts:logout' %}" class="btn-logout-nav"><i class="fas fa-sign-out-alt me-1"></i> Sair</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- HEADER -->
+<div class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-book-open me-2" style="color:var(--gold)"></i>Meus Cursos</h1>
+        <p class="sub">A gerir os cursos de <strong style="color:var(--gold)">{{ professor.nome_publico }}</strong></p>
+    </div>
+</div>
+
+{% if messages %}
+<div class="container mb-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="container pb-5">
+
+    <!-- STATS -->
+    <div class="stats-bar">
+        <div class="stat-box">
+            <div class="n">{{ cursos_data|length }}</div>
+            <div class="l"><i class="fas fa-book me-1"></i> Total de Cursos</div>
+        </div>
+        <div class="stat-box">
+            <div class="n">
+                {% with total_inscritos=0 %}
+                    {% for item in cursos_data %}{{ item.inscritos }}{% endfor %}
+                {% endwith %}
+                {{ cursos_data|length }}
+            </div>
+            <div class="l"><i class="fas fa-users me-1"></i> Alunos Inscritos</div>
+        </div>
+        <div class="stat-box">
+            <div class="n">
+                {% for item in cursos_data %}{% if item.curso.ativo %}✓{% endif %}{% endfor %}
+            </div>
+            <div class="l"><i class="fas fa-eye me-1"></i> Cursos Ativos</div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0" style="color:var(--dark)">Todos os Cursos</h4>
+        <a href="{% url 'professores:criar-curso' %}" class="btn-novo">
+            <i class="fas fa-plus"></i> Criar Novo Curso
+        </a>
+    </div>
+
+    {% if cursos_data %}
+    <div class="row g-4">
+        {% for item in cursos_data %}
+        <div class="col-md-4 col-sm-6">
+            <div class="course-card">
+                {% if item.curso.thumbnail %}
+                    <img src="{{ item.curso.thumbnail.url }}" alt="{{ item.curso.titulo }}">
+                {% else %}
+                    <img src="https://via.placeholder.com/400x170/111111/DAA520?text={{ item.curso.titulo|urlencode }}" alt="{{ item.curso.titulo }}">
+                {% endif %}
+                <div class="c-body">
+                    <h5 class="c-title">{{ item.curso.titulo }}</h5>
+                    <p class="c-desc">{{ item.curso.descricao }}</p>
+
+                    {% if item.curso.ativo %}
+                        <span class="badge-ativo"><i class="fas fa-circle me-1" style="font-size:.5rem"></i>Ativo</span>
+                    {% else %}
+                        <span class="badge-inativo"><i class="fas fa-circle me-1" style="font-size:.5rem"></i>Inativo</span>
+                    {% endif %}
+
+                    <div class="c-footer">
+                        <span class="c-price">{% if item.curso.preco %}{{ item.curso.preco }} Kz{% else %}Grátis{% endif %}</span>
+                        <span class="text-muted" style="font-size:.8rem">
+                            <i class="fas fa-users me-1"></i>{{ item.inscritos }} aluno{{ item.inscritos|pluralize:"s" }}
+                        </span>
+                    </div>
+
+                    {% if item.curso.duracao %}
+                    <div class="text-muted mt-1" style="font-size:.8rem">
+                        <i class="fas fa-clock me-1"></i>{{ item.curso.duracao }}
+                    </div>
+                    {% endif %}
+
+                    <div class="actions">
+                        <a href="{% url 'professores:editar-curso' item.curso.id %}" class="btn-edit">
+                            <i class="fas fa-pen me-1"></i> Editar
+                        </a>
+                        <a href="{% url 'professores:deletar-curso' item.curso.id %}" class="btn-del">
+                            <i class="fas fa-trash me-1"></i> Eliminar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-book-open d-block"></i>
+        <h5 class="fw-bold mt-2" style="color:var(--dark)">Ainda não tens cursos</h5>
+        <p class="text-muted">Cria o teu primeiro curso e começa a ensinar.</p>
+        <a href="{% url 'professores:criar-curso' %}" class="btn-novo mt-3">
+            <i class="fas fa-plus"></i> Criar Primeiro Curso
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
