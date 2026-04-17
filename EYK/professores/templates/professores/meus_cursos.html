@@ -1,9 +1,8 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+{% block extra_head %}
+
     <title>Meus Cursos | EYK</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -51,28 +50,11 @@
         .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 18px; border: 2px dashed #e0e0e0; }
         .empty-state i { font-size: 3rem; color: var(--gold); margin-bottom: 14px; }
     </style>
-</head>
-<body>
+{% endblock %}
 
-<nav class="navbar">
-    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <a href="{% url 'feed:home' %}" class="navbar-brand"><i class="fas fa-graduation-cap me-1"></i> EYK</a>
-        <ul class="list-unstyled d-flex align-items-center gap-4 mb-0">
-            <li><a href="{% url 'professores:perfil' %}" class="nav-link-custom"><i class="fas fa-user-tie"></i> Perfil</a></li>
-            <li><a href="{% url 'professores:criar-curso' %}" class="nav-link-custom"><i class="fas fa-plus-circle"></i> Novo Curso</a></li>
-            {% if user.is_staff %}<li><a href="{% url 'accounts:dashboard-professores' %}" class="nav-link-custom"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>{% endif %}
-            <li>
-                {% if professor.foto %}
-                    <img src="{{ professor.foto.url }}" class="avatar-sm" alt="foto">
-                {% else %}
-                    <span class="avatar-placeholder-sm">{{ professor.nome_publico|first|upper }}</span>
-                {% endif %}
-            </li>
-            <li><a href="{% url 'accounts:logout' %}" class="btn-logout-nav"><i class="fas fa-sign-out-alt me-1"></i> Sair</a></li>
-        </ul>
-    </div>
-</nav>
 
+
+{% block content %}
 <!-- HEADER -->
 <div class="page-header">
     <div class="container">
@@ -184,5 +166,5 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+
+{% endblock %}
