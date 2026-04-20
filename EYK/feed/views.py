@@ -18,3 +18,11 @@ def feed_home(request):
     }
 
     return render(request, 'feed/home.html', context)  # ✅ Corrigido: context não estava a ser passado
+
+
+def comunidade(request):
+    return render(request, "feed/comunidade.html")
+
+
+def cursos(request):
+    return render(request, 'feed/cursos.html')
