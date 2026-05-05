@@ -1,10 +1,12 @@
 from django.urls import path
-from .views import feed_home
+from feed import views
 
 
 app_name = 'feed'
 
 urlpatterns = [
-    path('', feed_home, name='home'),
+    path('', views.feed_home, name='home'),
+    path('comunidade/', views.comunidade),
+    path('cursos/', views.cursos),
     
 ]
