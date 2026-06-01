@@ -1,17 +1,13 @@
 {% load static %}
-<!-- BASE QUE ESTÁ SER USADA -->
 <!DOCTYPE html>
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ekola Ya Kelela</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
-        /* Estilos personalizados */
         :root {
             --primary-gold: #DAA520;
             --dark-gray: #333333;
@@ -21,402 +17,80 @@
             --text-primary: #333333;
             --text-secondary: #555555;
             --border-light: #e0e0e0;
-            --shadow-sm: 0 4px 15px rgba(0, 0, 0, 0.05);
-            --shadow-hover: 0 8px 25px rgba(218, 165, 32, 0.12);
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: var(--background-light);
-            color: var(--text-primary);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-        }
-
-        /* Navbar Estilizada */
-        .navbar {
-            background: linear-gradient(135deg, var(--accent-dark) 0%, #1a1a1a 100%);
-            padding: 1rem 0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .navbar-brand {
-            color: var(--primary-gold) !important;
-            font-size: 1.8rem;
-            font-weight: 800;
-            text-decoration: none;
-            letter-spacing: -0.5px;
-            transition: all 0.3s;
-        }
-
-        .navbar-brand:hover {
-            transform: scale(1.05);
-            text-shadow: 0 0 10px rgba(218, 165, 32, 0.3);
-        }
-
-        .nav-menu {
-            display: flex;
-            align-items: center;
-            gap: 2rem;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .nav-item {
-            position: relative;
-        }
-
-        .nav-link {
-            color: #fff !important;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 0.5rem 0;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-link:hover {
-            color: var(--primary-gold) !important;
-            transform: translateY(-2px);
-        }
-        .logo{
-            width: 100%; height: 90px; object-fit: contain;
-        }
-
-        /* Cards de Usuário (Moeda e Ofensiva) */
-        .user-stats {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 20px;
-            border-radius: 50px;
-            backdrop-filter: blur(10px);
-        }
-
-        .stat-card {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 6px 15px;
-            border-radius: 30px;
-            transition: all 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            background: rgba(218, 165, 32, 0.2);
-        }
-
-        .stat-icon {
-            font-size: 1.2rem;
-        }
-
-        .stat-icon.coin {
-            color: var(--primary-gold);
-        }
-
-        .stat-icon.streak {
-            color: #ff6b6b;
-        }
-
-        .stat-value {
-            color: #fff;
-            font-weight: 700;
-            font-size: 1rem;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-
-        /* Botões de Autenticação */
-        .auth-buttons {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn-auth {
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-login {
-            background-color: transparent;
-            border: 2px solid var(--primary-gold);
-            color: var(--primary-gold);
-        }
-
-        .btn-login:hover {
-            background-color: var(--primary-gold);
-            color: var(--accent-dark);
-            transform: translateY(-2px);
-        }
-
-        .btn-register {
-            background: linear-gradient(135deg, var(--primary-gold) 0%, #e6b422 100%);
-            border: none;
-            color: var(--accent-dark);
-        }
-
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(218, 165, 32, 0.3);
-        }
-
-        .btn-logout {
-            background-color: rgba(220, 53, 69, 0.2);
-            border: 2px solid #dc3545;
-            color: #dc3545;
-        }
-
-        .btn-logout:hover {
-            background-color: #dc3545;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        /* Mensagens de Alerta */
-        .messages {
-            margin-top: 1rem;
-        }
-
-        .alert-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        .alert {
-            padding: 12px 20px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            animation: slideIn 0.3s ease;
-        }
-
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .alert-error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .alert-warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffeeba;
-            color: #856404;
-        }
-
-        .alert-info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-
-        /* Animações */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        .stat-card:hover .stat-icon {
-            animation: pulse 0.5s ease;
-        }
-
-        /* Responsividade */
-        @media (max-width: 992px) {
-            .navbar .container {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .user-stats {
-                order: 2;
-            }
-            
-            .nav-menu {
-                order: 3;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .user-stats {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            .auth-buttons {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            .nav-menu {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 1rem;
-            }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--background-light);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary-gold);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #e6b422;
-        }
-
-        /* Dropdown Menu (opcional) */
-        .dropdown-menu {
-            background-color: var(--accent-dark);
-            border: 1px solid var(--primary-gold);
-            border-radius: 12px;
-            margin-top: 10px;
-        }
-
-        .dropdown-item {
-            color: #fff;
-            transition: all 0.3s;
-        }
-
-        .dropdown-item:hover {
-            background-color: var(--primary-gold);
-            color: var(--accent-dark);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--background-light); color: var(--text-primary); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; }
+        .navbar { background: linear-gradient(135deg, var(--accent-dark) 0%, #1a1a1a 100%); padding: 1rem 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+        .navbar-brand { color: var(--primary-gold) !important; font-size: 1.8rem; font-weight: 800; text-decoration: none; }
+        .logo { height: 70px; object-fit: contain; }
+        .nav-menu { display: flex; align-items: center; gap: 1.5rem; list-style: none; margin: 0; padding: 0; flex-wrap: wrap; }
+        .nav-link { color: #fff !important; text-decoration: none; font-weight: 500; padding: 0.4rem 0; transition: color 0.3s; display: flex; align-items: center; gap: 7px; }
+        .nav-link:hover { color: var(--primary-gold) !important; }
+        .nav-username { color: var(--primary-gold) !important; font-weight: 700; cursor: default; display: flex; align-items: center; gap: 7px; }
+        .notif-badge { background: #dc3545; color: #fff; font-size: .7rem; border-radius: 50%; padding: 1px 5px; margin-left: 3px; }
+        .alert-list { list-style: none; padding: 0; }
+        .alert { padding: 12px 20px; border-radius: 12px; margin-bottom: 10px; }
+        .alert-success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .alert-error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .alert-warning { background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+        .alert-info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary-gold); border-radius: 4px; }
     </style>
-    
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <!-- Barra de navegação estilizada -->
     <header>
         <nav class="navbar">
-            <div class="container">
+            <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <a href="{% url 'feed:home' %}" class="navbar-brand">
-                    <img class="logo" src="{% static 'imagens/media/logo-sem-fundo.png' %}" alt="logo-eyk">
+                    <img class="logo" src="{% static 'imagens/media/logo-sem-fundo.png' %}" alt="EYK">
                 </a>
-
-                <!-- Cards de Estatísticas do Usuário (Moeda e Ofensiva) -->
-                <div class="user-stats">
-                    <div class="stat-card">
-                        <i class="fas fa-coins stat-icon coin"></i>
-                        <div>
-                            <span id="contador" class="stat-value">1,250</span>
-                            <span class="stat-label">EYK Coins</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <i class="fas fa-fire stat-icon streak"></i>
-                        <div>
-                            <span class="stat-value">15</span>
-                            <span class="stat-label">dias de ofensiva</span>
-                        </div>
-                    </div>
-                </div>
 
                 <ul class="nav-menu">
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a href="{% url 'feed:home' %}" class="nav-link">
-                            <i class="fas fa-home"></i> Início
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="fas fa-users"></i> Comunidade
-                        </a>
-                    </li>
+                        <li><a href="{% url 'feed:home' %}" class="nav-link"><i class="fas fa-home"></i> Início</a></li>
+                        <li><a href="{% url 'feed:cursos' %}" class="nav-link"><i class="fas fa-graduation-cap"></i> Cursos</a></li>
+                        <li><a href="{% url 'feed:videos' %}" class="nav-link"><i class="fas fa-play-circle"></i> Vídeos</a></li>
+                        <li><a href="{% url 'feed:comunidade' %}" class="nav-link"><i class="fas fa-users"></i> Comunidade</a></li>
+                        <li>
+                            <a href="{% url 'feed:notificacoes' %}" class="nav-link">
+                                <i class="fas fa-bell"></i> Notificações
+                                {% with total_nao_lidas=request.user.notificacoes.filter.count %}
+                                    {% if total_nao_lidas > 0 %}<span class="notif-badge">{{ total_nao_lidas }}</span>{% endif %}
+                                {% endwith %}
+                            </a>
+                        </li>
+
                         {% if user.is_teacher %}
-                            <li class="nav-item">
-                                <a href="{% url 'professores:perfil' %}" class="nav-link">
-                                    <i class="fas fa-user-tie"></i> Perfil
-                                </a>
-                            </li>
-    
+                            <li><a href="{% url 'professores:meus-cursos' %}" class="nav-link"><i class="fas fa-book-open"></i> Meus Cursos</a></li>
+                            <li><a href="{% url 'professores:meus-videos' %}" class="nav-link"><i class="fas fa-video"></i> Meus Vídeos</a></li>
+                            <li><a href="{% url 'professores:configuracoes' %}" class="nav-link"><i class="fas fa-cog"></i> Configurações</a></li>
+                        {% else %}
+                            <li><a href="{% url 'alunos:configuracoes' %}" class="nav-link"><i class="fas fa-cog"></i> Configurações</a></li>
                         {% endif %}
+
                         {% if user.is_staff %}
-                            <li class="nav-item">
-                                <a href="{% url 'accounts:dashboard-professores' %}" class="nav-link">
-                                    <i class="fas fa-tachometer-alt"></i> Admin Prof.
-                                </a>
-                            </li>
+                            <li><a href="{% url 'accounts:dashboard-professores' %}" class="nav-link"><i class="fas fa-tachometer-alt"></i> Admin</a></li>
                         {% endif %}
-                       
-                        <li class="nav-item">
-                            <a href="{% url 'accounts:logout' %}" class="nav-link">
-                                <i class="fas fa-sign-out-alt"></i> Sair
-                            </a>
+
+                        <li>
+                            <span class="nav-username">
+                                <i class="fas fa-user-circle"></i>
+                                {% if user.is_teacher %}{{ user.professor.nome_publico }}{% else %}{{ user.username }}{% endif %}
+                            </span>
                         </li>
+                        <li><a href="{% url 'accounts:logout' %}" class="nav-link" style="color:#dc3545 !important;"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
                     {% else %}
-                        <li class="nav-item">
-                            <a href="{% url 'accounts:login' %}" class="nav-link">
-                                <i class="fas fa-sign-in-alt"></i> Entrar
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{% url 'accounts:register' %}" class="nav-link">
-                                <i class="fas fa-user-plus"></i> Registrar
-                            </a>
-                        </li>
+                        <li><a href="{% url 'accounts:login' %}" class="nav-link"><i class="fas fa-sign-in-alt"></i> Entrar</a></li>
+                        <li><a href="{% url 'accounts:register' %}" class="nav-link"><i class="fas fa-user-plus"></i> Registar</a></li>
                     {% endif %}
                 </ul>
             </div>
         </nav>
     </header>
 
-    <!-- Área de mensagens (feedback visual de sucesso/erro) -->
-    <section class="messages container">
+    <section class="messages container mt-3">
         {% if messages %}
             <ul class="alert-list">
                 {% for message in messages %}
@@ -426,26 +100,11 @@
         {% endif %}
     </section>
 
-    <!-- Conteúdo principal -->
     <main class="container mt-4">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Scripts do front-end -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
-
-<script>
-    const contador = () => {
-        const contadorElement = document.getElementById('contador');
-        let count = parseInt(contadorElement.textContent);
-        setInterval(() => {
-            count++;
-            contadorElement.textContent = count;
-        }, 1000);
-    }
-
-    contador();
-</script>

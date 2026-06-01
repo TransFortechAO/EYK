@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            {% if curso.thumbnail %}
+                <img src="{{ curso.thumbnail.url }}" class="card-img-top" style="max-height:350px;object-fit:cover;" alt="{{ curso.titulo }}">
+            {% endif %}
+            <div class="card-body">
+                <h1 class="card-title h3">{{ curso.titulo }}</h1>
+                {% if curso.categoria %}
+                    <span class="badge bg-warning text-dark mb-3">{{ curso.categoria.nome }}</span>
+                {% endif %}
+                <p class="card-text">{{ curso.descricao }}</p>
+
+                <div class="d-flex gap-4 text-muted mb-4">
+                    <span><i class="fas fa-user-tie me-1 text-warning"></i>{{ curso.professor.nome_publico }}</span>
+                    {% if curso.duracao %}<span><i class="fas fa-clock me-1 text-warning"></i>{{ curso.duracao }}</span>{% endif %}
+                    <span><i class="fas fa-users me-1 text-warning"></i>{{ curso.total_inscritos }} inscritos</span>
+                </div>
+
+                <!-- Avaliação -->
+                <div class="card bg-light p-3">
+                    <h5>Avaliar este curso</h5>
+                    <form method="POST" action="{% url 'feed:avaliar-curso' curso.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">A tua avaliação (1-5 estrelas)</label>
+                            <select name="nota" class="form-select w-auto">
+                                <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                                <option value="4">⭐⭐⭐⭐ Muito Bom</option>
+                                <option value="3">⭐⭐⭐ Bom</option>
+                                <option value="2">⭐⭐ Regular</option>
+                                <option value="1">⭐ Mau</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-star me-1"></i>Avaliar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Info do Professor -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-body text-center">
+                {% if curso.professor.foto %}
+                    <img src="{{ curso.professor.foto.url }}" class="rounded-circle mb-3" width="80" height="80" style="object-fit:cover;border:3px solid #DAA520;">
+                {% else %}
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:80px;height:80px;background:#DAA520;font-size:1.8rem;font-weight:800;color:#111;">
+                        {{ curso.professor.nome_publico|first|upper }}
+                    </div>
+                {% endif %}
+                <h5>{{ curso.professor.nome_publico }}</h5>
+                <p class="text-muted small">{{ curso.professor.area }}</p>
+                {% if curso.professor.bio %}<p class="small">{{ curso.professor.bio|truncatewords:20 }}</p>{% endif %}
+            </div>
+        </div>
+
+        <!-- Estado da inscrição -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">O teu progresso</h6>
+                {% if inscricao %}
+                    <p class="text-success"><i class="fas fa-check-circle me-1"></i>Estás inscrito neste curso</p>
+                    {% if inscricao.concluido %}
+                        <p class="text-success fw-bold"><i class="fas fa-trophy me-1"></i>Curso concluído!</p>
+                    {% else %}
+                        <p class="text-muted small">Continua o teu progresso.</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">Faz login como aluno para te inscrever.</p>
+                {% endif %}
+                <div class="mt-2">
+                    <strong class="text-warning fs-5">{% if curso.preco %}{{ curso.preco }} Kz{% else %}Grátis{% endif %}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

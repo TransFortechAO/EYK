@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-8">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="mb-4">
+                <i class="fas fa-book me-2 text-warning"></i>
+                {{ acao }} Curso
+            </h2>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ form.titulo.label }}</label>
+                    {{ form.titulo }}
+                    {% if form.titulo.errors %}<div class="text-danger small mt-1">{{ form.titulo.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ form.descricao.label }}</label>
+                    {{ form.descricao }}
+                    {% if form.descricao.errors %}<div class="text-danger small mt-1">{{ form.descricao.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.categoria_nome.label }}</label>
+                        {{ form.categoria_nome }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{{ form.preco.label }}</label>
+                        {{ form.preco }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{{ form.duracao.label }}</label>
+                        {{ form.duracao }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">{{ form.thumbnail.label }}</label>
+                    {{ form.thumbnail }}
+                    {% if curso and curso.thumbnail %}
+                        <div class="mt-2">
+                            <img src="{{ curso.thumbnail.url }}" style="max-height:120px;border-radius:8px;" alt="Thumbnail actual">
+                            <small class="text-muted d-block">Imagem actual</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-check mb-4">
+                    {{ form.ativo }}
+                    <label class="form-check-label">{{ form.ativo.label }}</label>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-warning px-4 fw-bold">
+                        <i class="fas fa-save me-1"></i>{{ acao }} Curso
+                    </button>
+                    <a href="{% url 'professores:meus-cursos' %}" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

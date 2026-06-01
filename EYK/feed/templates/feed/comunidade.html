@@ -1,251 +1,90 @@
-{% block content %}
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comunidade - EYK Educação</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <link rel="stylesheet" href="{% static 'comunidade.css' %}">
-    <link rel="stylesheet" href="{% static 'style.css' %}">
-    
-</head>
-<body>
-    <div class="container mt-5 fade-in">
-        <!-- Cabeçalho -->
-            <h1 class="mb-4" >Comunidade EYK</h1>
-            <p >Compartilhe o que aprendeu, jogue e interaja com outros estudantes!</p>
-        
 
-        <!-- Navegação -->
-        <nav class="nav-menu">
-            <button class="tab-button active" data-target="feed">🧠 Feed</button>
-            <button class="tab-button" data-target="jogos">🎮 Jogos</button>
-            <button class="tab-button" data-target="ranking">🏆 Ranking</button>
-            <button class="tab-button" data-target="conversa">💬 Bate papo</button>
-        </nav>
+{% block content %}
+<h1 class="mb-2"><i class="fas fa-users me-2 text-warning"></i>Comunidade EYK</h1>
+<p class="text-muted mb-4">Partilhe conquistas, dúvidas e interaja com outros membros.</p>
 
-        <main class="main-comunidade">
-            <!-- Feed -->
-            <section id="feed" class="section active">
-                <h2>📢 O que você aprendeu hoje?</h2>
-                <form class="form-publicacao">
-                    <textarea name="conteudo" rows="3" placeholder="Partilhe aqui dúvidas, conquistas, reflexões..."></textarea>
-                    <button type="submit">Partilhar</button>
-                </form>
-                
-                <div class="post-feed">
-                    <!-- Post 1 -->
-                    <div class="post">
-                        <img src="https://via.placeholder.com/60x60/DAA520/ffffff?text=JS" alt="Foto do usuário" class="user-avatar">
-                        <div>
-                            <strong>João Silva</strong>
-                            <p>Hoje finalmente consegui implementar minha primeira API REST completa! Foram 3 dias de muito estudo, mas valeu a pena. 🚀 #conquista #programação</p>
-                            
-                            <div class="post-actions">
-                                <button class="btn-curtir">❤️ Curtir (24)</button>
-                                <span class="contagem-comentarios">💬 (5) Comentários</span>
-                            </div>
-
-                            <!-- Comentários existentes -->
-                            <div class="comentarios" id="comentarios-1">
-                                <p><strong>Maria Santos:</strong> Parabéns! Compartilha o link do projeto?</p>
-                                <p><strong>Pedro Costa:</strong> Que inspiração! Tô nessa jornada também 💪</p>
-                                
-                                <div id="todos-comentarios-1" class="comentarios-ocultos">
-                                    <p><strong>Ana Beatriz:</strong> Muito bom! Qual stack você usou?</p>
-                                    <p><strong>Carlos Lima:</strong> Show! Meus parabéns 👏</p>
-                                    <p><strong>Lucia Mendes:</strong> Que legal! Parabéns pela conquista!</p>
-                                </div>
-
-                                <button class="btn-ver-mais" onclick="mostrarTodos('1')">Ver mais comentários (3)</button>
-                                <button class="btn-ver-menos" onclick="esconderTodos('1')" style="display: none;">Ver menos</button>
-                            </div>
-
-                            <!-- Formulário de comentário -->
-                            <form class="form-comentario">
-                                <input type="text" name="conteudo" placeholder="Escreva um comentário...">
-                                <button type="submit">Comentar</button>
-                            </form>
-
-                            <small class="data-post">há 2 horas</small>
-                            
-                            <button class="btn-apagar">🗑️ Apagar</button>
-                        </div>
-                    </div>
-
-                    <!-- Post 2 -->
-                    <div class="post">
-                        <img src="https://via.placeholder.com/60x60/DAA520/ffffff?text=MC" alt="Foto do usuário" class="user-avatar">
-                        <div>
-                            <strong>Maria Costa</strong>
-                            <p>Finalizei o módulo de Marketing Digital! Aprendi tantas estratégias novas que já estou aplicando no meu negócio. Obrigada, EYK! 📈✨</p>
-                            
-                            <div class="post-actions">
-                                <button class="btn-curtir">❤️ Curtir (18)</button>
-                                <span class="contagem-comentarios">💬 (3) Comentários</span>
-                            </div>
-
-                            <!-- Comentários existentes -->
-                            <div class="comentarios" id="comentarios-2">
-                                <p><strong>João Silva:</strong> Que bom que está ajudando! Também amei esse módulo</p>
-                                
-                                <div id="todos-comentarios-2" class="comentarios-ocultos">
-                                    <p><strong>Patrícia Oliveira:</strong> Você já aplicou alguma estratégia específica?</p>
-                                    <p><strong>Roberto Alves:</strong> Parabéns pela dedicação! 👏</p>
-                                </div>
-
-                                <button class="btn-ver-mais" onclick="mostrarTodos('2')">Ver mais comentários (2)</button>
-                                <button class="btn-ver-menos" onclick="esconderTodos('2')" style="display: none;">Ver menos</button>
-                            </div>
-
-                            <!-- Formulário de comentário -->
-                            <form class="form-comentario">
-                                <input type="text" name="conteudo" placeholder="Escreva um comentário...">
-                                <button type="submit">Comentar</button>
-                            </form>
-
-                            <small class="data-post">há 5 horas</small>
-                            
-                            <button class="btn-apagar">🗑️ Apagar</button>
-                        </div>
-                    </div>
-
-                    <!-- Post 3 -->
-                    <div class="post">
-                        <img src="https://via.placeholder.com/60x60/DAA520/ffffff?text=PL" alt="Foto do usuário" class="user-avatar">
-                        <div>
-                            <strong>Paulo Lima</strong>
-                            <p>Alguém mais está fazendo o curso de Design Gráfico? Tô apaixonado pelas aulas de Photoshop! 🎨 Quem diria que eu conseguiria criar essas artes.</p>
-                            
-                            <div class="post-actions">
-                                <button class="btn-curtir">❤️ Curtir (12)</button>
-                                <span class="contagem-comentarios">💬 (4) Comentários</span>
-                            </div>
-
-                            <!-- Comentários existentes -->
-                            <div class="comentarios" id="comentarios-3">
-                                <p><strong>Carla Souza:</strong> Eu! Tô amando também. O professor é incrível</p>
-                                
-                                <div id="todos-comentarios-3" class="comentarios-ocultos">
-                                    <p><strong>Marcos Reis:</strong> Já fez o exercício de manipulação de imagens?</p>
-                                    <p><strong>Fernanda Lima:</strong> Que bom que está gostando! Também estou adorando</p>
-                                    <p><strong>Ricardo Mendes:</strong> Bora trocar ideias sobre os projetos?</p>
-                                </div>
-
-                                <button class="btn-ver-mais" onclick="mostrarTodos('3')">Ver mais comentários (3)</button>
-                                <button class="btn-ver-menos" onclick="esconderTodos('3')" style="display: none;">Ver menos</button>
-                            </div>
-
-                            <!-- Formulário de comentário -->
-                            <form class="form-comentario">
-                                <input type="text" name="conteudo" placeholder="Escreva um comentário...">
-                                <button type="submit">Comentar</button>
-                            </form>
-
-                            <small class="data-post">há 1 dia</small>
-                            
-                            <button class="btn-apagar">🗑️ Apagar</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Jogos -->
-            <section id="jogos" class="section">
-                <h2>🎮 Jogos Educativos</h2>
-                <div id="jogos-container">
-                    <h1>🚀 Em desenvolvimento...</h1>
-                    <p style="color: var(--text-secondary); margin-top: 20px;">Em breve novos jogos para tornar seu aprendizado ainda mais divertido!</p>
-                </div>
-            </section>
-
-            <!-- Ranking -->
-            <section id="ranking" class="section">
-                <h2>🏆 Estudantes mais ativos</h2>
-                <ol>
-                    <li><strong>Pedro Neto</strong> – 2.450 pontos</li>
-                    <li><strong>Ana Mário</strong> – 2.210 pontos</li>
-                    <li><strong>João Silva</strong> – 1.980 pontos</li>
-                    <li><strong>Maria Costa</strong> – 1.750 pontos</li>
-                    <li><strong>Carlos Lima</strong> – 1.520 pontos</li>
-                </ol>
-            </section>
-
-            <!-- Conversa -->
-            <section id="conversa" class="section">
-                <h2>💬 Bate papo</h2>
-                <div style="text-align: center; padding: 40px;">
-                    <p style="font-size: 1.2rem; color: var(--text-secondary);">💭 Em breve você poderá conversar com outros estudantes em tempo real!</p>
-                    <p style="color: #999; margin-top: 15px;">Estamos preparando um chat incrível para a comunidade.</p>
-                </div>
-            </section>
-        </main>
-
-        <script>
-            // Sistema de abas
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                    document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
-                    
-                    button.classList.add('active');
-                    document.getElementById(button.dataset.target).classList.add('active');
-                });
-            });
-
-            // Funções para ver mais/menos comentários
-            function mostrarTodos(postId) {
-                const container = document.getElementById(`todos-comentarios-${postId}`);
-                const btnMais = document.querySelector(`#comentarios-${postId} .btn-ver-mais`);
-                const btnMenos = document.querySelector(`#comentarios-${postId} .btn-ver-menos`);
-
-                container.classList.add('ativo');
-                btnMais.style.display = 'none';
-                btnMenos.style.display = 'inline';
-            }
-
-            function esconderTodos(postId) {
-                const container = document.getElementById(`todos-comentarios-${postId}`);
-                const btnMais = document.querySelector(`#comentarios-${postId} .btn-ver-mais`);
-                const btnMenos = document.querySelector(`#comentarios-${postId} .btn-ver-menos`);
-
-                container.classList.remove('ativo');
-                btnMais.style.display = 'inline';
-                btnMenos.style.display = 'none';
-            }
-
-            // Impedir envio real dos formulários (apenas demonstração)
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    alert('Funcionalidade demonstrativa - Em produção isso enviaria os dados!');
-                });
-            });
-
-            // Simular curtida
-            document.querySelectorAll('.btn-curtir').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const currentText = this.textContent;
-                    const match = currentText.match(/\d+/);
-                    if (match) {
-                        const count = parseInt(match[0]);
-                        if (this.style.borderColor !== 'rgb(255, 107, 107)') {
-                            this.style.borderColor = '#ff6b6b';
-                            this.style.color = '#ff6b6b';
-                            this.textContent = this.textContent.replace(count, count + 1);
-                        } else {
-                            this.style.borderColor = '#e0e0e0';
-                            this.style.color = '#555555';
-                            this.textContent = this.textContent.replace(count, count - 1);
-                        }
-                    }
-                });
-            });
-        </script>
+<!-- FORMULÁRIO DE POST -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="POST" action="{% url 'feed:criar-post' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <textarea name="conteudo" class="form-control" rows="3" placeholder="O que aprendeste hoje? Partilha com a comunidade..."></textarea>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <input type="file" name="imagem" class="form-control w-auto" accept="image/*">
+                <button type="submit" class="btn btn-warning px-4">
+                    <i class="fas fa-paper-plane me-1"></i>Publicar
+                </button>
+            </div>
+        </form>
     </div>
-</body>
-</html>
+</div>
+
+<!-- LISTA DE POSTS -->
+{% if posts %}
+    {% for post in posts %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <!-- Cabeçalho do post -->
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:45px;height:45px;background:#DAA520;font-weight:800;color:#111;font-size:1.1rem;flex-shrink:0;">
+                    {{ post.autor.username|first|upper }}
+                </div>
+                <div>
+                    <strong>{{ post.autor.username }}</strong>
+                    <br><small class="text-muted">{{ post.criado_em|timesince }} atrás</small>
+                </div>
+            </div>
+
+            <!-- Conteúdo -->
+            <p>{{ post.conteudo }}</p>
+            {% if post.imagem %}
+                <img src="{{ post.imagem.url }}" class="img-fluid rounded mb-3" alt="Imagem do post" style="max-height:400px;">
+            {% endif %}
+
+            <!-- Acções -->
+            <div class="d-flex gap-3 mb-3 border-top pt-2">
+                <form method="POST" action="{% url 'feed:reagir-post' post.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="tipo" value="like">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-heart me-1"></i>{{ post.total_likes }}
+                    </button>
+                </form>
+                <span class="text-muted small d-flex align-items-center">
+                    <i class="fas fa-comment me-1"></i>{{ post.total_comentarios }} comentário{{ post.total_comentarios|pluralize:"s" }}
+                </span>
+            </div>
+
+            <!-- Comentários existentes -->
+            {% if post.comentarios.all %}
+            <div class="bg-light rounded p-3 mb-3">
+                {% for comentario in post.comentarios.all %}
+                <div class="mb-2 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                    <strong class="small">{{ comentario.autor.username }}</strong>
+                    <small class="text-muted ms-1">{{ comentario.criado_em|timesince }} atrás</small>
+                    <p class="mb-0 small">{{ comentario.conteudo }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Formulário de comentário -->
+            <form method="POST" action="{% url 'feed:comentar-post' post.id %}" class="d-flex gap-2">
+                {% csrf_token %}
+                <input type="text" name="conteudo" class="form-control form-control-sm" placeholder="Escreve um comentário...">
+                <button type="submit" class="btn btn-warning btn-sm px-3">Enviar</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="text-center py-5 bg-white rounded border">
+    <i class="fas fa-comments fa-3x text-warning mb-3"></i>
+    <p class="text-muted">Ainda não há posts. Sê o primeiro a publicar!</p>
+</div>
+{% endif %}
 {% endblock %}

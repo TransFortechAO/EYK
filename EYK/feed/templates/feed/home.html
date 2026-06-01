@@ -2,145 +2,85 @@
 {% load static %}
 
 {% block extra_head %}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{%static 'home.css'%}">
-    <style>
-        :root {
-            --gold: #DAA520;
-            --dark: #111111;
-            --gray: #333333;
-        }
-        body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-
-        /* ── NAVBAR ── */
-        .navbar {
-            background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
-            padding: 1rem 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,.15);
-            position: sticky; top: 0; z-index: 1000;
-        }
-        .navbar-brand { color: var(--gold) !important; font-size: 1.7rem; font-weight: 800; text-decoration: none; }
-        .nav-link-custom { color: #fff !important; text-decoration: none; font-weight: 500; padding: .5rem 0; transition: color .25s; display: flex; align-items: center; gap: 7px; }
-        .nav-link-custom:hover { color: var(--gold) !important; }
-        .btn-logout-nav {
-            background: transparent; border: 2px solid #dc3545; color: #dc3545;
-            padding: 6px 18px; border-radius: 30px; font-weight: 600; text-decoration: none; font-size: .85rem; transition: all .25s;
-        }
-        .btn-logout-nav:hover { background: #dc3545; color: #fff; }
-        .btn-login-nav {
-            border: 2px solid var(--gold); color: var(--gold);
-            padding: 6px 18px; border-radius: 30px; font-weight: 600; text-decoration: none; font-size: .85rem; transition: all .25s; background: transparent;
-        }
-        .btn-login-nav:hover { background: var(--gold); color: var(--dark); }
-        .avatar-sm {
-            width: 34px; height: 34px; border-radius: 50%; object-fit: cover;
-            border: 2px solid var(--gold);
-        }
-        .avatar-sm-placeholder {
-            width: 34px; height: 34px; border-radius: 50%; background: var(--gold);
-            display: inline-flex; align-items: center; justify-content: center;
-            color: var(--dark); font-weight: 700; font-size: .85rem;
-        }
-
-     
-
-
-        /* ── EMPTY STATE ── */
-        .empty-state { text-align: center; padding: 50px 20px; background: #fff; border-radius: 16px; border: 2px dashed #e0e0e0; }
-        .empty-state i { font-size: 2.5rem; color: var(--gold); margin-bottom: 12px; }
-        .empty-state p { color: #888; }
-    </style>
+<link rel="stylesheet" href="{% static 'home.css' %}">
 {% endblock %}
 
 {% block content %}
-
-<!-- ── MENSAGENS ── -->
 {% if messages %}
-<div class="container mt-3">
     {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     {% endfor %}
+{% endif %}
+
+<h1 class="mb-2">Início</h1>
+<p class="mb-4">
+    Olá, <strong>{% if user.is_teacher %}{{ user.professor.nome_publico }}{% else %}{{ user.username }}{% endif %}</strong>! 👋
+    Bem-vindo à plataforma EYK.
+</p>
+
+<!-- CURSOS EM DESTAQUE -->
+<h2 class="mb-3">Cursos em Destaque</h2>
+{% if cursos %}
+<div class="row g-4 mb-5">
+    {% for curso in cursos %}
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            {% if curso.thumbnail %}
+                <img src="{{ curso.thumbnail.url }}" class="card-img-top" style="height:175px;object-fit:cover;" alt="{{ curso.titulo }}">
+            {% else %}
+                <img src="https://via.placeholder.com/400x175/111111/DAA520?text={{ curso.titulo|urlencode }}" class="card-img-top" style="height:175px;object-fit:cover;" alt="{{ curso.titulo }}">
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ curso.titulo }}</h5>
+                {% if curso.categoria %}<span class="badge bg-warning text-dark mb-2">{{ curso.categoria.nome }}</span>{% endif %}
+                <p class="card-text text-muted small">{{ curso.descricao|truncatewords:18 }}</p>
+                <p class="card-text"><small class="text-muted"><i class="fas fa-user-tie me-1"></i>{{ curso.professor.nome_publico }}{% if curso.duracao %} • {{ curso.duracao }}{% endif %}</small></p>
+                <div class="mt-auto pt-2">
+                    <strong class="text-warning">{% if curso.preco %}{{ curso.preco }} Kz{% else %}Grátis{% endif %}</strong>
+                    <a href="{% url 'feed:assistir-curso' curso.id %}" class="btn btn-warning btn-sm float-end">Ver Curso</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center p-5 bg-white rounded border mb-5">
+    <i class="fas fa-book-open fa-3x text-warning mb-3"></i>
+    <p class="text-muted">Nenhum curso disponível no momento.</p>
 </div>
 {% endif %}
 
-    
-    {% if user.is_authenticated %}
-    <div class="container mt-4 fade-in">
-        <h1 class="mb-4">Início</h1>
-        <P class="fw-bold" style="color: var(--dark);">
-            Olá, {% if user.is_teacher %}{{ user.professor.nome_publico }}{% else %}{{ user.username }}{% endif %}! 👋 <br>
-            Bem-vindo à plataforma EYK. Explora os cursos em destaque.
-        </P>
-        {% endif %}
-        <!-- CURSOS ----------------------------------------------- -->
-        <h2>Cursos em Destaque</h2>
-        {% if cursos %}
-        <div class="row g-4">
-            {% for curso in cursos %}
-            <div class="col-md-4">
-                <div class="card shadow-sm h-100">
-                    {% if curso.thumbnail %}
-                    <img src="{{ curso.thumbnail.url }}" alt="Thumbnail do curso" class="{{curso.titulo}}">
-                    {% else %}
-                    <img src="https://via.placeholder.com/400x175/111111/DAA520?text={{ curso.titulo|urlencode }}" alt="{{ curso.titulo }}">
-                    <div class="card-body">
-                        <span class="badge-gold">{{ curso.titulo }}</span>
-                        {% if curso.categoria %}
-                        <h5 class="card-title">{{ curso.categoria.nome }}</h5>
-                        {% endif %}
-                        <p class="card-text">{{ curso.descricao }}</p>
-                        {% endif %}
-                        <small class="text-muted">👨‍🏫 {{ curso.professor.nome_publico }} • {{ curso.duracao }}</small><br>
-                        <a href="#" class="btn btn-primary mt-2">Ver Curso</a>
+<!-- PROFESSORES EM DESTAQUE -->
+<h2 class="mb-3">Professores em Destaque</h2>
+{% if professores %}
+<div class="row g-4 mb-5">
+    {% for prof in professores %}
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm text-center">
+            <div class="card-body">
+                {% if prof.foto %}
+                    <img src="{{ prof.foto.url }}" class="rounded-circle mb-3" width="100" height="100" style="object-fit:cover;border:3px solid #DAA520;" alt="{{ prof.nome_publico }}">
+                {% else %}
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:100px;height:100px;background:#DAA520;font-size:2rem;font-weight:800;color:#111;">
+                        {{ prof.nome_publico|first|upper }}
                     </div>
-                </div>
-                {% endfor %}
+                {% endif %}
+                <h5 class="card-title">{{ prof.nome_publico }}</h5>
+                <p class="text-muted small">{{ prof.area }}</p>
+                {% if prof.bio %}<p class="card-text small">{{ prof.bio|truncatewords:12 }}</p>{% endif %}
+                <p class="small text-warning"><i class="fas fa-graduation-cap me-1"></i>{{ prof.curso_set.count }} curso{{ prof.curso_set.count|pluralize:"s" }}</p>
             </div>
-            {% else %}
-            <div class="empty-state mb-5">
-                <i class="fas fa-book-open d-block"></i>
-                <p>Nenhum curso disponível no momento.</p>
-            </div>
-            {% endif %}
-            
-        <!-- PROFESSORES ------------------------------------- -->
-        <h2>Professores em Destaque</h2>
-        {% if professores %}
-            {% for prof in professores %}
-            <div class="row g-4">
-            <!-- Card Usuário 1 -->
-            <div class="col-md-4">
-                <div class="card shadow-sm h-100 text-center">
-                    <div class="card-body">
-                        {% if prof.foto %}
-                        <img src="{{ prof.foto.url }}" class="rounded-circle mb-3" width="120" height="120" alt="{{ prof.nome_publico }}">
-                        {% else %}
-                        <div class="prof-avatar-placeholder">{{ prof.nome_publico|first|upper }}</div>
-                        {% endif %}
-                        <h5 class="card-title">{{ prof.nome_publico }}</h5>
-                        {% if prof.bio %}
-                        <p class="card-text">{{ prof.bio }}.</p>
-                        {% endif %}
-                        <div class="mt-auto">
-                            <a href="#" class="btn btn-outline-secondary">Ver Perfil</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {% endfor %}
-
-            {% else %}
-            <div class="empty-state">
-                <i class="fas fa-user-tie d-block"></i>
-                <p>Nenhum professor disponível no momento.</p>
-            </div>
-            {% endif %}
-{% endblock %}
-
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center p-5 bg-white rounded border">
+    <i class="fas fa-user-tie fa-3x text-warning mb-3"></i>
+    <p class="text-muted">Nenhum professor disponível no momento.</p>
+</div>
+{% endif %}
+{% endblock %}

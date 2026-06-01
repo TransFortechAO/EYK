@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-cog me-2 text-warning"></i>Configurações</h1>
+
+<div class="row g-4">
+    <!-- Editar Perfil -->
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-4"><i class="fas fa-user-edit me-2 text-warning"></i>Editar Perfil</h4>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                            {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.foto.label }}</label>
+                        {{ form.foto }}
+                        {% if professor.foto %}
+                            <img src="{{ professor.foto.url }}" class="rounded-circle mt-2" width="70" height="70" style="object-fit:cover;border:2px solid #DAA520;">
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.nome_publico.label }}</label>
+                        {{ form.nome_publico }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.area.label }}</label>
+                        {{ form.area }}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{{ form.bio.label }}</label>
+                        {{ form.bio }}
+                    </div>
+                    <button type="submit" class="btn btn-warning fw-bold px-4">
+                        <i class="fas fa-save me-1"></i>Guardar Alterações
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Painel de Monetização + Apagar Conta -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3"><i class="fas fa-money-bill-wave me-2 text-success"></i>Monetização</h5>
+                <p class="text-muted small">Gere os teus ganhos na plataforma EYK.</p>
+                <ul class="list-unstyled small text-muted">
+                    <li class="mb-1"><i class="fas fa-circle text-warning me-2" style="font-size:.5rem;"></i>Cursos publicados: <strong>{{ professor.curso_set.count }}</strong></li>
+                    <li class="mb-1"><i class="fas fa-circle text-warning me-2" style="font-size:.5rem;"></i>Vídeos publicados: <strong>{{ professor.videos.count }}</strong></li>
+                </ul>
+                <p class="text-muted small fst-italic">Sistema de pagamentos em breve.</p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-danger">
+            <div class="card-body">
+                <h5 class="fw-bold text-danger mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Zona de Perigo</h5>
+                <p class="text-muted small">Eliminar a tua conta é irreversível.</p>
+                <a href="{% url 'professores:apagar-conta' %}" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-trash me-1"></i>Apagar Conta
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

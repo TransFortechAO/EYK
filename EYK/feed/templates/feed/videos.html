@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-play-circle me-2 text-warning"></i>Vídeos</h1>
+
+{% if videos %}
+<div class="row g-4">
+    {% for video in videos %}
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            {% if video.thumbnail %}
+                <img src="{{ video.thumbnail.url }}" class="card-img-top" style="height:175px;object-fit:cover;" alt="{{ video.titulo }}">
+            {% else %}
+                <div class="card-img-top d-flex align-items-center justify-content-center bg-dark" style="height:175px;">
+                    <i class="fas fa-play-circle fa-4x text-warning"></i>
+                </div>
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ video.titulo }}</h5>
+                <p class="small text-muted mb-1"><i class="fas fa-user-tie me-1"></i>{{ video.professor.nome_publico }}</p>
+                {% if video.descricao %}<p class="card-text text-muted small flex-grow-1">{{ video.descricao|truncatewords:15 }}</p>{% endif %}
+                <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                    <span class="small text-muted">
+                        <i class="fas fa-heart me-1 text-danger"></i>{{ video.total_likes }}
+                        <i class="fas fa-eye ms-2 me-1"></i>{{ video.total_visualizacoes }}
+                    </span>
+                    {% if video.url_externa %}
+                        <a href="{{ video.url_externa }}" target="_blank" class="btn btn-warning btn-sm">
+                            <i class="fas fa-play me-1"></i>Assistir
+                        </a>
+                    {% elif video.arquivo %}
+                        <a href="{{ video.arquivo.url }}" target="_blank" class="btn btn-warning btn-sm">
+                            <i class="fas fa-play me-1"></i>Assistir
+                        </a>
+                    {% endif %}
+                </div>
+                <!-- Reacoes -->
+                <div class="mt-2 d-flex gap-2">
+                    <form method="POST" action="{% url 'professores:reagir-video' video.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo" value="like">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-heart me-1"></i>{{ video.total_likes }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 bg-white rounded border">
+    <i class="fas fa-video fa-3x text-warning mb-3"></i>
+    <p class="text-muted">Nenhum vídeo disponível de momento.</p>
+</div>
+{% endif %}
+{% endblock %}
