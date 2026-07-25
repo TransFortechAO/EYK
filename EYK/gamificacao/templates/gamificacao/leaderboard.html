@@ -1,20 +1,25 @@
 {% extends 'base.html' %}
 
+{% block title %}Leaderboard | EYK{% endblock %}
+
 {% block content %}
-<h1 class="mb-4"><i class="fas fa-trophy me-2 text-warning"></i>Leaderboard</h1>
+<div class="page-head"><div><h1>Gamificação</h1><p>Acompanha a tua posição na comunidade.</p></div></div>
+
+<div class="tabs">
+    <a href="{% url 'gamificacao:painel' %}">A minha carteira</a>
+    <a href="{% url 'gamificacao:leaderboard' %}" class="active">Leaderboard</a>
+</div>
 
 {% if top_carteiras %}
-<div class="list-group shadow-sm">
+<div class="card">
     {% for c in top_carteiras %}
-    <div class="list-group-item d-flex justify-content-between align-items-center">
-        <span><span class="fw-bold me-2">#{{ forloop.counter }}</span>{{ c.utilizador.username }}</span>
-        <span class="fw-bold text-warning"><i class="fas fa-coins me-1"></i>{{ c.saldo }}</span>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:13px 18px; {% if not forloop.last %}border-bottom:1px solid var(--border);{% endif %} {% if c.utilizador == request.user %}background:var(--gold-dim);{% endif %}">
+        <span><strong class="mono" style="margin-right:10px;">#{{ forloop.counter }}</strong>{{ c.utilizador.username }}{% if c.utilizador == request.user %} (tu){% endif %}</span>
+        <strong class="mono" style="color:var(--gold);"><i class="fas fa-coins"></i> {{ c.saldo }}</strong>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<div class="text-center py-5 bg-white rounded border">
-    <p class="text-muted mb-0">Ainda não há dados suficientes.</p>
-</div>
+<div class="empty-state"><i class="fas fa-trophy"></i><p>Ainda não há dados suficientes.</p></div>
 {% endif %}
 {% endblock %}
