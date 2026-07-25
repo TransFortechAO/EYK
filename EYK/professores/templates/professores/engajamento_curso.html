@@ -1,77 +1,41 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Engajamento: {{ curso.titulo }} | EYK{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3"><i class="fas fa-chart-bar me-2 text-warning"></i>Engajamento: {{ curso.titulo }}</h1>
-    <a href="{% url 'professores:meus-cursos' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="fas fa-arrow-left me-1"></i>Voltar
-    </a>
+<div class="page-head">
+    <div><h1 style="font-size:1.5rem;"><i class="fas fa-chart-bar" style="color:var(--gold);"></i> Engajamento: {{ curso.titulo }}</h1></div>
+    <a href="{% url 'professores:meus-cursos' %}" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Voltar</a>
 </div>
 
-<!-- ESTATÍSTICAS -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3 col-sm-6">
-        <div class="card shadow-sm text-center py-3">
-            <div class="h2 text-warning fw-bold">{{ total_inscritos }}</div>
-            <div class="text-muted small"><i class="fas fa-users me-1"></i>Inscritos</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-        <div class="card shadow-sm text-center py-3">
-            <div class="h2 text-warning fw-bold">{{ total_visualizacoes }}</div>
-            <div class="text-muted small"><i class="fas fa-eye me-1"></i>Visualizações</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-        <div class="card shadow-sm text-center py-3">
-            <div class="h2 text-warning fw-bold">{{ total_concluidos }}</div>
-            <div class="text-muted small"><i class="fas fa-check-circle me-1"></i>Concluídos</div>
-        </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-        <div class="card shadow-sm text-center py-3">
-            <div class="h2 text-warning fw-bold">{{ taxa_conclusao }}%</div>
-            <div class="text-muted small"><i class="fas fa-percent me-1"></i>Taxa de Conclusão</div>
-        </div>
-    </div>
+<div class="grid grid-4" style="margin-bottom:26px;">
+    <div class="card" style="padding:18px; text-align:center;"><div class="mono" style="font-size:1.5rem; font-weight:700; color:var(--gold);">{{ total_inscritos }}</div><div style="font-size:.78rem; color:var(--ink-soft);"><i class="fas fa-users"></i> Inscritos</div></div>
+    <div class="card" style="padding:18px; text-align:center;"><div class="mono" style="font-size:1.5rem; font-weight:700; color:var(--gold);">{{ total_visualizacoes }}</div><div style="font-size:.78rem; color:var(--ink-soft);"><i class="fas fa-eye"></i> Visualizações</div></div>
+    <div class="card" style="padding:18px; text-align:center;"><div class="mono" style="font-size:1.5rem; font-weight:700; color:var(--gold);">{{ total_concluidos }}</div><div style="font-size:.78rem; color:var(--ink-soft);"><i class="fas fa-check-circle"></i> Concluídos</div></div>
+    <div class="card" style="padding:18px; text-align:center;"><div class="mono" style="font-size:1.5rem; font-weight:700; color:var(--gold);">{{ taxa_conclusao }}%</div><div style="font-size:.78rem; color:var(--ink-soft);"><i class="fas fa-percent"></i> Taxa de Conclusão</div></div>
 </div>
 
-<!-- LISTA DE INSCRITOS -->
-<div class="card shadow-sm">
-    <div class="card-body">
-        <h5 class="fw-bold mb-3"><i class="fas fa-list me-2 text-warning"></i>Alunos Inscritos</h5>
-        {% if inscricoes %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Aluno</th>
-                        <th>Email</th>
-                        <th>Inscrito em</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for inscricao in inscricoes %}
-                    <tr>
-                        <td><strong>{{ inscricao.aluno.profile.username }}</strong></td>
-                        <td>{{ inscricao.aluno.profile.email }}</td>
-                        <td>{{ inscricao.inscrito_em|date:"d/m/Y" }}</td>
-                        <td>
-                            {% if inscricao.concluido %}
-                                <span class="badge bg-success">Concluído</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark">Em progresso</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p class="text-muted text-center py-3">Nenhum aluno inscrito ainda.</p>
-        {% endif %}
+<div class="card" style="padding:22px;">
+    <h3 style="font-size:1rem; margin-bottom:16px;"><i class="fas fa-list" style="color:var(--gold);"></i> Alunos Inscritos</h3>
+    {% if inscricoes %}
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead><tr><th>Aluno</th><th>Email</th><th>Inscrito em</th><th>Estado</th></tr></thead>
+            <tbody>
+                {% for inscricao in inscricoes %}
+                <tr>
+                    <td><strong>{{ inscricao.aluno.profile.username }}</strong></td>
+                    <td>{{ inscricao.aluno.profile.email }}</td>
+                    <td>{{ inscricao.inscrito_em|date:"d/m/Y" }}</td>
+                    <td>{% if inscricao.concluido %}<span class="badge badge-teal">Concluído</span>{% else %}<span class="badge badge-gold">Em progresso</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% else %}
+    <p style="color:var(--ink-soft); text-align:center; padding:20px 0;">Nenhum aluno inscrito ainda.</p>
+    {% endif %}
 </div>
 {% endblock %}

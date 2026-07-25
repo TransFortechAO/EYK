@@ -103,6 +103,7 @@ def meus_cursos(request):
     return render(request, 'professores/meus_cursos.html', {
         'cursos_data': cursos_data,
         'professor': professor,
+        'total_inscritos': sum(item['inscritos'] for item in cursos_data),
     })
 
 

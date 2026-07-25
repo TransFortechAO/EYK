@@ -147,10 +147,11 @@ table.data-table tr:hover td{background:var(--cream);}
 .form-field{margin-bottom:18px;}
 .form-field label{display:block; font-weight:700; font-size:.85rem; margin-bottom:6px;}
 .form-field .hint{font-size:.75rem; color:var(--ink-soft); margin-top:5px;}
-.form-field input, .form-field select, .form-field textarea{
+.form-field input:not([type="checkbox"]):not([type="radio"]), .form-field select, .form-field textarea{
   width:100%; border:1.5px solid var(--border); border-radius:10px; padding:11px 14px; font-family:inherit; font-size:.9rem; background:var(--paper);
 }
 .form-field input:focus, .form-field select:focus, .form-field textarea:focus{outline:2px solid var(--gold); border-color:var(--gold);}
+.form-field input[type="checkbox"], .form-field input[type="radio"]{width:auto; margin-right:6px;}
 .upload-box{border:1.5px dashed var(--border); border-radius:14px; padding:22px; text-align:center; color:var(--ink-soft); background:var(--cream);}
 .upload-box i{color:var(--gold); font-size:1.4rem;}
 .upload-box.required{border-color:var(--teal); background:var(--teal-dim);}
