@@ -1,70 +1,56 @@
-{% block content %}
+{% extends 'base_public.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt">
-  
-  <head>
-    <meta charset="UTF-8">
-    <title>Registrar</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    
-    <!-- Estilos personalizados -->
-      <link rel="stylesheet" href="{% static 'auth.css' %}">
-  </head>
-  
-  <body>
-    <div class="container-login d-flex">
-      <div class="logo-login">
-        <video src="{% static 'imagens/media/eyk-effet-panorama.mp4' %}" autoplay loop muted playsinline
-        disablePictureInPicture></video>
-      </div>
-      
-      <div class="container mt-5">
-        <h2 class="text-center">Registrar</h2>
-      <form method="POST" class="register-form">
-        {% csrf_token %}
-        <div class="form-group">
-          <label for="username">Nome de usuário</label>
-          {{ form.username }}
-          {{ form.username.errors }}
-        </div>
-        <div class="form-group">
-          <label for="email">E-mail</label>
-          {{ form.email }}
-          {{ form.email.errors }}
-        </div>
-        <div class="form-group">
-          <label for="password1">Senha</label>
-          {{ form.password1 }}
-          {{ form.password1.errors }}
-      </div>
-      <div class="form-group">
-        <label for="password2">Confirmar Senha</label>
-        {{ form.password2 }}
-            {{ form.password2.errors }}
-          </div>
-          
-          <button type="submit" class="btn btn-primary btn-block">Registrar</button>
-        </form>
-        
-        <div style="text-align:center; font-weight:bold;">
-          <p>Já tem uma conta? <a href="{% url 'accounts:login' %}">Entrar</a></p>
-          <hr>
-          <p>Quer ser professor na EYK?</p>
-          <p>
-            <a href='https://forms.gle/puLkdWGfdRdUyyyN7' target='_blank' class='btn btn-outline-primary'>
-              Preencher Formulário de Professor
-            </a>
-          </p>
-      </div>
-    </div>
-  </div>
-  
- 
-</body>
 
-</html>
+{% block title %}Registar | EYK{% endblock %}
+
+{% block content %}
+<div style="display:grid; grid-template-columns:1fr 1fr; min-height:100vh;">
+    <div style="background:linear-gradient(160deg,#1c1712,#3a2f1e); display:flex; flex-direction:column; justify-content:center; padding:60px; color:#fff; position:relative; overflow:hidden;">
+        <svg class="hand-mark" width="220" height="220" style="position:absolute; right:-40px; bottom:-30px; color:rgba(201,151,30,.14);"><use href="#hand-glyph"/></svg>
+        <a href="{% url 'index' %}" style="display:flex; align-items:center; gap:10px; color:var(--gold); font-family:'Fraunces',serif; font-weight:700; font-size:1.5rem; margin-bottom:40px; text-decoration:none;">
+            <svg class="hand-mark" width="30" height="30"><use href="#hand-glyph"/></svg> EYK
+        </a>
+        <h2 style="color:#fff; font-size:2rem; max-width:380px; line-height:1.2;">Cria a tua conta e começa a aprender hoje.</h2>
+        <p style="color:#c9c1b0; margin-top:16px; max-width:360px;">Regista-te gratuitamente como aluno e acede a cursos, vídeos e à comunidade EYK.</p>
+        <div class="sr-visual-alert" style="background:rgba(46,142,133,.18); color:#7fd4cb; margin-top:40px; max-width:320px;">
+            <i class="fas fa-closed-captioning"></i> Todos os vídeos têm legendas sempre visíveis.
+        </div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:center; padding:40px;">
+        <div style="width:100%; max-width:380px;">
+            <h2 style="font-size:1.5rem; margin-bottom:22px;">Cria a tua conta</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-field">
+                    <label for="{{ form.username.id_for_label }}">Nome de utilizador</label>
+                    {{ form.username }}
+                    <span class="text-danger">{{ form.username.errors }}</span>
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.email.id_for_label }}">E-mail</label>
+                    {{ form.email }}
+                    <span class="text-danger">{{ form.email.errors }}</span>
+                </div>
+                <div class="grid grid-2" style="gap:12px;">
+                    <div class="form-field">
+                        <label for="{{ form.password1.id_for_label }}">Palavra-passe</label>
+                        {{ form.password1 }}
+                        <span class="text-danger">{{ form.password1.errors }}</span>
+                    </div>
+                    <div class="form-field">
+                        <label for="{{ form.password2.id_for_label }}">Confirmar</label>
+                        {{ form.password2 }}
+                        <span class="text-danger">{{ form.password2.errors }}</span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;">Criar conta <i class="fas fa-arrow-right"></i></button>
+            </form>
+            <p style="text-align:center; font-size:.85rem; margin-top:20px; color:var(--ink-soft);">Já tens conta? <a href="{% url 'accounts:login' %}" style="color:var(--teal); font-weight:700;">Entrar</a></p>
+            <div style="text-align:center; margin-top:22px; padding-top:18px; border-top:1px solid var(--border);">
+                <p style="font-size:.85rem; color:var(--ink-soft); margin-bottom:10px;">Queres ensinar na EYK?</p>
+                <a href="https://forms.gle/puLkdWGfdRdUyyyN7" target="_blank" class="btn btn-outline btn-sm">Formulário de professor <i class="fas fa-external-link-alt"></i></a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

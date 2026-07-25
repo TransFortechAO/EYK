@@ -1,62 +1,40 @@
+{% extends 'base_public.html' %}
 {% load static %}
+
+{% block title %}Entrar | EYK{% endblock %}
+
 {% block content %}
-
-
-
-<!DOCTYPE html>
-<html lang="pt">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Entrar</title>
-
-  <!-- Bootstrap -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-
-  <!-- Estilo personalizado -->
-  <link rel="stylesheet" href="{% static 'auth.css' %}">
-
-</head>
-
-<body>
-  <div class="container-login">
-    <div class=logo-login><video src="{% static 'imagens/media/eyk-effet-panorama.mp4' %}" autoplay loop muted
-        playsinline disablePictureInPicture></video></div>
-    <div class="container mt-5">
-      <h2 class="text-center">Iniciar sessão</h2>
-      <form method="POST">
-        {% csrf_token %}
-        <div class="form-group">
-          <label for="id_username">Usuário</label>
-          {{ form.username }}
-          <span class="text-danger">
-            {{ form.username.errors }}
-          </span>
+<div style="display:grid; grid-template-columns:1fr 1fr; min-height:100vh;">
+    <div style="background:linear-gradient(160deg,#1c1712,#3a2f1e); display:flex; flex-direction:column; justify-content:center; padding:60px; color:#fff; position:relative; overflow:hidden;">
+        <svg class="hand-mark" width="220" height="220" style="position:absolute; right:-40px; bottom:-30px; color:rgba(201,151,30,.14);"><use href="#hand-glyph"/></svg>
+        <a href="{% url 'index' %}" style="display:flex; align-items:center; gap:10px; color:var(--gold); font-family:'Fraunces',serif; font-weight:700; font-size:1.5rem; margin-bottom:40px; text-decoration:none;">
+            <svg class="hand-mark" width="30" height="30"><use href="#hand-glyph"/></svg> EYK
+        </a>
+        <h2 style="color:#fff; font-size:2rem; max-width:380px; line-height:1.2;">"Ekola ya kelela" — a tua escola, à distância de um clique.</h2>
+        <p style="color:#c9c1b0; margin-top:16px; max-width:360px;">Junta-te a professores e estudantes numa comunidade construída à volta da língua gestual.</p>
+        <div class="sr-visual-alert" style="background:rgba(46,142,133,.18); color:#7fd4cb; margin-top:40px; max-width:320px;">
+            <i class="fas fa-closed-captioning"></i> Todos os vídeos têm legendas sempre visíveis.
         </div>
-
-
-        <div class="form-group">
-          <label for="id_password">Senha</label>
-          {{ form.password }}
-          <span class="text-danger">
-            {{ form.password.errors }}
-          </span>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block">Login</button>
-      </form>
-      <p style="text-align:center;font-weight:bold;">Não tem uma conta ? <br><a href="{% url 'accounts:register' %}"
-          class="">Se inscreva
-          gratuitamente</a></p>
     </div>
-  </div>
- 
-
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>
+    <div style="display:flex; align-items:center; justify-content:center; padding:40px;">
+        <div style="width:100%; max-width:380px;">
+            <h2 style="font-size:1.5rem; margin-bottom:22px;">Bem-vindo de volta</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-field">
+                    <label for="{{ form.username.id_for_label }}">Nome de utilizador</label>
+                    {{ form.username }}
+                    <span class="text-danger">{{ form.username.errors }}</span>
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.password.id_for_label }}">Palavra-passe</label>
+                    {{ form.password }}
+                    <span class="text-danger">{{ form.password.errors }}</span>
+                </div>
+                <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;">Entrar <i class="fas fa-arrow-right"></i></button>
+            </form>
+            <p style="text-align:center; font-size:.85rem; margin-top:20px; color:var(--ink-soft);">Não tens conta? <a href="{% url 'accounts:register' %}" style="color:var(--teal); font-weight:700;">Regista-te grátis</a></p>
+        </div>
+    </div>
+</div>
 {% endblock %}
