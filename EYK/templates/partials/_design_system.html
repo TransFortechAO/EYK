@@ -181,6 +181,8 @@ img{max-width:100%;}
 
 .course-card{overflow:hidden; transition:.2s;}
 .course-card:hover{transform:translateY(-3px); box-shadow:0 16px 34px -14px rgba(24,20,15,.28);}
+.course-card[draggable="true"]{cursor:grab;}
+.course-card.dragging{opacity:.4; cursor:grabbing;}
 .course-thumb{position:relative; height:150px; background:linear-gradient(135deg,#2b251d,#463a26); background-size:cover; background-position:center;}
 .course-thumb .play{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; opacity:.85; font-size:1.6rem;}
 .course-body{padding:16px;}
@@ -209,6 +211,9 @@ table.data-table tr:hover td{background:var(--cream);}
 .upload-box i{color:var(--gold); font-size:1.4rem;}
 .upload-box.required{border-color:var(--teal); background:var(--teal-dim);}
 .upload-box.required i{color:var(--teal);}
+.dropzone-active .upload-box, .dropzone-active input[type="file"]{
+  outline:2px dashed var(--gold); outline-offset:4px; background:var(--gold-dim); border-radius:14px;
+}
 
 .tabs{display:flex; gap:6px; border-bottom:1px solid var(--border); margin-bottom:24px; flex-wrap:wrap;}
 .tabs a, .tabs button{background:none; border:none; padding:12px 4px; margin-right:22px; font-weight:700; color:var(--ink-soft); border-bottom:2px solid transparent; font-size:.92rem; text-decoration:none;}

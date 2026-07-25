@@ -4,7 +4,7 @@ from .views import (
     editar_curso, deletar_curso, engajamento_curso,
     meus_videos, upload_video, editar_video, deletar_video, engajamento_video,
     reagir_video, configuracoes_professor, apagar_conta_professor,
-    toggle_seguir,
+    toggle_seguir, reordenar_videos,
 )
 
 app_name = 'professores'
@@ -29,6 +29,7 @@ urlpatterns = [
     path('deletar-video/<int:video_id>/', deletar_video, name='deletar-video'),
     path('engajamento-video/<int:video_id>/', engajamento_video, name='engajamento-video'),
     path('reagir-video/<int:video_id>/', reagir_video, name='reagir-video'),
+    path('reordenar-videos/', reordenar_videos, name='reordenar-videos'),
 
     # Seguir
     path('seguir/<int:professor_id>/', toggle_seguir, name='seguir'),

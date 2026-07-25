@@ -28,6 +28,7 @@
             <div class="form-field">
                 <label for="{{ form.thumbnail.id_for_label }}">{{ form.thumbnail.label }}</label>
                 {{ form.thumbnail }}
+                <div class="upload-box" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i> Arrasta uma imagem para aqui ou clica em "Escolher ficheiro"</div>
                 {% if curso and curso.thumbnail %}
                     <div style="margin-top:10px;">
                         <img loading="lazy" src="{{ curso.thumbnail.url }}" style="max-height:120px;border-radius:8px;">
@@ -46,4 +47,8 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/dropzone.js' %}"></script>
 {% endblock %}

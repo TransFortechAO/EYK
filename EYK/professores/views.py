@@ -203,7 +203,7 @@ def meus_videos(request):
     if not professor:
         return redirect('accounts:login')
 
-    videos = Video.objects.filter(professor=professor).order_by('-criado_em')
+    videos = Video.objects.filter(professor=professor)
     videos_data = []
     for video in videos:
         videos_data.append({
@@ -216,6 +216,24 @@ def meus_videos(request):
         'videos_data': videos_data,
         'professor': professor,
     })
+
+
+@login_required
+@require_POST
+def reordenar_videos(request):
+    professor = get_professor_or_403(request)
+    if not professor:
+        return JsonResponse({'erro': 'Perfil de professor não encontrado.'}, status=403)
+
+    ids = request.POST.getlist('ordem[]')
+    videos_por_id = {v.id: v for v in Video.objects.filter(professor=professor, id__in=ids)}
+    for posicao, video_id in enumerate(ids):
+        video = videos_por_id.get(int(video_id))
+        if video:
+            video.ordem = posicao
+            video.save(update_fields=['ordem'])
+
+    return JsonResponse({'ok': True})
 
 
 @login_required

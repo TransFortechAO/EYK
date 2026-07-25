@@ -23,6 +23,10 @@ class Video(models.Model):
     thumbnail = models.ImageField(upload_to='videos/thumbs/', null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     ativo = models.BooleanField(default=True)
+    ordem = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['ordem', '-criado_em']
 
     def __str__(self):
         return self.titulo

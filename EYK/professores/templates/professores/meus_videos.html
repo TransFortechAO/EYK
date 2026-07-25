@@ -15,21 +15,25 @@
 </div>
 
 {% if videos_data %}
-<div class="grid grid-3">
+<p class="hint" style="margin-bottom:14px;"><i class="fas fa-arrows-alt" aria-hidden="true"></i> Arrasta os cartões para reordenar os vídeos.</p>
+<div id="videos-grid" class="grid grid-3">
     {% for item in videos_data %}
-    <div class="card course-card">
-        <div class="course-thumb" style="{% if item.video.thumbnail %}background-image:url('{{ item.video.thumbnail.url }}');{% endif %}"><div class="play"><i class="fas fa-play-circle"></i></div></div>
+    <div class="card course-card" draggable="true" data-video-id="{{ item.video.id }}" tabindex="0" aria-label="{{ item.video.titulo }}, arrastar para reordenar">
+        <div class="course-thumb" style="{% if item.video.thumbnail %}background-image:url('{{ item.video.thumbnail.url }}');{% endif %}">
+            <div class="play"><i class="fas fa-play-circle" aria-hidden="true"></i></div>
+            <span style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,.55); color:#fff; border-radius:8px; padding:4px 8px; font-size:.75rem; cursor:grab;" aria-hidden="true"><i class="fas fa-grip-vertical"></i></span>
+        </div>
         <div class="course-body">
             <h4>{{ item.video.titulo }}</h4>
             {% if item.video.descricao %}<p style="color:var(--ink-soft); font-size:.82rem; margin:6px 0;">{{ item.video.descricao|truncatewords:14 }}</p>{% endif %}
             <div class="course-meta" style="gap:14px;">
-                <span><i class="fas fa-heart" style="color:var(--coral);"></i> {{ item.likes }}</span>
-                <span><i class="fas fa-eye"></i> {{ item.visualizacoes }}</span>
+                <span><i class="fas fa-heart" style="color:var(--coral);" aria-hidden="true"></i> {{ item.likes }}</span>
+                <span><i class="fas fa-eye" aria-hidden="true"></i> {{ item.visualizacoes }}</span>
                 {% if item.video.ativo %}<span class="badge badge-teal">Ativo</span>{% else %}<span class="badge badge-coral">Inativo</span>{% endif %}
             </div>
             <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
-                <a href="{% url 'professores:editar-video' item.video.id %}" class="btn btn-outline btn-sm"><i class="fas fa-pen"></i> Editar</a>
-                <a href="{% url 'professores:engajamento-video' item.video.id %}" class="btn btn-outline btn-sm"><i class="fas fa-chart-bar"></i> Stats</a>
+                <a href="{% url 'professores:editar-video' item.video.id %}" class="btn btn-outline btn-sm"><i class="fas fa-pen" aria-hidden="true"></i> Editar</a>
+                <a href="{% url 'professores:engajamento-video' item.video.id %}" class="btn btn-outline btn-sm"><i class="fas fa-chart-bar" aria-hidden="true"></i> Stats</a>
                 <a href="{% url 'professores:deletar-video' item.video.id %}" class="btn btn-danger btn-sm" aria-label="Eliminar vídeo {{ item.video.titulo }}"><i class="fas fa-trash" aria-hidden="true"></i></a>
             </div>
         </div>
@@ -43,4 +47,18 @@
     <a href="{% url 'professores:upload-video' %}" class="btn btn-gold btn-sm" style="margin-top:10px;">Publicar Vídeo</a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/dropzone.js' %}"></script>
+<script src="{% static 'js/reorder.js' %}"></script>
+<script>
+    initReorder({
+        gridId: 'videos-grid',
+        itemSelector: '.course-card',
+        idAttr: 'videoId',
+        url: '{% url "professores:reordenar-videos" %}',
+        fieldName: 'ordem[]',
+    });
+</script>
 {% endblock %}

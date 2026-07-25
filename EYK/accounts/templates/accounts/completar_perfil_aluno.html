@@ -15,6 +15,7 @@
             <div class="form-field" style="text-align:center;">
                 <label for="{{ form.foto.id_for_label }}" style="text-align:left; display:block;">{{ form.foto.label }}</label>
                 {{ form.foto }}
+                <div class="upload-box" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i> Arrasta uma foto para aqui ou clica em "Escolher ficheiro"</div>
                 <img id="preview-img" src="#" alt="Pré-visualização" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);display:none;margin:12px auto 0;">
             </div>
             <div class="form-field"><label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>{{ form.bio }}</div>
@@ -40,4 +41,8 @@ document.querySelector('input[type=file]').addEventListener('change', function(e
     }
 });
 </script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/dropzone.js' %}"></script>
 {% endblock %}

@@ -19,6 +19,7 @@
             <div class="form-field">
                 <label for="{{ form.arquivo.id_for_label }}">{{ form.arquivo.label }}</label>
                 {{ form.arquivo }}
+                <div class="upload-box" aria-hidden="true"><i class="fas fa-film"></i> Arrasta um vídeo para aqui ou clica em "Escolher ficheiro"</div>
             </div>
             <div class="form-field">
                 <label for="{{ form.url_externa.id_for_label }}">{{ form.url_externa.label }}</label>
@@ -28,6 +29,7 @@
             <div class="form-field">
                 <label for="{{ form.thumbnail.id_for_label }}">{{ form.thumbnail.label }}</label>
                 {{ form.thumbnail }}
+                <div class="upload-box" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i> Arrasta uma imagem para aqui ou clica em "Escolher ficheiro"</div>
                 {% if video and video.thumbnail %}
                     <img loading="lazy" src="{{ video.thumbnail.url }}" style="max-height:100px;border-radius:8px;margin-top:8px;">
                 {% endif %}
@@ -43,4 +45,8 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/dropzone.js' %}"></script>
 {% endblock %}
