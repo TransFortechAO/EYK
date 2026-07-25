@@ -14,13 +14,13 @@
         <form method="post" enctype="multipart/form-data" style="text-align:left;">
             {% csrf_token %}
             <div class="form-field" style="text-align:center;">
-                <label style="text-align:left; display:block;">{{ form.foto.label }}</label>
+                <label for="{{ form.foto.id_for_label }}" style="text-align:left; display:block;">{{ form.foto.label }}</label>
                 {{ form.foto }}
                 <img id="preview-img" src="#" alt="Pré-visualização" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);display:none;margin:12px auto 0;">
             </div>
-            <div class="form-field"><label>{{ form.nome_publico.label }}</label>{{ form.nome_publico }}</div>
-            <div class="form-field"><label>{{ form.area.label }}</label>{{ form.area }}</div>
-            <div class="form-field"><label>{{ form.bio.label }}</label>{{ form.bio }}</div>
+            <div class="form-field"><label for="{{ form.nome_publico.id_for_label }}">{{ form.nome_publico.label }}</label>{{ form.nome_publico }}</div>
+            <div class="form-field"><label for="{{ form.area.id_for_label }}">{{ form.area.label }}</label>{{ form.area }}</div>
+            <div class="form-field"><label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>{{ form.bio }}</div>
             <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;"><i class="fas fa-check"></i> Guardar e ir para a plataforma</button>
         </form>
     </div>

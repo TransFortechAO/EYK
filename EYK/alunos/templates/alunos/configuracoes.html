@@ -12,11 +12,11 @@
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="form-field">
-                <label>{{ form.foto.label }}</label>
+                <label for="{{ form.foto.id_for_label }}">{{ form.foto.label }}</label>
                 {{ form.foto }}
-                {% if aluno.foto %}<img src="{{ aluno.foto.url }}" class="avatar-fallback" style="width:70px;height:70px;object-fit:cover;margin-top:10px;">{% endif %}
+                {% if aluno.foto %}<img loading="lazy" src="{{ aluno.foto.url }}" class="avatar-fallback" style="width:70px;height:70px;object-fit:cover;margin-top:10px;">{% endif %}
             </div>
-            <div class="form-field"><label>{{ form.bio.label }}</label>{{ form.bio }}</div>
+            <div class="form-field"><label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>{{ form.bio }}</div>
             <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Guardar Alterações</button>
         </form>
     </div>

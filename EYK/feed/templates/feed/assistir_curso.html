@@ -8,7 +8,7 @@
     <div>
         <div class="card" style="overflow:hidden;">
             {% if curso.thumbnail %}
-                <img src="{{ curso.thumbnail.url }}" style="width:100%; max-height:340px; object-fit:cover;">
+                <img loading="lazy" src="{{ curso.thumbnail.url }}" style="width:100%; max-height:340px; object-fit:cover;">
             {% endif %}
             <div style="padding:22px;">
                 {% if curso.categoria %}<span class="badge badge-gold">{{ curso.categoria.nome }}</span>{% endif %}
@@ -41,7 +41,7 @@
     <div>
         <div class="card" style="padding:20px; text-align:center; margin-bottom:16px;">
             {% if curso.professor.foto %}
-                <img src="{{ curso.professor.foto.url }}" class="avatar-fallback" style="width:64px;height:64px;font-size:1.3rem;margin:0 auto 10px;object-fit:cover;">
+                <img loading="lazy" src="{{ curso.professor.foto.url }}" class="avatar-fallback" style="width:64px;height:64px;font-size:1.3rem;margin:0 auto 10px;object-fit:cover;">
             {% else %}
                 <div class="avatar-fallback" style="width:64px;height:64px;font-size:1.3rem;margin:0 auto 10px;">{{ curso.professor.nome_publico|first|upper }}</div>
             {% endif %}

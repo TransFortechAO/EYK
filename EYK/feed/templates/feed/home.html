@@ -69,7 +69,7 @@
     {% for prof in professores %}
     <div class="card" style="padding:22px; text-align:center;">
         {% if prof.foto %}
-            <img src="{{ prof.foto.url }}" class="avatar-fallback" style="width:76px;height:76px;font-size:1.6rem;margin:0 auto 12px;object-fit:cover;">
+            <img loading="lazy" src="{{ prof.foto.url }}" class="avatar-fallback" style="width:76px;height:76px;font-size:1.6rem;margin:0 auto 12px;object-fit:cover;">
         {% else %}
             <div class="avatar-fallback" style="width:76px;height:76px;font-size:1.6rem;margin:0 auto 12px;">{{ prof.nome_publico|first|upper }}</div>
         {% endif %}

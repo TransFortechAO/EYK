@@ -13,11 +13,11 @@
         <form method="post" enctype="multipart/form-data" style="text-align:left;">
             {% csrf_token %}
             <div class="form-field" style="text-align:center;">
-                <label style="text-align:left; display:block;">{{ form.foto.label }}</label>
+                <label for="{{ form.foto.id_for_label }}" style="text-align:left; display:block;">{{ form.foto.label }}</label>
                 {{ form.foto }}
                 <img id="preview-img" src="#" alt="Pré-visualização" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);display:none;margin:12px auto 0;">
             </div>
-            <div class="form-field"><label>{{ form.bio.label }}</label>{{ form.bio }}</div>
+            <div class="form-field"><label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>{{ form.bio }}</div>
             <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;"><i class="fas fa-check"></i> Guardar e continuar</button>
         </form>
         <div style="margin-top:16px;">

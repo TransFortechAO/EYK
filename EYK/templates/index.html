@@ -4,7 +4,7 @@
 {% block title %}Ekola Ya Kelela — Aprender em língua gestual{% endblock %}
 
 {% block content %}
-<div style="background:var(--ink); color:#fff;">
+<div style="background:var(--sidebar-bg); color:#fff;">
     <div style="display:flex; align-items:center; justify-content:space-between; padding:20px 48px; flex-wrap:wrap; gap:14px;">
         <div style="display:flex; align-items:center; gap:10px; color:var(--gold); font-family:'Fraunces',serif; font-weight:700; font-size:1.4rem;">
             <svg class="hand-mark" width="30" height="30"><use href="#hand-glyph"/></svg> EYK
@@ -61,11 +61,11 @@
     </div>
 </div>
 
-<footer style="background:var(--ink); color:#9c9384; padding:50px 48px 24px;">
+<footer style="background:var(--sidebar-bg); color:#9c9384; padding:50px 48px 24px;">
     <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:30px; max-width:1080px; margin:0 auto;">
         <div style="display:flex; flex-direction:column; gap:10px;">
-            <img src="{% static 'imagens/media/logo-sem-fundo.png' %}" alt="Logo Projeto EYK" style="height:50px;">
-            <img src="{% static 'imagens/media/transfortech-logo-sem-fundo.png' %}" alt="Logo Transfortech" style="height:40px;">
+            <img loading="lazy" src="{% static 'imagens/media/logo-sem-fundo.png' %}" alt="Logo Projeto EYK" style="height:50px;">
+            <img loading="lazy" src="{% static 'imagens/media/transfortech-logo-sem-fundo.png' %}" alt="Logo Transfortech" style="height:40px;">
         </div>
         <div style="display:flex; gap:40px; font-size:.85rem; flex-wrap:wrap;">
             <div><div style="color:#fff; font-weight:700; margin-bottom:8px;">Plataforma</div>Sobre · Cursos · Comunidade</div>

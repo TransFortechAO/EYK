@@ -4,31 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function () {
+            var t = localStorage.getItem('eyk-theme');
+            if (t && t !== 'auto') document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
     <title>{% block title %}Ekola Ya Kelela{% endblock %}</title>
     {% include 'partials/_design_system.html' %}
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+<a href="#conteudo-principal" class="skip-link">Saltar para o conteúdo</a>
 {# base.html assume utilizador autenticado -- todas as views que o usam exigem login/staff. #}
 {# Páginas públicas (landing, login, registo) usam base_public.html. #}
 <div class="app-shell">
     {% include 'partials/_sidebar.html' %}
     <div class="app-main">
         {% include 'partials/_topbar.html' %}
-        <div class="app-content">
+        <main id="conteudo-principal" class="app-content" tabindex="-1">
             {% if messages %}
-                <ul class="list-unstyled mb-4">
+                <ul id="django-messages" class="list-unstyled mb-4">
                     {% for message in messages %}
-                        <li class="alert alert-{{ message.tags }}">{{ message }}</li>
+                        <li class="alert alert-{{ message.tags }}" data-tag="{{ message.tags }}">{{ message }}</li>
                     {% endfor %}
                 </ul>
             {% endif %}
             {% block content %}{% endblock %}
-        </div>
+        </main>
     </div>
 </div>
+<div id="toast-container" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/theme.js' %}"></script>
+<script src="{% static 'js/toast.js' %}"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -11,18 +11,18 @@
         {% csrf_token %}
         <div class="grid grid-2" style="gap:16px;">
             <div class="form-field">
-                <label>{{ form.username.label }}</label>
+                <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
                 {{ form.username }}
                 {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-field">
-                <label>{{ form.email.label }}</label>
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
                 {{ form.email }}
                 {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
             </div>
-            <div class="form-field"><label>{{ form.password.label }}</label>{{ form.password }}</div>
-            <div class="form-field"><label>{{ form.nome_publico.label }}</label>{{ form.nome_publico }}</div>
-            <div class="form-field"><label>{{ form.area.label }}</label>{{ form.area }}</div>
+            <div class="form-field"><label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>{{ form.password }}</div>
+            <div class="form-field"><label for="{{ form.nome_publico.id_for_label }}">{{ form.nome_publico.label }}</label>{{ form.nome_publico }}</div>
+            <div class="form-field"><label for="{{ form.area.id_for_label }}">{{ form.area.label }}</label>{{ form.area }}</div>
         </div>
         <button type="submit" class="btn btn-gold"><i class="fas fa-plus"></i> Registar Professor</button>
     </form>
@@ -41,7 +41,7 @@
                 <tr>
                     <td>
                         {% if prof.foto %}
-                            <img src="{{ prof.foto.url }}" class="avatar-sm" alt="Foto">
+                            <img loading="lazy" src="{{ prof.foto.url }}" class="avatar-sm" alt="Foto">
                         {% else %}
                             <div class="avatar-fallback" style="width:38px;height:38px;font-size:.85rem;">{{ prof.nome_publico|first|upper }}</div>
                         {% endif %}

@@ -11,30 +11,30 @@
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="form-field">
-                <label>{{ form.titulo.label }}</label>
+                <label for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
                 {{ form.titulo }}
                 {% if form.titulo.errors %}<div class="text-danger small mt-1">{{ form.titulo.errors.0 }}</div>{% endif %}
             </div>
-            <div class="form-field"><label>{{ form.descricao.label }}</label>{{ form.descricao }}</div>
+            <div class="form-field"><label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>{{ form.descricao }}</div>
             <div class="form-field">
-                <label>{{ form.arquivo.label }}</label>
+                <label for="{{ form.arquivo.id_for_label }}">{{ form.arquivo.label }}</label>
                 {{ form.arquivo }}
             </div>
             <div class="form-field">
-                <label>{{ form.url_externa.label }}</label>
+                <label for="{{ form.url_externa.id_for_label }}">{{ form.url_externa.label }}</label>
                 {{ form.url_externa }}
                 <div class="hint">Preenche o ficheiro OU o link externo, não ambos.</div>
             </div>
             <div class="form-field">
-                <label>{{ form.thumbnail.label }}</label>
+                <label for="{{ form.thumbnail.id_for_label }}">{{ form.thumbnail.label }}</label>
                 {{ form.thumbnail }}
                 {% if video and video.thumbnail %}
-                    <img src="{{ video.thumbnail.url }}" style="max-height:100px;border-radius:8px;margin-top:8px;">
+                    <img loading="lazy" src="{{ video.thumbnail.url }}" style="max-height:100px;border-radius:8px;margin-top:8px;">
                 {% endif %}
             </div>
             <div class="form-field" style="display:flex; align-items:center; gap:8px;">
                 {{ form.ativo }}
-                <label style="margin:0;">{{ form.ativo.label }}</label>
+                <label for="{{ form.ativo.id_for_label }}" style="margin:0;">{{ form.ativo.label }}</label>
             </div>
             <div style="display:flex; gap:10px;">
                 <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> {{ acao }} Vídeo</button>

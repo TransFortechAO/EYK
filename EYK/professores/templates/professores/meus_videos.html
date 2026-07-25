@@ -30,7 +30,7 @@
             <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
                 <a href="{% url 'professores:editar-video' item.video.id %}" class="btn btn-outline btn-sm"><i class="fas fa-pen"></i> Editar</a>
                 <a href="{% url 'professores:engajamento-video' item.video.id %}" class="btn btn-outline btn-sm"><i class="fas fa-chart-bar"></i> Stats</a>
-                <a href="{% url 'professores:deletar-video' item.video.id %}" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></a>
+                <a href="{% url 'professores:deletar-video' item.video.id %}" class="btn btn-danger btn-sm" aria-label="Eliminar vídeo {{ item.video.titulo }}"><i class="fas fa-trash" aria-hidden="true"></i></a>
             </div>
         </div>
     </div>

@@ -41,7 +41,7 @@
             <div style="display:flex; gap:8px; margin-top:14px;">
                 <a href="{% url 'professores:editar-curso' item.curso.id %}" class="btn btn-outline btn-sm"><i class="fas fa-pen"></i> Editar</a>
                 <a href="{% url 'professores:engajamento-curso' item.curso.id %}" class="btn btn-outline btn-sm"><i class="fas fa-chart-bar"></i> Stats</a>
-                <a href="{% url 'professores:deletar-curso' item.curso.id %}" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></a>
+                <a href="{% url 'professores:deletar-curso' item.curso.id %}" class="btn btn-danger btn-sm" aria-label="Eliminar curso {{ item.curso.titulo }}"><i class="fas fa-trash" aria-hidden="true"></i></a>
             </div>
         </div>
     </div>

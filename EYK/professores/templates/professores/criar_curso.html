@@ -11,33 +11,33 @@
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="form-field">
-                <label>{{ form.titulo.label }}</label>
+                <label for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>
                 {{ form.titulo }}
                 {% if form.titulo.errors %}<div class="text-danger small mt-1">{{ form.titulo.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-field">
-                <label>{{ form.descricao.label }}</label>
+                <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
                 {{ form.descricao }}
                 {% if form.descricao.errors %}<div class="text-danger small mt-1">{{ form.descricao.errors.0 }}</div>{% endif %}
             </div>
             <div class="grid grid-3" style="gap:12px;">
-                <div class="form-field"><label>{{ form.categoria_nome.label }}</label>{{ form.categoria_nome }}</div>
-                <div class="form-field"><label>{{ form.preco.label }}</label>{{ form.preco }}</div>
-                <div class="form-field"><label>{{ form.duracao.label }}</label>{{ form.duracao }}</div>
+                <div class="form-field"><label for="{{ form.categoria_nome.id_for_label }}">{{ form.categoria_nome.label }}</label>{{ form.categoria_nome }}</div>
+                <div class="form-field"><label for="{{ form.preco.id_for_label }}">{{ form.preco.label }}</label>{{ form.preco }}</div>
+                <div class="form-field"><label for="{{ form.duracao.id_for_label }}">{{ form.duracao.label }}</label>{{ form.duracao }}</div>
             </div>
             <div class="form-field">
-                <label>{{ form.thumbnail.label }}</label>
+                <label for="{{ form.thumbnail.id_for_label }}">{{ form.thumbnail.label }}</label>
                 {{ form.thumbnail }}
                 {% if curso and curso.thumbnail %}
                     <div style="margin-top:10px;">
-                        <img src="{{ curso.thumbnail.url }}" style="max-height:120px;border-radius:8px;">
+                        <img loading="lazy" src="{{ curso.thumbnail.url }}" style="max-height:120px;border-radius:8px;">
                         <small class="hint" style="display:block;">Imagem atual</small>
                     </div>
                 {% endif %}
             </div>
             <div class="form-field" style="display:flex; align-items:center; gap:8px;">
                 {{ form.ativo }}
-                <label style="margin:0;">{{ form.ativo.label }}</label>
+                <label for="{{ form.ativo.id_for_label }}" style="margin:0;">{{ form.ativo.label }}</label>
             </div>
             <div style="display:flex; gap:10px;">
                 <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> {{ acao }} Curso</button>
