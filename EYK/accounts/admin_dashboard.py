@@ -1,6 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
+from django.views.decorators.http import require_POST
 from django.contrib import messages
+from django.db.models import Q
 from django import forms
 from .models import User
 from professores.models import Professor
@@ -71,3 +73,67 @@ def registar_professor(request):
         'form': form,
         'professores': professores,
     })
+
+
+# ── Gestão geral de utilizadores ────────────────────────────────────────────
+
+@staff_member_required
+def gerenciar_usuarios(request):
+    """Dashboard exclusivo para admins listarem, pesquisarem e gerirem utilizadores"""
+    usuarios = User.objects.all().order_by('-date_joined')
+
+    q = request.GET.get('q', '').strip()
+    if q:
+        usuarios = usuarios.filter(Q(username__icontains=q) | Q(email__icontains=q))
+
+    tipo = request.GET.get('tipo', '')
+    if tipo == 'aluno':
+        usuarios = usuarios.filter(is_student=True)
+    elif tipo == 'professor':
+        usuarios = usuarios.filter(is_teacher=True)
+    elif tipo == 'staff':
+        usuarios = usuarios.filter(is_staff=True)
+
+    return render(request, 'accounts/dashboard_usuarios.html', {
+        'usuarios': usuarios,
+        'q': q,
+        'tipo': tipo,
+    })
+
+
+@staff_member_required
+@require_POST
+def toggle_ativo_usuario(request, user_id):
+    utilizador = get_object_or_404(User, id=user_id)
+
+    if utilizador == request.user:
+        messages.error(request, 'Não podes ativar/desativar a tua própria conta.')
+    elif utilizador.is_staff or utilizador.is_superuser:
+        messages.error(request, 'Não é possível ativar/desativar outra conta de administrador.')
+    else:
+        utilizador.is_active = not utilizador.is_active
+        utilizador.save()
+        estado = 'ativada' if utilizador.is_active else 'desativada'
+        messages.success(request, f'Conta de "{utilizador.username}" {estado} com sucesso.')
+
+    return redirect('accounts:dashboard-usuarios')
+
+
+@staff_member_required
+def apagar_usuario(request, user_id):
+    utilizador = get_object_or_404(User, id=user_id)
+
+    if utilizador == request.user:
+        messages.error(request, 'Não podes apagar a tua própria conta por aqui.')
+        return redirect('accounts:dashboard-usuarios')
+    if utilizador.is_staff or utilizador.is_superuser:
+        messages.error(request, 'Não é possível apagar outra conta de administrador.')
+        return redirect('accounts:dashboard-usuarios')
+
+    if request.method == 'POST':
+        username = utilizador.username
+        utilizador.delete()
+        messages.success(request, f'Utilizador "{username}" apagado com sucesso.')
+        return redirect('accounts:dashboard-usuarios')
+
+    return render(request, 'accounts/confirmar_apagar_usuario.html', {'utilizador': utilizador})
