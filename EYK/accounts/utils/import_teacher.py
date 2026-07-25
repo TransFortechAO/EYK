@@ -1,6 +1,7 @@
 import gspread
 from google.oauth2.service_account import Credentials
-from django.contrib.auth import get_user_model 
+from django.conf import settings
+from django.contrib.auth import get_user_model
 import secrets
 
 User = get_user_model()
@@ -11,7 +12,7 @@ def import_teacher_from_google_sheet():
         'https://www.googleapis.com/auth/drive'
     ]
 
-    credentials = Credentials.from_service_account_file('credentials.json', scopes =SCOPES)
+    credentials = Credentials.from_service_account_file(settings.GOOGLE_CREDENTIALS_FILE, scopes=SCOPES)
     client = gspread.authorize(credentials)
     SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1ESZlIE1e7v9c88JWmGSBe0epR9Zcr8-LwkyMkJdsk1c/edit?resourcekey=&gid=1323887326#gid=1323887326'
     sheet = client.open_by_url(SPREADSHEET_URL)
