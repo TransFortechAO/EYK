@@ -28,46 +28,36 @@
         </form>
     </div>
 
-    {% if posts %}
-        {% for post in posts %}
+    <div id="posts-list">
+        {% if posts %}
+            {% for post in posts %}{% include 'feed/_post_card.html' %}{% endfor %}
+        {% else %}
+            <div class="empty-state"><i class="fas fa-comments"></i><p>Ainda não há posts. Sê o primeiro a publicar!</p></div>
+        {% endif %}
+    </div>
+    <div id="posts-skeleton" style="display:none;">
+        {% for i in "12" %}
         <div class="card" style="padding:20px; margin-bottom:18px;">
-            <div style="display:flex; gap:12px; align-items:center;">
-                <div class="avatar-fallback" style="width:42px;height:42px;">{{ post.autor.username|first|upper }}</div>
-                <div><div style="font-weight:700; font-size:.9rem;">{{ post.autor.username }}</div><div style="font-size:.75rem; color:var(--ink-soft);">{{ post.criado_em|timesince }} atrás</div></div>
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px;">
+                <div class="skeleton" style="width:42px;height:42px;border-radius:50%;"></div>
+                <div style="flex:1;"><div class="skeleton skeleton-text" style="width:40%;"></div></div>
             </div>
-            <p style="margin:14px 0; line-height:1.6;">{{ post.conteudo }}</p>
-            {% if post.imagem %}<img loading="lazy" src="{{ post.imagem.url }}" style="border-radius:12px; max-height:400px; width:100%; object-fit:cover; margin-bottom:14px;">{% endif %}
-
-            <div style="display:flex; gap:20px; align-items:center; padding-top:12px; border-top:1px solid var(--border);">
-                <form method="POST" action="{% url 'feed:reagir-post' post.id %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="tipo" value="like">
-                    <button type="submit" style="background:none; border:none; color:var(--coral); font-weight:700; font-size:.85rem; cursor:pointer;"><i class="fas fa-heart"></i> {{ post.total_likes }}</button>
-                </form>
-                <span style="color:var(--ink-soft); font-size:.85rem;"><i class="fas fa-comment"></i> {{ post.total_comentarios }} comentário{{ post.total_comentarios|pluralize:"s" }}</span>
-            </div>
-
-            {% if post.comentarios.all %}
-            <div style="background:var(--cream); border-radius:12px; padding:12px 16px; margin-top:14px;">
-                {% for comentario in post.comentarios.all %}
-                <div style="margin-bottom:8px; padding-bottom:8px; {% if not forloop.last %}border-bottom:1px solid var(--border);{% endif %}">
-                    <strong style="font-size:.82rem;">{{ comentario.autor.username }}</strong>
-                    <span style="color:var(--ink-soft); font-size:.75rem; margin-left:6px;">{{ comentario.criado_em|timesince }} atrás</span>
-                    <p style="margin:2px 0 0; font-size:.85rem;">{{ comentario.conteudo }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <form method="POST" action="{% url 'feed:comentar-post' post.id %}" style="display:flex; gap:10px; margin-top:14px;">
-                {% csrf_token %}
-                <input type="text" name="conteudo" placeholder="Escreve um comentário..." style="flex:1; border:1.5px solid var(--border); border-radius:100px; padding:9px 16px; font-family:inherit;">
-                <button type="submit" class="btn btn-gold btn-sm">Enviar</button>
-            </form>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text" style="width:70%;"></div>
         </div>
         {% endfor %}
-    {% else %}
-        <div class="empty-state"><i class="fas fa-comments"></i><p>Ainda não há posts. Sê o primeiro a publicar!</p></div>
-    {% endif %}
+    </div>
+    <div id="posts-sentinel" data-next-url="{% url 'feed:comunidade-pagina' 2 %}" aria-hidden="true"></div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/infinite-scroll.js' %}"></script>
+<script>
+    initInfiniteScroll({
+        sentinelId: 'posts-sentinel',
+        listId: 'posts-list',
+        skeletonId: 'posts-skeleton',
+    });
+</script>
 {% endblock %}

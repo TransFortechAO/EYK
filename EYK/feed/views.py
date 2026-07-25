@@ -3,10 +3,15 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.template.loader import render_to_string
 from cursos.models import Curso, Categoria
 from professores.models import Professor, Video, Seguidor
 from .models import Post, ReacaoPost, Comentario
 from gamificacao.services import creditar_moedas
+
+POSTS_POR_PAGINA = 10
+CURSOS_POR_PAGINA = 12
 
 
 @login_required
@@ -35,24 +40,41 @@ def feed_home(request):
     })
 
 
-@login_required
-def cursos_view(request):
+def _cursos_filtrados(request):
     q = request.GET.get('q', '')
     categoria_id = request.GET.get('categoria', '')
-    categorias = Categoria.objects.all()
     cursos = Curso.objects.filter(ativo=True).select_related('professor', 'categoria')
-
     if q:
         cursos = cursos.filter(titulo__icontains=q)
     if categoria_id:
         cursos = cursos.filter(categoria_id=categoria_id)
+    return cursos, q, categoria_id
+
+
+@login_required
+def cursos_view(request):
+    cursos, q, categoria_id = _cursos_filtrados(request)
+    categorias = Categoria.objects.all()
+    pagina = Paginator(cursos, CURSOS_POR_PAGINA).get_page(1)
 
     return render(request, 'feed/cursos.html', {
-        'cursos': cursos,
+        'cursos': pagina.object_list,
         'categorias': categorias,
         'q': q,
         'categoria_selecionada': categoria_id,
     })
+
+
+@login_required
+def cursos_pagina(request, page):
+    cursos, q, categoria_id = _cursos_filtrados(request)
+    paginator = Paginator(cursos, CURSOS_POR_PAGINA)
+    pagina = paginator.get_page(page)
+    html = ''.join(
+        render_to_string('feed/_curso_card.html', {'curso': c}, request=request)
+        for c in pagina.object_list
+    )
+    return JsonResponse({'html': html, 'has_next': pagina.has_next()})
 
 
 @login_required
@@ -61,10 +83,25 @@ def videos_view(request):
     return render(request, 'feed/videos.html', {'videos': videos})
 
 
+def _posts_base():
+    return Post.objects.select_related('autor').prefetch_related('comentarios', 'reacoes').all()
+
+
 @login_required
 def comunidade(request):
-    posts = Post.objects.select_related('autor').prefetch_related('comentarios', 'reacoes').all()
-    return render(request, 'feed/comunidade.html', {'posts': posts})
+    pagina = Paginator(_posts_base(), POSTS_POR_PAGINA).get_page(1)
+    return render(request, 'feed/comunidade.html', {'posts': pagina.object_list})
+
+
+@login_required
+def comunidade_pagina(request, page):
+    paginator = Paginator(_posts_base(), POSTS_POR_PAGINA)
+    pagina = paginator.get_page(page)
+    html = ''.join(
+        render_to_string('feed/_post_card.html', {'post': p}, request=request)
+        for p in pagina.object_list
+    )
+    return JsonResponse({'html': html, 'has_next': pagina.has_next()})
 
 
 @login_required

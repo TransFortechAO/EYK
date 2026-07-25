@@ -27,25 +27,22 @@
 </div>
 
 {% if cursos %}
-<div class="grid grid-4">
-    {% for curso in cursos %}
+<div id="cursos-grid" class="grid grid-4">
+    {% for curso in cursos %}{% include 'feed/_curso_card.html' %}{% endfor %}
+</div>
+<div id="cursos-skeleton" class="grid grid-4" style="display:none;">
+    {% for i in "1234" %}
     <div class="card course-card">
-        <div class="course-thumb" style="{% if curso.thumbnail %}background-image:url('{{ curso.thumbnail.url }}');{% endif %}">
-            <div class="play"><i class="fas fa-play-circle"></i></div>
-        </div>
+        <div class="skeleton skeleton-thumb"></div>
         <div class="course-body">
-            {% if curso.categoria %}<span class="badge badge-gold">{{ curso.categoria.nome }}</span>{% endif %}
-            <h4>{{ curso.titulo }}</h4>
-            <p style="color:var(--ink-soft); font-size:.82rem; margin:6px 0;">{{ curso.descricao|truncatewords:16 }}</p>
-            <div class="course-meta"><i class="fas fa-user-tie"></i> {{ curso.professor.nome_publico }}{% if curso.duracao %} · {{ curso.duracao }}{% endif %}</div>
-            <div class="course-foot">
-                <span class="price">{% if curso.preco %}{{ curso.preco }} Kz{% else %}Grátis{% endif %}</span>
-                <a href="{% url 'feed:assistir-curso' curso.id %}" class="btn btn-gold btn-sm">Ver</a>
-            </div>
+            <div class="skeleton skeleton-text" style="width:50%;"></div>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text" style="width:70%;"></div>
         </div>
     </div>
     {% endfor %}
 </div>
+<div id="cursos-sentinel" data-next-url="{% url 'feed:cursos-pagina' 2 %}?q={{ q|urlencode }}&categoria={{ categoria_selecionada }}" aria-hidden="true"></div>
 {% else %}
 <div class="empty-state">
     <i class="fas fa-search"></i>
@@ -53,4 +50,15 @@
     <a href="{% url 'feed:cursos' %}" class="btn btn-outline btn-sm" style="margin-top:10px;">Limpar filtros</a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/infinite-scroll.js' %}"></script>
+<script>
+    initInfiniteScroll({
+        sentinelId: 'cursos-sentinel',
+        listId: 'cursos-grid',
+        skeletonId: 'cursos-skeleton',
+    });
+</script>
 {% endblock %}
