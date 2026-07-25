@@ -1,66 +1,54 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Cursos | EYK{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1><i class="fas fa-graduation-cap me-2 text-warning"></i>Explorar Cursos</h1>
+<div class="page-head">
+    <div><h1>Cursos</h1><p>Explora conteúdos por categoria, professor ou nível.</p></div>
 </div>
 
-<!-- PESQUISA E FILTROS -->
-<div class="card shadow-sm p-3 mb-4">
-    <form method="GET" class="row g-2 align-items-end">
-        <div class="col-md-6">
-            <label class="form-label fw-bold">Pesquisar</label>
-            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Título do curso...">
+<div class="card" style="padding:16px 20px; margin-bottom:22px;">
+    <form method="GET" style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+        <div class="searchbox" style="max-width:320px;">
+            <i class="fas fa-search"></i>
+            <input type="text" name="q" value="{{ q }}" placeholder="Título do curso...">
         </div>
-        <div class="col-md-4">
-            <label class="form-label fw-bold">Categoria</label>
-            <select name="categoria" class="form-select">
-                <option value="">Todas as categorias</option>
-                {% for cat in categorias %}
-                    <option value="{{ cat.id }}" {% if categoria_selecionada == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nome }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-warning w-100"><i class="fas fa-search me-1"></i>Filtrar</button>
-        </div>
+        <select name="categoria" style="border:1.5px solid var(--border); border-radius:100px; padding:9px 16px; font-size:.85rem; background:var(--paper); font-family:inherit;">
+            <option value="">Todas as categorias</option>
+            {% for cat in categorias %}
+                <option value="{{ cat.id }}" {% if categoria_selecionada == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nome }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-gold btn-sm"><i class="fas fa-search"></i> Filtrar</button>
     </form>
 </div>
 
-<!-- LISTA DE CURSOS -->
 {% if cursos %}
-<div class="row g-4">
+<div class="grid grid-4">
     {% for curso in cursos %}
-    <div class="col-md-4 col-sm-6">
-        <div class="card h-100 shadow-sm">
-            {% if curso.thumbnail %}
-                <img src="{{ curso.thumbnail.url }}" class="card-img-top" style="height:175px;object-fit:cover;" alt="{{ curso.titulo }}">
-            {% else %}
-                <img src="https://via.placeholder.com/400x175/111111/DAA520?text={{ curso.titulo|urlencode }}" class="card-img-top" style="height:175px;object-fit:cover;" alt="{{ curso.titulo }}">
-            {% endif %}
-            <div class="card-body d-flex flex-column">
-                <h5 class="card-title">{{ curso.titulo }}</h5>
-                {% if curso.categoria %}<span class="badge bg-warning text-dark mb-2">{{ curso.categoria.nome }}</span>{% endif %}
-                <p class="card-text text-muted small flex-grow-1">{{ curso.descricao|truncatewords:20 }}</p>
-                <p class="small text-muted mb-1"><i class="fas fa-user-tie me-1"></i>{{ curso.professor.nome_publico }}</p>
-                {% if curso.duracao %}<p class="small text-muted mb-2"><i class="fas fa-clock me-1"></i>{{ curso.duracao }}</p>{% endif %}
-                <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
-                    <strong class="text-warning">{% if curso.preco %}{{ curso.preco }} Kz{% else %}Grátis{% endif %}</strong>
-                    <a href="{% url 'feed:assistir-curso' curso.id %}" class="btn btn-warning btn-sm">
-                        <i class="fas fa-play me-1"></i>Assistir
-                    </a>
-                </div>
+    <div class="card course-card">
+        <div class="course-thumb" style="{% if curso.thumbnail %}background-image:url('{{ curso.thumbnail.url }}');{% endif %}">
+            <div class="play"><i class="fas fa-play-circle"></i></div>
+        </div>
+        <div class="course-body">
+            {% if curso.categoria %}<span class="badge badge-gold">{{ curso.categoria.nome }}</span>{% endif %}
+            <h4>{{ curso.titulo }}</h4>
+            <p style="color:var(--ink-soft); font-size:.82rem; margin:6px 0;">{{ curso.descricao|truncatewords:16 }}</p>
+            <div class="course-meta"><i class="fas fa-user-tie"></i> {{ curso.professor.nome_publico }}{% if curso.duracao %} · {{ curso.duracao }}{% endif %}</div>
+            <div class="course-foot">
+                <span class="price">{% if curso.preco %}{{ curso.preco }} Kz{% else %}Grátis{% endif %}</span>
+                <a href="{% url 'feed:assistir-curso' curso.id %}" class="btn btn-gold btn-sm">Ver</a>
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<div class="text-center py-5 bg-white rounded border">
-    <i class="fas fa-search fa-3x text-warning mb-3"></i>
-    <p class="text-muted">Nenhum curso encontrado{% if q %} para "{{ q }}"{% endif %}.</p>
-    <a href="{% url 'feed:cursos' %}" class="btn btn-outline-warning mt-2">Limpar filtros</a>
+<div class="empty-state">
+    <i class="fas fa-search"></i>
+    <p>Nenhum curso encontrado{% if q %} para "{{ q }}"{% endif %}.</p>
+    <a href="{% url 'feed:cursos' %}" class="btn btn-outline btn-sm" style="margin-top:10px;">Limpar filtros</a>
 </div>
 {% endif %}
 {% endblock %}

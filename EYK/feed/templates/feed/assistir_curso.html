@@ -1,85 +1,68 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}{{ curso.titulo }} | EYK{% endblock %}
+
 {% block content %}
-<div class="row g-4">
-    <div class="col-md-8">
-        <div class="card shadow-sm">
+<div class="grid grid-2" style="grid-template-columns:2fr 1fr; align-items:start; gap:26px;">
+    <div>
+        <div class="card" style="overflow:hidden;">
             {% if curso.thumbnail %}
-                <img src="{{ curso.thumbnail.url }}" class="card-img-top" style="max-height:350px;object-fit:cover;" alt="{{ curso.titulo }}">
+                <img src="{{ curso.thumbnail.url }}" style="width:100%; max-height:340px; object-fit:cover;">
             {% endif %}
-            <div class="card-body">
-                <h1 class="card-title h3">{{ curso.titulo }}</h1>
-                {% if curso.categoria %}
-                    <span class="badge bg-warning text-dark mb-3">{{ curso.categoria.nome }}</span>
-                {% endif %}
-                <p class="card-text">{{ curso.descricao }}</p>
-
-                <div class="d-flex gap-4 text-muted mb-4">
-                    <span><i class="fas fa-user-tie me-1 text-warning"></i>{{ curso.professor.nome_publico }}</span>
-                    {% if curso.duracao %}<span><i class="fas fa-clock me-1 text-warning"></i>{{ curso.duracao }}</span>{% endif %}
-                    <span><i class="fas fa-users me-1 text-warning"></i>{{ curso.total_inscritos }} inscritos</span>
-                </div>
-
-                <!-- Avaliação -->
-                <div class="card bg-light p-3">
-                    <h5>Avaliar este curso</h5>
-                    <form method="POST" action="{% url 'feed:avaliar-curso' curso.id %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label">A tua avaliação (1-5 estrelas)</label>
-                            <select name="nota" class="form-select w-auto">
-                                <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
-                                <option value="4">⭐⭐⭐⭐ Muito Bom</option>
-                                <option value="3">⭐⭐⭐ Bom</option>
-                                <option value="2">⭐⭐ Regular</option>
-                                <option value="1">⭐ Mau</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-star me-1"></i>Avaliar
-                        </button>
-                    </form>
+            <div style="padding:22px;">
+                {% if curso.categoria %}<span class="badge badge-gold">{{ curso.categoria.nome }}</span>{% endif %}
+                <h1 style="font-size:1.6rem; margin:10px 0 10px;">{{ curso.titulo }}</h1>
+                <p style="color:var(--ink-soft); line-height:1.7;">{{ curso.descricao }}</p>
+                <div style="display:flex; gap:20px; color:var(--ink-soft); font-size:.85rem; margin-top:14px;">
+                    <span><i class="fas fa-user-tie" style="color:var(--gold);"></i> {{ curso.professor.nome_publico }}</span>
+                    {% if curso.duracao %}<span><i class="fas fa-clock" style="color:var(--gold);"></i> {{ curso.duracao }}</span>{% endif %}
+                    <span><i class="fas fa-users" style="color:var(--gold);"></i> {{ curso.total_inscritos }} inscritos</span>
                 </div>
             </div>
+        </div>
+
+        <div class="card" style="padding:22px; margin-top:20px;">
+            <h3 style="font-size:1rem; margin-bottom:14px;">Avaliar este curso</h3>
+            <form method="POST" action="{% url 'feed:avaliar-curso' curso.id %}" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                {% csrf_token %}
+                <select name="nota" style="border:1.5px solid var(--border); border-radius:10px; padding:10px 14px; font-family:inherit;">
+                    <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                    <option value="4">⭐⭐⭐⭐ Muito Bom</option>
+                    <option value="3">⭐⭐⭐ Bom</option>
+                    <option value="2">⭐⭐ Regular</option>
+                    <option value="1">⭐ Mau</option>
+                </select>
+                <button type="submit" class="btn btn-gold btn-sm"><i class="fas fa-star"></i> Avaliar</button>
+            </form>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <!-- Info do Professor -->
-        <div class="card shadow-sm mb-3">
-            <div class="card-body text-center">
-                {% if curso.professor.foto %}
-                    <img src="{{ curso.professor.foto.url }}" class="rounded-circle mb-3" width="80" height="80" style="object-fit:cover;border:3px solid #DAA520;">
-                {% else %}
-                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:80px;height:80px;background:#DAA520;font-size:1.8rem;font-weight:800;color:#111;">
-                        {{ curso.professor.nome_publico|first|upper }}
-                    </div>
-                {% endif %}
-                <h5>{{ curso.professor.nome_publico }}</h5>
-                <p class="text-muted small">{{ curso.professor.area }}</p>
-                {% if curso.professor.bio %}<p class="small">{{ curso.professor.bio|truncatewords:20 }}</p>{% endif %}
-            </div>
+    <div>
+        <div class="card" style="padding:20px; text-align:center; margin-bottom:16px;">
+            {% if curso.professor.foto %}
+                <img src="{{ curso.professor.foto.url }}" class="avatar-fallback" style="width:64px;height:64px;font-size:1.3rem;margin:0 auto 10px;object-fit:cover;">
+            {% else %}
+                <div class="avatar-fallback" style="width:64px;height:64px;font-size:1.3rem;margin:0 auto 10px;">{{ curso.professor.nome_publico|first|upper }}</div>
+            {% endif %}
+            <h4 style="font-size:.95rem;">{{ curso.professor.nome_publico }}</h4>
+            <p style="font-size:.78rem; color:var(--ink-soft); margin:4px 0 0;">{{ curso.professor.area }}</p>
+            {% if curso.professor.bio %}<p style="font-size:.82rem; margin-top:10px;">{{ curso.professor.bio|truncatewords:20 }}</p>{% endif %}
         </div>
 
-        <!-- Estado da inscrição -->
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h6 class="fw-bold mb-3">O teu progresso</h6>
-                {% if inscricao %}
-                    <p class="text-success"><i class="fas fa-check-circle me-1"></i>Estás inscrito neste curso</p>
-                    {% if inscricao.concluido %}
-                        <p class="text-success fw-bold"><i class="fas fa-trophy me-1"></i>Curso concluído!</p>
-                    {% else %}
-                        <p class="text-muted small">Continua o teu progresso.</p>
-                    {% endif %}
+        <div class="card" style="padding:20px;">
+            <h4 style="font-size:.95rem; margin-bottom:10px;">O teu progresso</h4>
+            {% if inscricao %}
+                <p style="color:var(--teal); font-size:.88rem;"><i class="fas fa-check-circle"></i> Estás inscrito neste curso</p>
+                {% if inscricao.concluido %}
+                    <p style="color:var(--teal); font-weight:700; font-size:.88rem;"><i class="fas fa-trophy"></i> Curso concluído!</p>
                 {% else %}
-                    <p class="text-muted">Faz login como aluno para te inscrever.</p>
+                    <p style="color:var(--ink-soft); font-size:.85rem;">Continua o teu progresso.</p>
                 {% endif %}
-                <div class="mt-2">
-                    <strong class="text-warning fs-5">{% if curso.preco %}{{ curso.preco }} Kz{% else %}Grátis{% endif %}</strong>
-                </div>
-            </div>
+            {% else %}
+                <p style="color:var(--ink-soft); font-size:.85rem;">Faz login como aluno para te inscreveres.</p>
+            {% endif %}
+            <div style="margin-top:10px;"><strong class="price" style="font-size:1.1rem;">{% if curso.preco %}{{ curso.preco }} Kz{% else %}Grátis{% endif %}</strong></div>
         </div>
     </div>
 </div>

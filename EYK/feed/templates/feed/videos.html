@@ -1,251 +1,109 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="{% static 'videos.css' %}">
-<!-- <script src="{% static 'pega_tempo.js' %}"></script> -->
-{% endblock %}
+{% block title %}Vídeos | EYK{% endblock %}
 
 {% block content %}
+<div class="page-head">
+    <div><h1>Vídeos</h1><p>Conteúdos avulsos de todos os professores da plataforma.</p></div>
+</div>
 
-<h1 class="mb-4">
-    <i class="fas fa-play-circle text-warning"></i>
-    Vídeos
-</h1>
-
-<!-- =========================
-     FEED
-========================= -->
-<div id="feed" class="feed-container">
-
+<div id="feed">
     {% if videos %}
-
-    {% for video in videos %}
-
-    <div class="video-card">
-        <div class="video-thumb" onclick="openVideo(this)" data-id="{{ video.id }}" data-url="{{ video.arquivo.url }}"
-            data-title="{{ video.titulo }}" data-views="{{ video.total_visualizacoes }}"
-            data-likes="{{ video.total_likes }}" id="video-thumb">
-
-            {% if video.thumbnail %}
-            <img src="{{ video.thumbnail.url }}">
-            {% else %}
-            <img src="{% static 'img/default-video.jpg' %}">
-            {% endif %}
-
-            <div class="play-overlay">
-                <i class="fas fa-play"></i>
+    <div class="grid grid-4">
+        {% for video in videos %}
+        <div class="card course-card">
+            <div class="course-thumb" id="video-thumb" onclick="openVideo(this)" data-id="{{ video.id }}"
+                 data-url="{% if video.arquivo %}{{ video.arquivo.url }}{% else %}{{ video.url_externa }}{% endif %}" data-title="{{ video.titulo }}"
+                 data-views="{{ video.total_visualizacoes }}" data-likes="{{ video.total_likes }}"
+                 style="cursor:pointer; {% if video.thumbnail %}background-image:url('{{ video.thumbnail.url }}');{% endif %}">
+                <div class="play"><i class="fas fa-play-circle"></i></div>
             </div>
-
-
-        </div>
-        <h5>{{ video.titulo }}</h5>
-
-        <p>{{ user.professor.nome_publico }}</p>
-
-        <span><i class="fas fa-heart me-1 text-danger"></i>{{ item.likes }}</span>
-        <span><i class="fas fa-eye me-1"></i>{{ item.visualizacoes }}</span>
-        <span id="videoDuration">0:00</span>
-
-    </div>
-
-    {% endfor %}
-
-    {% else %}
-
-    <div class="empty-feed">
-        <i class="fas fa-video fa-3x text-warning"></i>
-        <p>Nenhum vídeo disponível</p>
-    </div>
-
-    {% endif %}
-
-</div>
-
-<!-- =========================
-     PLAYER PAGE
-========================= -->
-<div id="playerPage" class="player-page">
-
-    <div class="player-wrapper">
-
-        <button class="back-btn" onclick="backToFeed()">
-            ← Voltar
-        </button>
-
-        <div class="video-player">
-            <video id="mainVideo" class="video-main" controls  controlsList="nodownload" poster="{{ video.thumbnail.url }}"></video>
-        </div>
-
-        <div class="video-info">
-
-            <h2 id="videoTitle"></h2>
-
-            <div class="video-stats">
-                👁 <span id="videoViews"></span> visualizações
-            </div>
-
-            <div class="video-actions">
-
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="tipo" value="like">
-
-                    <button class="btn-like">
-                        <img src="{% static 'imagens/icons/like.png' %}" alt="Like" width="30" >
-                    </button>
-
-                </form>
-
-            </div>
-
-        </div>
-
-        <h3 class="suggestions-title">Vídeos sugeridos</h3>
-
-        <div class="suggestions">
-
-            {% for video in videos %}
-
-            <div class="suggest-card"
-                onclick="openSuggestion('{{ video.arquivo.url }}','{{ video.titulo }}','{{ video.total_visualizacoes }}')">
-
-                {% if video.thumbnail %}
-                <img src="{{ video.thumbnail.url }}">
-                {% else %}
-                <img src="{% static 'img/default-video.jpg' %}">
-                {% endif %}
-
-                <div>
-                    <strong>{{ video.titulo }}</strong><br>
-                    <small>{{ video.total_visualizacoes }} views</small>
+            <div class="captions-strip"><i class="fas fa-closed-captioning"></i> Legendas ativas</div>
+            <div class="course-body">
+                <h4 style="font-size:.92rem;">{{ video.titulo }}</h4>
+                <div class="course-meta"><i class="fas fa-user-tie"></i> {{ video.professor.nome_publico }}</div>
+                <div class="course-meta" style="gap:14px;">
+                    <span><i class="fas fa-heart" style="color:var(--coral);"></i> {{ video.total_likes }}</span>
+                    <span><i class="fas fa-eye"></i> {{ video.total_visualizacoes }}</span>
                 </div>
-
             </div>
-
-            {% endfor %}
-
         </div>
-
+        {% endfor %}
     </div>
-
+    {% else %}
+    <div class="empty-state"><i class="fas fa-video"></i><p>Nenhum vídeo disponível.</p></div>
+    {% endif %}
 </div>
 
-<!-- =========================
-     JS LOGIC
-========================= -->
-<script>
+<!-- PLAYER -->
+<div id="playerPage" style="display:none;">
+    <button class="btn btn-ghost btn-sm" onclick="backToFeed()" style="margin-bottom:16px;"><i class="fas fa-arrow-left"></i> Voltar</button>
+    <div style="background:var(--ink); border-radius:var(--r-lg); overflow:hidden;">
+        <video id="mainVideo" style="width:100%; display:block; max-height:520px; background:#000;" controls controlsList="nodownload"></video>
+    </div>
+    <div style="margin-top:18px;">
+        <h2 id="videoTitle" style="font-size:1.4rem;"></h2>
+        <div class="course-meta" style="margin-top:8px;"><i class="fas fa-eye"></i> <span id="videoViews"></span> visualizações</div>
+        <form method="POST" style="margin-top:12px;">
+            {% csrf_token %}
+            <input type="hidden" name="tipo" value="like">
+            <button type="submit" class="btn btn-outline btn-sm"><i class="fas fa-heart"></i> Gostar</button>
+        </form>
+    </div>
 
+    <h3 style="font-size:1.05rem; margin:30px 0 14px;">Vídeos sugeridos</h3>
+    <div class="grid grid-4">
+        {% for video in videos %}
+        <div class="card course-card" style="cursor:pointer;" onclick="openSuggestion('{% if video.arquivo %}{{ video.arquivo.url }}{% else %}{{ video.url_externa }}{% endif %}','{{ video.titulo|escapejs }}','{{ video.total_visualizacoes }}')">
+            <div class="course-thumb" style="{% if video.thumbnail %}background-image:url('{{ video.thumbnail.url }}');{% endif %}"><div class="play"><i class="fas fa-play-circle"></i></div></div>
+            <div class="course-body"><h4 style="font-size:.85rem;">{{ video.titulo }}</h4><div class="course-meta"><i class="fas fa-eye"></i> {{ video.total_visualizacoes }}</div></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
     const feed = document.getElementById("feed");
     const playerPage = document.getElementById("playerPage");
     const mainVideo = document.getElementById("mainVideo");
 
-    //desativar download 
-    mainVideo
-
     function openVideo(el) {
-
         const url = el.dataset.url;
         const title = el.dataset.title;
         const views = el.dataset.views;
-
-        // esconder feed
         feed.style.display = "none";
-
-        // mostrar player
         playerPage.style.display = "block";
-
-        // set video
         mainVideo.src = url;
         mainVideo.load();
         mainVideo.play();
-
-        // info
         document.getElementById("videoTitle").innerText = title;
         document.getElementById("videoViews").innerText = views;
-
         pauseOthers();
     }
 
     function backToFeed() {
-
         mainVideo.pause();
         mainVideo.currentTime = 0;
-
         playerPage.style.display = "none";
-        feed.style.display = "grid";
-
+        feed.style.display = "block";
     }
 
     function openSuggestion(url, title, views) {
-
         mainVideo.src = url;
         mainVideo.load();
         mainVideo.play();
-
         document.getElementById("videoTitle").innerText = title;
         document.getElementById("videoViews").innerText = views;
-
         pauseOthers();
     }
 
-    /* garante que só 1 vídeo toca */
     document.addEventListener("play", function (e) {
-
-        const videos = document.querySelectorAll("video");
-
-        videos.forEach(v => {
-            if (v !== e.target) {
-                v.pause();
-            }
-        });
-
+        document.querySelectorAll("video").forEach(v => { if (v !== e.target) v.pause(); });
     }, true);
 
     function pauseOthers() {
-        document.querySelectorAll("video").forEach(v => {
-            if (v !== mainVideo) {
-                v.pause();
-            }
-        });
+        document.querySelectorAll("video").forEach(v => { if (v !== mainVideo) v.pause(); });
     }
-
-
-    function formatTime(seconds) {
-
-        seconds = Math.floor(seconds);
-
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-
-        if (h > 0) {
-            return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        } else {
-            return `${m}:${String(s).padStart(2, '0')}`;
-        }
-    }
-
-    const video = document.createElement("video");
-    video.src = "video.mp4";
-
-    video.addEventListener("loadedmetadata", function () {
-
-        const duration = video.duration;
-
-        console.log("Duração:", formatTime(duration));
-
-    });
-
-    // const mainVideo = document.getElementById("mainVideo");
-
-    mainVideo.addEventListener("loadedmetadata", function () {
-
-        const duration = formatTime(mainVideo.duration);
-
-        document.getElementById("videoDuration").innerText = duration;
-
-    });
 </script>
-
 {% endblock %}
