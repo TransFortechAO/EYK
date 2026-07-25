@@ -1,0 +1,25 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}Verificação em duas etapas | EYK{% endblock %}
+
+{% block content %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 16px;">
+    <div class="card" style="max-width:420px; width:100%; padding:44px 36px; text-align:center;">
+        <div class="avatar-fallback" style="width:64px; height:64px; font-size:1.4rem; margin:0 auto 20px;"><i class="fas fa-shield-halved"></i></div>
+        <h1 style="font-size:1.4rem;">Verificação em duas etapas</h1>
+        <p style="color:var(--ink-soft); margin:8px 0 24px;">Olá <strong>{{ username }}</strong>, introduz o código da tua app de autenticação (ou um código de backup).</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-field" style="text-align:left;">
+                <label for="codigo" class="visually-hidden">Código de verificação</label>
+                <input id="codigo" type="text" name="codigo" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" autofocus style="text-align:center; letter-spacing:.3em; font-size:1.2rem;">
+            </div>
+            <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;"><i class="fas fa-check"></i> Verificar</button>
+        </form>
+        <div style="margin-top:16px;">
+            <a href="{% url 'accounts:login' %}" style="color:var(--ink-soft); font-size:.85rem; text-decoration:none;">Cancelar e voltar ao login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

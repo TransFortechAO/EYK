@@ -7,6 +7,11 @@
     <script>
         (function () {
             var t = localStorage.getItem('eyk-theme');
+            if (!t) {
+                var servidor = '{{ user.tema_preferido|default:"auto" }}';
+                t = servidor === 'escuro' ? 'dark' : (servidor === 'claro' ? 'light' : 'auto');
+                localStorage.setItem('eyk-theme', t);
+            }
             if (t && t !== 'auto') document.documentElement.setAttribute('data-theme', t);
         })();
     </script>

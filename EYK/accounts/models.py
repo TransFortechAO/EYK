@@ -3,11 +3,22 @@ from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
+    TEMA_CHOICES = [
+        ('auto', 'Automático (segue o sistema)'),
+        ('claro', 'Claro'),
+        ('escuro', 'Escuro'),
+    ]
+
     is_student = models.BooleanField(default=False)
     is_teacher = models.BooleanField(default=False)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     morada = models.CharField(max_length=200, null=True, blank=True)
     perfil_completo = models.BooleanField(default=False)
+
+    tema_preferido = models.CharField(max_length=10, choices=TEMA_CHOICES, default='auto')
+    notif_email_novidades = models.BooleanField(default=True)
+    notif_email_comunidade = models.BooleanField(default=True)
+    notif_email_gamificacao = models.BooleanField(default=True)
 
     def __str__(self):
         return self.username

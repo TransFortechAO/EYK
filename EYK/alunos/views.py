@@ -17,7 +17,9 @@ def configuracoes_aluno(request):
             return redirect('alunos:configuracoes')
     else:
         form = AlunoPerfilForm(instance=aluno)
-    return render(request, 'alunos/configuracoes.html', {'form': form, 'aluno': aluno})
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+    tem_2fa = TOTPDevice.objects.filter(user=request.user, confirmed=True).exists()
+    return render(request, 'alunos/configuracoes.html', {'form': form, 'aluno': aluno, 'tem_2fa': tem_2fa})
 
 
 @login_required

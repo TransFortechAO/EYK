@@ -67,7 +67,9 @@ def configuracoes_professor(request):
             return redirect('professores:configuracoes')
     else:
         form = ProfessorPerfilForm(instance=professor)
-    return render(request, 'professores/configuracoes.html', {'form': form, 'professor': professor})
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+    tem_2fa = TOTPDevice.objects.filter(user=request.user, confirmed=True).exists()
+    return render(request, 'professores/configuracoes.html', {'form': form, 'professor': professor, 'tem_2fa': tem_2fa})
 
 
 @login_required
