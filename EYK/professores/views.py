@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from cursos.models import Curso, Categoria, Inscricao, EngajamentoCurso
 from cursos.forms import CursoForm
-from .models import Professor, Video, ReacaoVideo, VisualizacaoVideo
+from .models import Professor, Video, ReacaoVideo, VisualizacaoVideo, Seguidor
 from django import forms as django_forms
 
 
@@ -324,3 +324,18 @@ def reagir_video(request, video_id):
         'likes': video.total_likes(),
         'dislikes': ReacaoVideo.objects.filter(video=video, tipo='dislike').count(),
     })
+
+
+# ── SEGUIR ───────────────────────────────────────────────────────────────────
+
+@login_required
+@require_POST
+def toggle_seguir(request, professor_id):
+    professor = get_object_or_404(Professor, id=professor_id)
+    seguidor, created = Seguidor.objects.get_or_create(utilizador=request.user, professor=professor)
+    if not created:
+        seguidor.delete()
+        messages.info(request, f'Deixaste de seguir {professor.nome_publico}.')
+    else:
+        messages.success(request, f'Agora segues {professor.nome_publico}!')
+    return redirect('feed:home')

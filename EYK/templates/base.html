@@ -100,26 +100,27 @@
                         <img class="logo" src="{% static 'imagens/media/logo-sem-fundo.png' %}" alt="EYK">
                     </a>
                     <!-- Cards de Estatísticas do Usuário (Moeda e Ofensiva) -->
-            <div class="user-stats">
+            <a href="{% url 'gamificacao:painel' %}" class="user-stats text-decoration-none">
                 <div class="stat-card">
                     <i class="fas fa-coins stat-icon coin"></i>
                     <div>
-                        <span class="stat-value">1,250</span>
+                        <span class="stat-value">{{ minha_carteira.saldo|default:0 }}</span>
                         <span class="stat-label">EYK Coins</span>
                     </div>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-fire stat-icon streak"></i>
                     <div>
-                        <span class="stat-value">15</span>
+                        <span class="stat-value">{{ minha_ofensiva.dias_atual|default:0 }}</span>
                         <span class="stat-label">dias de ofensiva</span>
                     </div>
                 </div>
-            </div>
+            </a>
                         <li><a href="{% url 'feed:home' %}" class="nav-link"><i class="fas fa-home"></i> Início</a></li>
                         <li><a href="{% url 'feed:cursos' %}" class="nav-link"><i class="fas fa-graduation-cap"></i> Cursos</a></li>
                         <li><a href="{% url 'feed:videos' %}" class="nav-link"><i class="fas fa-play-circle"></i> Vídeos</a></li>
                         <li><a href="{% url 'feed:comunidade' %}" class="nav-link"><i class="fas fa-users"></i> Comunidade</a></li>
+                        <li><a href="{% url 'gamificacao:leaderboard' %}" class="nav-link"><i class="fas fa-trophy"></i> Leaderboard</a></li>
         
                             <li>
                             <a href="{% url 'feed:notificacoes' %}" class="nav-link">
@@ -141,6 +142,7 @@
 
                         {% if user.is_staff %}
                             <li><a href="{% url 'accounts:dashboard-professores' %}" class="nav-link"><i class="fas fa-tachometer-alt"></i> Admin</a></li>
+                            <li><a href="{% url 'accounts:dashboard-usuarios' %}" class="nav-link"><i class="fas fa-users-cog"></i> Utilizadores</a></li>
                         {% endif %}
 
                         <!-- <li>

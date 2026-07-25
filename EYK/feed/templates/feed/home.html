@@ -53,6 +53,38 @@
 </div>
 {% endif %}
 
+<!-- VÍDEOS -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">{% if videos_seguidos %}Vídeos de Professores que Sigo{% else %}Vídeos em Destaque{% endif %}</h2>
+    <a href="{% url 'feed:videos' %}" class="small">Ver todos</a>
+</div>
+{% with videos_a_mostrar=videos_seguidos|default:videos_destaque %}
+{% if videos_a_mostrar %}
+<div class="row g-4 mb-5">
+    {% for video in videos_a_mostrar %}
+    <div class="col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm">
+            {% if video.thumbnail %}
+                <img src="{{ video.thumbnail.url }}" class="card-img-top" style="height:175px;object-fit:cover;" alt="{{ video.titulo }}">
+            {% else %}
+                <img src="https://via.placeholder.com/400x175/111111/DAA520?text={{ video.titulo|urlencode }}" class="card-img-top" style="height:175px;object-fit:cover;" alt="{{ video.titulo }}">
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ video.titulo }}</h5>
+                <p class="card-text text-muted small"><i class="fas fa-user-tie me-1"></i>{{ video.professor.nome_publico }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center p-5 bg-white rounded border mb-5">
+    <i class="fas fa-video fa-3x text-warning mb-3"></i>
+    <p class="text-muted mb-0">Ainda não segues nenhum professor. Segue professores em baixo para veres os vídeos deles aqui!</p>
+</div>
+{% endif %}
+{% endwith %}
+
 <!-- PROFESSORES EM DESTAQUE -->
 <h2 class="mb-3">Professores em Destaque</h2>
 {% if professores %}
@@ -72,6 +104,14 @@
                 <p class="text-muted small">{{ prof.area }}</p>
                 {% if prof.bio %}<p class="card-text small">{{ prof.bio|truncatewords:12 }}</p>{% endif %}
                 <p class="small text-warning"><i class="fas fa-graduation-cap me-1"></i>{{ prof.curso_set.count }} curso{{ prof.curso_set.count|pluralize:"s" }}</p>
+                <form method="post" action="{% url 'professores:seguir' prof.id %}">
+                    {% csrf_token %}
+                    {% if prof.id in professores_seguidos_ids %}
+                        <button type="submit" class="btn btn-outline-secondary btn-sm w-100"><i class="fas fa-check me-1"></i>A seguir</button>
+                    {% else %}
+                        <button type="submit" class="btn btn-warning btn-sm w-100"><i class="fas fa-plus me-1"></i>Seguir</button>
+                    {% endif %}
+                </form>
             </div>
         </div>
     </div>

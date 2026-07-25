@@ -55,3 +55,16 @@ class VisualizacaoVideo(models.Model):
 
     class Meta:
         unique_together = ('video', 'utilizador')
+
+
+class Seguidor(models.Model):
+    """Regista quando um utilizador (aluno ou professor) segue um professor"""
+    utilizador = models.ForeignKey(User, on_delete=models.CASCADE, related_name='professores_seguidos')
+    professor = models.ForeignKey(Professor, on_delete=models.CASCADE, related_name='seguidores')
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('utilizador', 'professor')
+
+    def __str__(self):
+        return f'{self.utilizador} segue {self.professor}'

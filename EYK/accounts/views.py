@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm, UserLoginForm, AlunoPerfilForm, ProfessorPerfilForm
 from .models import User
+from gamificacao.services import registrar_atividade_diaria, creditar_moedas
 
 
 def register_view(request):
@@ -32,6 +33,9 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
+
+            if registrar_atividade_diaria(user):
+                creditar_moedas(user, 5, 'login_diario')
 
             # Redireciona para personalização se o perfil ainda não foi completado
             if not user.perfil_completo:

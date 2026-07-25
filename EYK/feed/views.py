@@ -4,8 +4,9 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib import messages
 from cursos.models import Curso, Categoria
-from professores.models import Professor, Video
+from professores.models import Professor, Video, Seguidor
 from .models import Post, ReacaoPost, Comentario
+from gamificacao.services import creditar_moedas
 
 
 @login_required
@@ -14,10 +15,23 @@ def feed_home(request):
     cursos = Curso.objects.filter(ativo=True).select_related('professor', 'categoria')
     professores = Professor.objects.filter(ativo=True)
 
+    professores_seguidos_ids = list(
+        Seguidor.objects.filter(utilizador=request.user).values_list('professor_id', flat=True)
+    )
+    videos_seguidos = Video.objects.filter(
+        professor_id__in=professores_seguidos_ids, ativo=True
+    ).select_related('professor').order_by('-criado_em')[:6]
+    videos_destaque = Video.objects.filter(ativo=True).exclude(
+        professor_id__in=professores_seguidos_ids
+    ).select_related('professor').order_by('-criado_em')[:6]
+
     return render(request, 'feed/home.html', {
         'categorias': categorias,
         'cursos': cursos,
         'professores': professores,
+        'professores_seguidos_ids': professores_seguidos_ids,
+        'videos_seguidos': videos_seguidos,
+        'videos_destaque': videos_destaque,
     })
 
 
@@ -60,6 +74,7 @@ def criar_post(request):
     imagem = request.FILES.get('imagem')
     if conteudo:
         Post.objects.create(autor=request.user, conteudo=conteudo, imagem=imagem)
+        creditar_moedas(request.user, 2, 'post_comunidade')
         messages.success(request, 'Post publicado!')
     return redirect('feed:comunidade')
 

@@ -12,4 +12,5 @@ urlpatterns = [
     path('api/', include('cursos.urls')),
     path('feed/', include('feed.urls', namespace='feed')),
     path('aluno/', include('alunos.urls', namespace='alunos')),
+    path('gamificacao/', include('gamificacao.urls', namespace='gamificacao')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
