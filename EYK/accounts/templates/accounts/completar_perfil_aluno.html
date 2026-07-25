@@ -1,129 +1,43 @@
+{% extends 'base_public.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personalizar Perfil | EYK</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --gold: #DAA520;
-            --dark: #111111;
-            --gray: #333333;
-        }
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .setup-card {
-            background: #fff;
-            border-radius: 24px;
-            padding: 48px 40px;
-            max-width: 520px;
-            width: 100%;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-        }
-        .setup-icon {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, var(--gold), #e6b422);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 28px;
-            color: var(--dark);
-        }
-        h1 { font-size: 1.6rem; font-weight: 700; color: var(--dark); }
-        .subtitle { color: #666; font-size: 0.95rem; margin-bottom: 32px; }
-        .form-label { font-weight: 600; color: var(--gray); font-size: 0.9rem; }
-        .btn-gold {
-            background: linear-gradient(135deg, var(--gold), #e6b422);
-            border: none;
-            color: var(--dark);
-            font-weight: 700;
-            padding: 12px 32px;
-            border-radius: 50px;
-            width: 100%;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(218,165,32,0.35); }
-        .skip-link { color: #999; font-size: 0.875rem; text-decoration: none; }
-        .skip-link:hover { color: var(--gold); }
-        #preview-img {
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid var(--gold);
-            display: none;
-            margin: 12px auto 0;
-        }
-        .photo-wrap { text-align: center; }
-    </style>
-</head>
-<body>
-    <div class="setup-card">
-        <div class="setup-icon"><i class="fas fa-user-edit"></i></div>
-        <h1 class="text-center">Personaliza o teu perfil</h1>
-        <p class="subtitle text-center">Adiciona uma foto e uma breve bio para que a comunidade te conheça melhor.</p>
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
+{% block title %}Personalizar Perfil | EYK{% endblock %}
 
-        <form method="post" enctype="multipart/form-data">
+{% block content %}
+<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 16px;">
+    <div class="card" style="max-width:520px; width:100%; padding:48px 40px; text-align:center;">
+        <div class="avatar-fallback" style="width:72px; height:72px; font-size:1.6rem; margin:0 auto 24px;"><i class="fas fa-user-edit"></i></div>
+        <h1 style="font-size:1.5rem;">Personaliza o teu perfil</h1>
+        <p style="color:var(--ink-soft); margin:8px 0 28px;">Adiciona uma foto e uma breve bio para que a comunidade te conheça melhor.</p>
+
+        <form method="post" enctype="multipart/form-data" style="text-align:left;">
             {% csrf_token %}
-
-            <div class="mb-3 photo-wrap">
-                <label class="form-label d-block text-start">{{ form.foto.label }}</label>
+            <div class="form-field" style="text-align:center;">
+                <label style="text-align:left; display:block;">{{ form.foto.label }}</label>
                 {{ form.foto }}
-                <img id="preview-img" src="#" alt="Pré-visualização">
+                <img id="preview-img" src="#" alt="Pré-visualização" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);display:none;margin:12px auto 0;">
             </div>
-
-            <div class="mb-4">
-                <label class="form-label">{{ form.bio.label }}</label>
-                {{ form.bio }}
-            </div>
-
-            <button type="submit" class="btn btn-gold">
-                <i class="fas fa-check me-2"></i> Guardar e continuar
-            </button>
+            <div class="form-field"><label>{{ form.bio.label }}</label>{{ form.bio }}</div>
+            <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;"><i class="fas fa-check"></i> Guardar e continuar</button>
         </form>
-
-        <div class="text-center mt-3">
-            <a href="{% url 'feed:home' %}" class="skip-link">
-                <i class="fas fa-forward me-1"></i> Saltar por agora
-            </a>
+        <div style="margin-top:16px;">
+            <a href="{% url 'feed:home' %}" style="color:var(--ink-soft); font-size:.85rem; text-decoration:none;"><i class="fas fa-forward"></i> Saltar por agora</a>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.querySelector('input[type=file]').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = ev => {
-                    const img = document.getElementById('preview-img');
-                    img.src = ev.target.result;
-                    img.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    </script>
-</body>
-</html>
+<script>
+document.querySelector('input[type=file]').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = document.getElementById('preview-img');
+            img.src = ev.target.result;
+            img.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}
