@@ -1,0 +1,59 @@
+{% load static %}
+<div class="offcanvas-lg offcanvas-start app-sidebar" tabindex="-1" id="appSidebar" aria-labelledby="appSidebarLabel">
+    <div class="d-flex d-lg-none justify-content-end">
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#appSidebar" aria-label="Fechar"></button>
+    </div>
+    <a href="{% url 'feed:home' %}" class="app-brand text-decoration-none">
+        <svg class="hand-mark" width="26" height="26"><use href="#hand-glyph"/></svg> EYK
+    </a>
+    <nav class="app-nav">
+        {% if user.is_teacher %}
+            {% url 'professores:meus-cursos' as url_meus_cursos %}
+            <a href="{{ url_meus_cursos }}" class="{% if request.path == url_meus_cursos %}active{% endif %}"><i class="fas fa-book-open"></i> Meus Cursos</a>
+            {% url 'professores:meus-videos' as url_meus_videos %}
+            <a href="{{ url_meus_videos }}" class="{% if request.path == url_meus_videos %}active{% endif %}"><i class="fas fa-video"></i> Meus Vídeos</a>
+            {% url 'professores:criar-curso' as url_criar_curso %}
+            <a href="{{ url_criar_curso }}" class="{% if request.path == url_criar_curso %}active{% endif %}"><i class="fas fa-plus-circle"></i> Criar Conteúdo</a>
+        {% else %}
+            {% url 'feed:home' as url_home %}
+            <a href="{{ url_home }}" class="{% if request.path == url_home %}active{% endif %}"><i class="fas fa-home"></i> Início</a>
+            {% url 'feed:cursos' as url_cursos %}
+            <a href="{{ url_cursos }}" class="{% if request.path == url_cursos %}active{% endif %}"><i class="fas fa-graduation-cap"></i> Cursos</a>
+            {% url 'feed:videos' as url_videos %}
+            <a href="{{ url_videos }}" class="{% if request.path == url_videos %}active{% endif %}"><i class="fas fa-play-circle"></i> Vídeos</a>
+        {% endif %}
+
+        {% url 'feed:comunidade' as url_comunidade %}
+        <a href="{{ url_comunidade }}" class="{% if request.path == url_comunidade %}active{% endif %}"><i class="fas fa-users"></i> Comunidade</a>
+
+        <div class="divider"></div>
+
+        {% url 'feed:notificacoes' as url_notificacoes %}
+        <a href="{{ url_notificacoes }}" class="{% if request.path == url_notificacoes %}active{% endif %}">
+            <i class="fas fa-bell"></i> Novidades
+            {% with total_nao_lidas=request.user.notificacoes.filter.count %}
+                {% if total_nao_lidas > 0 %}<span class="nav-notif-badge">{{ total_nao_lidas }}</span>{% endif %}
+            {% endwith %}
+        </a>
+        {% url 'gamificacao:leaderboard' as url_leaderboard %}
+        <a href="{{ url_leaderboard }}" class="{% if request.path == url_leaderboard %}active{% endif %}"><i class="fas fa-trophy"></i> Leaderboard</a>
+
+        {% if user.is_teacher %}
+            {% url 'professores:configuracoes' as url_config %}
+        {% else %}
+            {% url 'alunos:configuracoes' as url_config %}
+        {% endif %}
+        <a href="{{ url_config }}" class="{% if request.path == url_config %}active{% endif %}"><i class="fas fa-cog"></i> Configurações</a>
+
+        {% if user.is_staff %}
+            <div class="divider"></div>
+            {% url 'accounts:dashboard-professores' as url_dash_prof %}
+            <a href="{{ url_dash_prof }}" class="{% if request.path == url_dash_prof %}active{% endif %}"><i class="fas fa-tachometer-alt"></i> Admin</a>
+            {% url 'accounts:dashboard-usuarios' as url_dash_users %}
+            <a href="{{ url_dash_users }}" class="{% if request.path == url_dash_users %}active{% endif %}"><i class="fas fa-users-cog"></i> Utilizadores</a>
+        {% endif %}
+    </nav>
+    <a href="{% url 'accounts:logout' %}" class="signout" style="display:flex;align-items:center;gap:11px;padding:10px 12px;text-decoration:none;font-size:.88rem;font-weight:600;">
+        <i class="fas fa-sign-out-alt"></i> Sair
+    </a>
+</div>

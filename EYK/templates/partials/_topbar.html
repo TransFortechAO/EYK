@@ -1,0 +1,35 @@
+{% load static %}
+<div class="app-topbar">
+    <button class="sidebar-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appSidebar" aria-controls="appSidebar" aria-label="Abrir menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <form method="get" action="{% url 'feed:cursos' %}" class="searchbox d-none d-md-flex">
+        <i class="fas fa-search"></i>
+        <input type="search" name="q" placeholder="Pesquisar curso, categoria ou professor...">
+    </form>
+
+    <div class="topbar-stats ms-auto">
+        <a href="{% url 'gamificacao:painel' %}" class="stat-pill">
+            <i class="fas fa-coins coin"></i> {{ minha_carteira.saldo|default:0 }}
+        </a>
+        <a href="{% url 'gamificacao:painel' %}" class="stat-pill">
+            <i class="fas fa-fire fire"></i> {{ minha_ofensiva.dias_atual|default:0 }}
+        </a>
+        <a href="{% url 'feed:notificacoes' %}" class="icon-btn">
+            <i class="fas fa-bell"></i>
+            {% with total_nao_lidas=request.user.notificacoes.filter.count %}
+                {% if total_nao_lidas > 0 %}<span class="dot"></span>{% endif %}
+            {% endwith %}
+        </a>
+        {% if user.is_teacher and user.professor.foto %}
+            <img src="{{ user.professor.foto.url }}" class="avatar-sm" alt="{{ user.professor.nome_publico }}">
+        {% elif not user.is_teacher and user.aluno.foto %}
+            <img src="{{ user.aluno.foto.url }}" class="avatar-sm" alt="{{ user.username }}">
+        {% else %}
+            <div class="avatar-fallback">
+                {% if user.is_teacher %}{{ user.professor.nome_publico|first|upper }}{% else %}{{ user.username|first|upper }}{% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
