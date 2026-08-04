@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Home,
   BookOpen,
@@ -15,7 +15,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { api, API_BASE_URL } from "@/lib/api";
 
 import {
   Sidebar,
@@ -51,7 +51,6 @@ export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = !isMobile && state === "collapsed";
   const pathname = usePathname();
-  const router = useRouter();
   const [logoutLoading, setLogoutLoading] = useState(false);
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
@@ -68,8 +67,8 @@ export function AppSidebar() {
       console.warn("logout warning:", err);
     } finally {
       setLogoutLoading(false);
-      router.push("/");
-      router.refresh();
+      // Volta para a landing page pública do Django (porta 8000)
+      window.location.assign(API_BASE_URL + "/");
     }
   };
 
@@ -140,15 +139,13 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
+              onClick={handleLogout}
               tooltip="Sair"
               disabled={logoutLoading}
-              className="text-destructive hover:bg-sidebar-accent hover:text-destructive"
+              className="text-destructive hover:bg-sidebar-accent hover:text-destructive cursor-pointer"
             >
-              <button type="button" onClick={handleLogout} className="w-full">
-                <LogOut />
-                <span>{logoutLoading ? "A sair…" : "Sair"}</span>
-              </button>
+              <LogOut />
+              <span>{logoutLoading ? "A sair…" : "Sair"}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

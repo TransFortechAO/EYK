@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Bell, Search, Coins, Flame, Sun, Moon, LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
@@ -20,13 +19,12 @@ import {
 import Link from "next/link";
 import { currentUser } from "@/lib/mock-data";
 import { useApi } from "@/hooks/useApi";
-import { api, type AuthUser } from "@/lib/api";
+import { api, type AuthUser, API_BASE_URL } from "@/lib/api";
 
 type UserShape = AuthUser | typeof currentUser;
 
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
-  const router = useRouter();
   const { data: authRes, execute } = useApi<{ authenticated: boolean; user: AuthUser | null }>();
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -45,10 +43,10 @@ export function Topbar() {
       console.warn("logout warning:", err);
     } finally {
       setLogoutLoading(false);
-      router.push("/");
-      router.refresh();
+      // Volta para a landing page pública do Django (porta 8000)
+      window.location.assign(API_BASE_URL + "/");
     }
-  }, [logoutLoading, router]);
+  }, [logoutLoading]);
 
   const dados: UserShape = (authRes?.authenticated && authRes.user)
     ? (authRes.user as UserShape)
@@ -121,7 +119,10 @@ export function Topbar() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={handleLogout}
+              onSelect={(event) => {
+                event.preventDefault();
+                void handleLogout();
+              }}
               disabled={logoutLoading}
               className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
             >
