@@ -1,0 +1,8 @@
+# Dependências de produção
+-r base.txt
+
+# Servidor web e monitoramento
+gunicorn==21.2.0
+sentry-sdk==2.11.0
+django-cors-headers==4.3.0
+whitenoise==6.7.0

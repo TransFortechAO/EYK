@@ -1,0 +1,39 @@
+[project]
+name = "eyk-backend"
+version = "1.0.0"
+description = "Plataforma educacional EYK - Backend Django"
+readme = "README.md"
+authors = [
+    { name="EYK Team", email="team@eyk.com.br" }
+]
+license = { file="LICENSE" }
+requires-python = ">=3.11"
+dependencies = [
+    "Django==5.2.7",
+    "djangorestframework==3.14.0",
+    "Celery==5.4.0",
+    "redis==5.1.0",
+    "gspread==6.1.0",
+    "google-auth==2.28.0",
+    "google-auth-httplib2==0.2.0",
+    "google-auth-oauthlib==1.2.0",
+    "python-dotenv==1.0.0",
+    "dj-database-url==2.3.0",
+    "psycopg[binary]==3.2.3",
+    "django-otp==1.7.0",
+    "qrcode==8.2",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests", "apps"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint]
+select = ["I"]

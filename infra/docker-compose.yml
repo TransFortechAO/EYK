@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Banco de dados principal
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: eyk_db
+      POSTGRES_USER: eyk_user
+      POSTGRES_PASSWORD: eyk_password123
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eyk_user -d eyk_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Para cache e Celery
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Backend Django
+  backend:
+    build: ../backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ../backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_ENV: dev
+      DEBUG: 'True'
+      DB_HOST: db
+      DB_NAME: eyk_db
+      DB_USER: eyk_user
+      DB_PASSWORD: eyk_password123
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Frontend Next.js
+  frontend:
+    build: ../frontend
+    command: npm run dev
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+    depends_on:
+      - backend
+
+  # Celery Worker
+  celery_worker:
+    build: ../backend
+    command: celery -A config worker --loglevel=info
+    volumes:
+      - ../backend:/app
+    environment:
+      DJANGO_ENV: dev
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+      - backend
+
+  # Celery Beat
+  celery_beat:
+    build: ../backend
+    command: celery -A config beat --loglevel=info
+    volumes:
+      - ../backend:/app
+    environment:
+      DJANGO_ENV: dev
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+      - backend
+
+  # Nginx - Proxy reverso
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
