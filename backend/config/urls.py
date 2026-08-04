@@ -1,30 +1,33 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.shortcuts import redirect
 
 from . import views
-# Importa as views dos apps para criar rotas diretas
-from apps.feed.views import comunidade, cursos_view, videos_view, notificacoes
-from apps.gamificacao.views import leaderboard
-from apps.alunos.views import configuracoes_aluno
+
+NEXT_URL = settings.NEXT_PUBLIC_URL if hasattr(settings, 'NEXT_PUBLIC_URL') else 'http://localhost:3000'
+
+def redirect_to_next(request, path=''):
+    """Redireciona rotas de UI para o frontend Next.js."""
+    url = NEXT_URL.rstrip('/') + '/' + path.lstrip('/')
+    qs = request.META.get('QUERY_STRING', '')
+    if qs:
+        url += '?' + qs
+    return redirect(url, permanent=False)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'),
     path('accounts/', include('apps.accounts.urls', namespace='accounts')),
     path('professor/', include('apps.professores.urls', namespace='professores')),
     path('api/', include('apps.cursos.urls')),
     path('feed/', include('apps.feed.urls', namespace='feed')),
     path('aluno/', include('apps.alunos.urls', namespace='aluno')),
     path('gamificacao/', include('apps.gamificacao.urls', namespace='gamificacao')),
-    # Rotas diretas para as páginas que estão retornando 404
-    path('comunidade/', comunidade, name='comunidade'),
-    path('cursos/', cursos_view, name='cursos'),
-    path('videos/', videos_view, name='videos'),
-    path('notificacoes/', notificacoes, name='notificacoes'),
-    path('leaderboard/', leaderboard, name='leaderboard'),
-    path('configuracoes/', configuracoes_aluno, name='configuracoes'),
+    path('health/', views.health_check, name='health_check'),
+    re_path(r'^$', lambda r: redirect_to_next(r, '')),
+    re_path(r'^(?P<path>comunidade|cursos|videos|notificacoes|leaderboard|gamificacao|biblioteca|configuracoes)(?P<rest>.*)$', lambda r, path, rest: redirect_to_next(r, path + rest)),
+    re_path(r'^(?!admin|accounts|professor|api|feed|aluno|gamificacao|media|static|health|__debug__).*$', lambda r: redirect_to_next(r, r.path.lstrip('/'))),
 ]
 
 # Adiciona URLs do Django Debug Toolbar apenas em ambiente de desenvolvimento

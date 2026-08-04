@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Home,
   BookOpen,
@@ -14,6 +14,8 @@ import {
   Hand,
   TrendingUp,
 } from "lucide-react";
+import { useState } from "react";
+import { api } from "@/lib/api";
 
 import {
   Sidebar,
@@ -49,10 +51,26 @@ export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = !isMobile && state === "collapsed";
   const pathname = usePathname();
+  const router = useRouter();
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
   const closeOnNavigate = () => {
     if (isMobile) setOpenMobile(false);
+  };
+
+  const handleLogout = async () => {
+    if (logoutLoading) return;
+    try {
+      setLogoutLoading(true);
+      await api.logout();
+    } catch (err) {
+      console.warn("logout warning:", err);
+    } finally {
+      setLogoutLoading(false);
+      router.push("/");
+      router.refresh();
+    }
   };
 
   return (
@@ -122,11 +140,15 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
+              asChild
               tooltip="Sair"
+              disabled={logoutLoading}
               className="text-destructive hover:bg-sidebar-accent hover:text-destructive"
             >
-              <LogOut />
-              <span>Sair</span>
+              <button type="button" onClick={handleLogout} className="w-full">
+                <LogOut />
+                <span>{logoutLoading ? "A sair…" : "Sair"}</span>
+              </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

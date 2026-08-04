@@ -25,4 +25,8 @@ urlpatterns = [
     path('dashboard/usuarios/', gerenciar_usuarios, name='dashboard-usuarios'),
     path('dashboard/usuarios/<int:user_id>/toggle-ativo/', toggle_ativo_usuario, name='toggle-ativo-usuario'),
     path('dashboard/usuarios/<int:user_id>/apagar/', apagar_usuario, name='apagar-usuario'),
+    path('auth/csrf/', views.auth_csrf, name='auth-csrf'),
+    path('auth/login/', views.auth_login_json, name='auth-login-json'),
+    path('auth/logout/', views.auth_logout_json, name='auth-logout-json'),
+    path('auth/me/', views.auth_me, name='auth-me'),
 ]

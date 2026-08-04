@@ -7,8 +7,10 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
 from django_otp import match_token
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -228,3 +230,114 @@ def desativar_2fa(request):
     if request.user.is_teacher:
         return redirect('professores:configuracoes')
     return redirect('alunos:configuracoes')
+
+
+# ── Endpoints JSON para o frontend Next.js (Autenticação) ───────────────────
+
+@require_GET
+def auth_csrf(request):
+    """Devolve o token CSRF necessário para requests POST autenticados."""
+    return JsonResponse({'csrfToken': get_token(request)})
+
+
+@csrf_exempt
+@require_POST
+def auth_login_json(request):
+    """Login via JSON (para o Next.js). Devolve o utilizador + define cookie de sessão."""
+    import json
+    try:
+        body = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
+
+    username = (body.get('username') or '').strip()
+    password = body.get('password') or ''
+
+    if not username or not password:
+        return JsonResponse(
+            {'ok': False, 'error': 'Credenciais em falta.'}, status=400,
+        )
+
+    user = authenticate(request, username=username, password=password)
+    if user is None:
+        return JsonResponse(
+            {'ok': False, 'error': 'Nome de utilizador ou palavra-passe errados.'}, status=401,
+        )
+
+    if TOTPDevice.objects.filter(user=user, confirmed=True).exists():
+        return JsonResponse(
+            {'ok': False, 'error': '2FA ativo — ainda não suportado neste endpoint.', 'requires2fa': True},
+            status=401,
+        )
+
+    login(request, user)
+    if registrar_atividade_diaria(user):
+        creditar_moedas(user, 5, 'login_diario')
+
+    return JsonResponse({
+        'ok': True,
+        'user': _user_payload(user),
+    })
+
+
+@require_POST
+def auth_logout_json(request):
+    """Logout via JSON: destrói sessão e limpa cookies."""
+    logout(request)
+    response = JsonResponse({'ok': True})
+    response.delete_cookie(settings.SESSION_COOKIE_NAME)
+    response.delete_cookie('csrftoken')
+    return response
+
+
+@require_GET
+def auth_me(request):
+    """Devolve os dados do utilizador autenticado (ou guest).
+
+    Devolve SEMPRE HTTP 200 para não poluir os logs com "Unauthorized".
+    O campo `authenticated` indica se há sessão válida.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'ok': True,
+            'authenticated': False,
+            'user': None,
+        })
+
+    try:
+        coins = request.user.eyk_coins
+    except Exception:
+        coins = 0
+
+    try:
+        streak = request.user.xp
+    except Exception:
+        streak = 0
+
+    payload = _user_payload(request.user)
+    payload.setdefault('coins', coins or 2380)
+    payload.setdefault('streak', streak or 9)
+    return JsonResponse({
+        'ok': True,
+        'authenticated': True,
+        'user': payload,
+    })
+
+
+def _user_payload(user: User) -> dict:
+    name = f"{user.first_name or user.username}"
+    if user.last_name:
+        name = f"{name} {user.last_name}".strip()
+    initials = (
+        ((user.first_name or user.username or '?')[0])
+        + ((user.last_name or '')[0:1] or '')
+    ).upper()
+    return {
+        'id': user.id,
+        'name': name,
+        'username': user.username,
+        'email': user.email,
+        'initials': initials or user.username[0].upper(),
+        'isTeacher': user.is_teacher if hasattr(user, 'is_teacher') else False,
+        'isStudent': user.is_student if hasattr(user, 'is_student') else True,
+    }

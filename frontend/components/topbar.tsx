@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { Bell, Search, Coins, Flame, Sun, Moon } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bell, Search, Coins, Flame, Sun, Moon, LogOut } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
 
@@ -19,19 +20,39 @@ import {
 import Link from "next/link";
 import { currentUser } from "@/lib/mock-data";
 import { useApi } from "@/hooks/useApi";
-import { api } from "@/lib/api";
+import { api, type AuthUser } from "@/lib/api";
+
+type UserShape = AuthUser | typeof currentUser;
 
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
-  const { data: dadosUsuario, execute } = useApi<unknown>();
+  const router = useRouter();
+  const { data: authRes, execute } = useApi<{ authenticated: boolean; user: AuthUser | null }>();
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   useEffect(() => {
-    execute(api.getUsuario).catch(() => {
+    execute(() => api.me()).catch(() => {
       console.log("Usando dados mockados - API indisponível");
     });
   }, [execute]);
 
-  const dados = (dadosUsuario as typeof currentUser | null) || currentUser;
+  const handleLogout = useCallback(async () => {
+    if (logoutLoading) return;
+    try {
+      setLogoutLoading(true);
+      await api.logout();
+    } catch (err) {
+      console.warn("logout warning:", err);
+    } finally {
+      setLogoutLoading(false);
+      router.push("/");
+      router.refresh();
+    }
+  }, [logoutLoading, router]);
+
+  const dados: UserShape = (authRes?.authenticated && authRes.user)
+    ? (authRes.user as UserShape)
+    : currentUser;
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur md:px-6">
@@ -49,11 +70,13 @@ export function Topbar() {
       <div className="ml-auto flex shrink-0 items-center gap-2">
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Coins className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium tabular-nums">{dados.coins.toLocaleString("pt-PT")}</span>
+          <span className="text-sm font-medium tabular-nums">
+            {(dados.coins ?? 0).toLocaleString("pt-PT")}
+          </span>
         </div>
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Flame className="h-4 w-4 text-streak" />
-          <span className="text-sm font-medium tabular-nums">{dados.streak}</span>
+          <span className="text-sm font-medium tabular-nums">{dados.streak ?? 0}</span>
         </div>
 
         <Button
@@ -82,13 +105,13 @@ export function Topbar() {
             >
               <Avatar className="h-9 w-9 border-2 border-primary/30">
                 <AvatarFallback className="bg-gradient-gold text-primary-foreground font-semibold uppercase">
-                  {currentUser.initials}
+                  {dados.initials}
                 </AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Olá, {currentUser.name}</DropdownMenuLabel>
+            <DropdownMenuLabel>Olá, {dados.name}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/gamificacao">A minha gamificação</Link>
@@ -97,7 +120,14 @@ export function Topbar() {
               <Link href="/configuracoes">Configurações</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">Sair</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleLogout}
+              disabled={logoutLoading}
+              className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              {logoutLoading ? "A sair…" : "Sair"}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

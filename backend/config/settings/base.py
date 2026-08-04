@@ -142,6 +142,20 @@ REST_FRAMEWORK = {
     ],
 }
 
+# URL pública do frontend Next.js
+NEXT_PUBLIC_URL = os.getenv('NEXT_PUBLIC_URL', 'http://localhost:3000')
+
+# CORS: permite que o Next.js chame a API do Django
+CORS_ALLOWED_ORIGINS = [
+    NEXT_PUBLIC_URL.rstrip('/'),
+    os.getenv('CORS_EXTRA', ''),
+]
+CORS_ALLOWED_ORIGINS = [u for u in CORS_ALLOWED_ORIGINS if u]
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF: confia no frontend Next.js para enviar formulários/cookies
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS.copy()
+
 # Celery configuration
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
