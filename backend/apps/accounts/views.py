@@ -23,6 +23,14 @@ from .models import User
 PRE_2FA_SESSION_KEY = 'pre_2fa_user_id'
 
 
+def redirect_next(path="/"):
+    """Redireciona para uma rota do frontend Next.js (NEXT_PUBLIC_URL)."""
+    base = settings.NEXT_PUBLIC_URL.rstrip("/")
+    if not path.startswith("/"):
+        path = "/" + path
+    return redirect(base + path)
+
+
 def register_view(request):
     """Registo de aluno — após registo vai para personalização do perfil"""
     if request.method == 'POST':
@@ -59,7 +67,7 @@ def _finalizar_login(request, user):
             return redirect('accounts:completar-perfil-professor')
 
     messages.success(request, f'Bem-vindo, {user.username}!')
-    return redirect('feed:home')
+    return redirect_next('/')
 
 
 def login_view(request):
@@ -117,7 +125,7 @@ def completar_perfil_aluno(request):
             request.user.perfil_completo = True
             request.user.save()
             messages.success(request, 'Perfil atualizado com sucesso!')
-            return redirect('feed:home')
+            return redirect_next('/')
     else:
         form = AlunoPerfilForm(instance=aluno)
 
@@ -132,7 +140,7 @@ def completar_perfil_professor(request):
         professor = Professor.objects.get(user=request.user)
     except Professor.DoesNotExist:
         messages.error(request, 'Perfil de professor não encontrado.')
-        return redirect('feed:home')
+        return redirect_next('/')
 
     if request.method == 'POST':
         form = ProfessorPerfilForm(request.POST, request.FILES, instance=professor)
@@ -141,7 +149,7 @@ def completar_perfil_professor(request):
             request.user.perfil_completo = True
             request.user.save()
             messages.success(request, 'Perfil de professor atualizado com sucesso!')
-            return redirect('feed:home')
+            return redirect_next('/')
     else:
         form = ProfessorPerfilForm(instance=professor)
 
@@ -171,9 +179,7 @@ def atualizar_preferencias_notificacao(request):
     user.notif_email_gamificacao = 'notif_email_gamificacao' in request.POST
     user.save(update_fields=['notif_email_novidades', 'notif_email_comunidade', 'notif_email_gamificacao'])
     messages.success(request, 'Preferências de notificação atualizadas.')
-    if user.is_teacher:
-        return redirect('professores:configuracoes')
-    return redirect('alunos:configuracoes')
+    return redirect_next('/configuracoes')
 
 
 # ── Autenticação de dois fatores (2FA) ──────────────────────────────────────
@@ -227,9 +233,7 @@ def desativar_2fa(request):
     TOTPDevice.objects.filter(user=request.user).delete()
     StaticDevice.objects.filter(user=request.user).delete()
     messages.success(request, 'Autenticação de dois fatores desativada.')
-    if request.user.is_teacher:
-        return redirect('professores:configuracoes')
-    return redirect('alunos:configuracoes')
+    return redirect_next('/configuracoes')
 
 
 # ── Endpoints JSON para o frontend Next.js (Autenticação) ───────────────────
@@ -280,6 +284,7 @@ def auth_login_json(request):
     })
 
 
+@csrf_exempt
 @require_POST
 def auth_logout_json(request):
     """Logout via JSON: destrói sessão e limpa cookies."""

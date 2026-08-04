@@ -3,7 +3,8 @@ from django.shortcuts import redirect, render
 
 
 def index(request):
-    return redirect('http://localhost:3000/', permanent=False)
+    """Landing page pública do projeto (template antigo preto)."""
+    return render(request, 'index.html')
 
 
 def health_check(request):

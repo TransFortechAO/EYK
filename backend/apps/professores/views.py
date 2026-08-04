@@ -1,5 +1,6 @@
 from django import forms as django_forms
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,6 +10,14 @@ from apps.cursos.forms import CursoForm
 from apps.cursos.models import Categoria, Curso, EngajamentoCurso, Inscricao
 
 from .models import Professor, ReacaoVideo, Seguidor, Video, VisualizacaoVideo
+
+
+def redirect_next(path="/"):
+    """Redireciona para uma rota do frontend Next.js (NEXT_PUBLIC_URL)."""
+    base = settings.NEXT_PUBLIC_URL.rstrip("/")
+    if not path.startswith("/"):
+        path = "/" + path
+    return redirect(base + path)
 
 # ── Formulário de Vídeo ──────────────────────────────────────────────────────
 
@@ -65,7 +74,7 @@ def configuracoes_professor(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Perfil actualizado com sucesso!')
-            return redirect('professores:configuracoes')
+            return redirect_next('/configuracoes')
     else:
         form = ProfessorPerfilForm(instance=professor)
     from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -125,7 +134,7 @@ def criar_curso(request):
             curso.professor = professor
             curso.save()
             messages.success(request, f'Curso "{curso.titulo}" criado com sucesso!')
-            return redirect('professores:meus-cursos')
+            return redirect_next('/cursos')
     else:
         form = CursoForm()
 
@@ -146,7 +155,7 @@ def editar_curso(request, curso_id):
         if form.is_valid():
             form.save()
             messages.success(request, f'Curso "{curso.titulo}" actualizado com sucesso!')
-            return redirect('professores:meus-cursos')
+            return redirect_next('/cursos')
     else:
         form = CursoForm(instance=curso)
 
@@ -166,7 +175,7 @@ def deletar_curso(request, curso_id):
         titulo = curso.titulo
         curso.delete()
         messages.success(request, f'Curso "{titulo}" eliminado com sucesso.')
-        return redirect('professores:meus-cursos')
+        return redirect_next('/cursos')
 
     return render(request, 'professores/confirmar_deletar.html', {
         'objeto': curso, 'tipo': 'curso', 'professor': professor,
@@ -252,7 +261,7 @@ def upload_video(request):
             video.professor = professor
             video.save()
             messages.success(request, f'Vídeo "{video.titulo}" publicado com sucesso!')
-            return redirect('professores:meus-videos')
+            return redirect_next('/videos')
     else:
         form = VideoForm()
 
@@ -273,7 +282,7 @@ def editar_video(request, video_id):
         if form.is_valid():
             form.save()
             messages.success(request, f'Vídeo "{video.titulo}" actualizado.')
-            return redirect('professores:meus-videos')
+            return redirect_next('/videos')
     else:
         form = VideoForm(instance=video)
 
@@ -293,7 +302,7 @@ def deletar_video(request, video_id):
         titulo = video.titulo
         video.delete()
         messages.success(request, f'Vídeo "{titulo}" eliminado.')
-        return redirect('professores:meus-videos')
+        return redirect_next('/videos')
 
     return render(request, 'professores/confirmar_deletar.html', {
         'objeto': video, 'tipo': 'vídeo', 'professor': professor,
@@ -360,4 +369,4 @@ def toggle_seguir(request, professor_id):
         messages.info(request, f'Deixaste de seguir {professor.nome_publico}.')
     else:
         messages.success(request, f'Agora segues {professor.nome_publico}!')
-    return redirect('feed:home')
+    return redirect_next('/')

@@ -25,7 +25,7 @@ urlpatterns = [
     path('aluno/', include('apps.alunos.urls', namespace='aluno')),
     path('gamificacao/', include('apps.gamificacao.urls', namespace='gamificacao')),
     path('health/', views.health_check, name='health_check'),
-    re_path(r'^$', lambda r: redirect_to_next(r, '')),
+    path('', views.index, name='index'),
     re_path(r'^(?P<path>comunidade|cursos|videos|notificacoes|leaderboard|gamificacao|biblioteca|configuracoes)(?P<rest>.*)$', lambda r, path, rest: redirect_to_next(r, path + rest)),
     re_path(r'^(?!admin|accounts|professor|api|feed|aluno|gamificacao|media|static|health|__debug__).*$', lambda r: redirect_to_next(r, r.path.lstrip('/'))),
 ]

@@ -3,46 +3,462 @@
 
 {% block title %}Personalizar Perfil | EYK{% endblock %}
 
-{% block content %}
-<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 16px;">
-    <div class="card" style="max-width:520px; width:100%; padding:48px 40px; text-align:center;">
-        <div class="avatar-fallback" style="width:72px; height:72px; font-size:1.6rem; margin:0 auto 24px;"><i class="fas fa-user-edit"></i></div>
-        <h1 style="font-size:1.5rem;">Personaliza o teu perfil</h1>
-        <p style="color:var(--ink-soft); margin:8px 0 28px;">Adiciona uma foto e uma breve bio para que a comunidade te conheça melhor.</p>
+{% block extra_head %}
+<style>
+  :root {
+    --eyk-bg: #0a0a0a;
+    --eyk-bg-2: #0d0d0d;
+    --eyk-card: #141414;
+    --eyk-border: rgba(255, 255, 255, 0.06);
+    --eyk-gold: #d4a24a;
+    --eyk-gold-2: #e2b45c;
+    --eyk-gold-soft: rgba(212, 162, 74, 0.18);
+    --eyk-gold-glow: rgba(212, 162, 74, 0.35);
+    --eyk-text: #ffffff;
+    --eyk-text-soft: #a8a294;
+    --eyk-text-muted: #8a8478;
+    --eyk-font-serif: 'Fraunces', 'Playfair Display', Georgia, serif;
+    --eyk-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--eyk-bg);
+    color: var(--eyk-text);
+    font-family: var(--eyk-font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .auth-page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--eyk-bg);
+  }
+  @media (max-width: 960px) {
+    .auth-page { grid-template-columns: 1fr; }
+    .auth-page .auth-brand { min-height: 280px; padding: 40px 32px; }
+  }
 
-        <form method="post" enctype="multipart/form-data" style="text-align:left;">
-            {% csrf_token %}
-            <div class="form-field" style="text-align:center;">
-                <label for="{{ form.foto.id_for_label }}" style="text-align:left; display:block;">{{ form.foto.label }}</label>
-                {{ form.foto }}
-                <div class="upload-box" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i> Arrasta uma foto para aqui ou clica em "Escolher ficheiro"</div>
-                <img id="preview-img" src="#" alt="Pré-visualização" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);display:none;margin:12px auto 0;">
-            </div>
-            <div class="form-field"><label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>{{ form.bio }}</div>
-            <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;"><i class="fas fa-check"></i> Guardar e continuar</button>
-        </form>
-        <div style="margin-top:16px;">
-            <a href="{% url 'feed:home' %}" style="color:var(--ink-soft); font-size:.85rem; text-decoration:none;"><i class="fas fa-forward"></i> Saltar por agora</a>
-        </div>
+  .auth-brand {
+    position: relative;
+    padding: 72px 60px;
+    background:
+      radial-gradient(ellipse 70% 60% at 85% 20%, var(--eyk-gold-soft), transparent 55%),
+      linear-gradient(180deg, #0b0a08 0%, #080808 100%);
+    border-right: 1px solid var(--eyk-border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .auth-brand-logo {
+    display: inline-block;
+    margin-bottom: 40px;
+  }
+  .auth-brand-logo img {
+    height: 72px;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 8px 24px rgba(212,162,74,0.25));
+  }
+  .auth-brand-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(212,162,74,0.12);
+    border: 1px solid rgba(212,162,74,0.28);
+    color: var(--eyk-gold-2);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-bottom: 24px;
+  }
+  .auth-brand-step svg { flex-shrink: 0; }
+  .auth-brand-headline {
+    font-family: var(--eyk-font-serif);
+    font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0 0 18px;
+    letter-spacing: -0.2px;
+    font-weight: 700;
+    max-width: 420px;
+  }
+  .auth-brand-headline em {
+    font-style: italic;
+    color: var(--eyk-gold-2);
+  }
+  .auth-brand-sub {
+    color: var(--eyk-text-soft);
+    font-size: 0.98rem;
+    line-height: 1.7;
+    margin: 0 0 40px;
+    max-width: 380px;
+  }
+  .auth-brand-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 40px;
+    max-width: 380px;
+  }
+  .auth-brand-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    color: #cfc8b6;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .auth-brand-list svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--eyk-gold-2);
+  }
+  .auth-brand-hand-bg {
+    position: absolute;
+    right: -40px;
+    bottom: -40px;
+    width: 360px;
+    height: 360px;
+    opacity: 0.08;
+    color: var(--eyk-gold);
+    pointer-events: none;
+  }
+
+  .auth-form {
+    padding: 56px 60px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    background: #0a0a0a;
+    overflow-y: auto;
+  }
+  .auth-form-inner {
+    width: 100%;
+    max-width: 460px;
+  }
+  .auth-title {
+    font-family: var(--eyk-font-serif);
+    font-size: 1.85rem;
+    font-weight: 700;
+    margin: 0 0 10px;
+    letter-spacing: -0.1px;
+    color: var(--eyk-text);
+  }
+  .auth-subtitle {
+    color: var(--eyk-text-soft);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 32px;
+  }
+  .auth-field {
+    margin-bottom: 22px;
+  }
+  .auth-field label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--eyk-text);
+    letter-spacing: 0.1px;
+  }
+  .auth-field input[type=text],
+  .auth-field input[type=email],
+  .auth-field select,
+  .auth-field textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #121212;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--eyk-text);
+    font-size: 0.95rem;
+    font-family: var(--eyk-font-sans);
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    resize: vertical;
+    min-height: 100px;
+  }
+  .auth-field textarea { min-height: 110px; }
+  .auth-field input::placeholder,
+  .auth-field textarea::placeholder { color: #6c675c; }
+  .auth-field input:focus,
+  .auth-field select:focus,
+  .auth-field textarea:focus {
+    border-color: rgba(212,162,74,0.55);
+    box-shadow: 0 0 0 4px rgba(212,162,74,0.12);
+    background: #151310;
+  }
+
+  .file-drop {
+    position: relative;
+    width: 100%;
+    padding: 22px 16px;
+    border-radius: 14px;
+    background: #121212;
+    border: 2px dashed rgba(255,255,255,0.1);
+    color: var(--eyk-text-muted);
+    text-align: center;
+    transition: border-color .15s ease, background .15s ease;
+    cursor: pointer;
+  }
+  .file-drop:hover,
+  .file-drop.has-file {
+    border-color: rgba(212,162,74,0.45);
+    background: #151310;
+  }
+  .file-drop input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .file-drop-icon {
+    margin-bottom: 8px;
+    color: var(--eyk-gold-2);
+  }
+  .file-drop-title {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--eyk-text);
+    margin-bottom: 4px;
+  }
+  .file-drop-sub {
+    font-size: 0.82rem;
+    color: var(--eyk-text-muted);
+  }
+  .file-preview {
+    margin-top: 14px;
+    width: 104px;
+    height: 104px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--eyk-gold);
+    box-shadow: 0 0 0 4px rgba(212,162,74,0.15);
+    margin-left: auto;
+    margin-right: auto;
+    display: none;
+  }
+  .file-preview.has-file { display: block; }
+  .file-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .file-clear {
+    display: none;
+    margin-top: 10px;
+    background: none;
+    border: none;
+    color: #ff8a8a;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-family: inherit;
+    text-decoration: underline;
+  }
+  .file-clear.has-file { display: inline-block; }
+
+  .eyk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: var(--eyk-font-sans);
+  }
+  .eyk-btn:hover { transform: translateY(-1px); }
+  .eyk-btn-gold {
+    color: #1a1307;
+    background: linear-gradient(145deg, var(--eyk-gold), var(--eyk-gold-2));
+    box-shadow: 0 10px 30px -10px var(--eyk-gold-glow);
+    border-color: rgba(212, 162, 74, 0.55);
+    width: 100%;
+    padding: 16px 22px;
+    font-size: 1rem;
+  }
+  .eyk-btn-gold:hover { box-shadow: 0 14px 36px -10px rgba(212,162,74,0.5); }
+  .eyk-btn-ghost {
+    background: transparent;
+    color: var(--eyk-text-muted);
+    border: none;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    width: 100%;
+    margin-top: 14px;
+  }
+  .eyk-btn-ghost:hover { color: var(--eyk-text-soft); }
+  .auth-field .error {
+    display: block;
+    margin-top: 6px;
+    color: #ff6a6a;
+    font-size: 0.82rem;
+  }
+  .char-counter {
+    display: block;
+    margin-top: 6px;
+    text-align: right;
+    color: var(--eyk-text-muted);
+    font-size: 0.78rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+
+  <aside class="auth-brand">
+    <a href="/" class="auth-brand-logo" aria-label="Página inicial EYK">
+      <img src="{% static 'imagens/eyk-logo.svg' %}" alt="Logo EYK — Ekola Ya Kelela">
+    </a>
+
+    <div>
+      <div class="auth-brand-step">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        PASSO 1 DE 1
+      </div>
+      <h1 class="auth-brand-headline">
+        Personaliza o teu <em>perfil de estudante</em>.
+      </h1>
+      <p class="auth-brand-sub">
+        Adiciona uma foto e uma breve apresentação para que a comunidade EYK te conheça melhor.
+      </p>
+      <ul class="auth-brand-list">
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Foto de perfil para te identificar em comentários e posts
+        </li>
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Bio curta sobre os teus gostos e objetivos de estudo
+        </li>
+      </ul>
     </div>
+
+    <svg class="auth-brand-hand-bg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18 11V6a2 2 0 0 0-4 0v5"/>
+      <path d="M14 10V4a2 2 0 0 0-4 0v6"/>
+      <path d="M10 10.5V6a2 2 0 0 0-4 0v8"/>
+      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.83L7 15"/>
+    </svg>
+  </aside>
+
+  <main class="auth-form">
+    <div class="auth-form-inner">
+      <h2 class="auth-title">Personaliza o teu perfil</h2>
+      <p class="auth-subtitle">
+        Estes dados são públicos e visíveis para a comunidade. Podes editar tudo mais tarde nas configurações.
+      </p>
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        <div class="auth-field">
+          <label for="{{ form.foto.id_for_label }}">{{ form.foto.label }}</label>
+          <label class="file-drop" id="fileDrop">
+            {{ form.foto }}
+            <div class="file-drop-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <div class="file-drop-title">Arraste uma foto ou clique para escolher</div>
+            <div class="file-drop-sub">PNG ou JPG · recomendado 400×400px</div>
+            <div class="file-preview" id="filePreview"><img id="previewImg" alt="Pré-visualização"></div>
+            <button type="button" class="file-clear" id="fileClear">Remover foto</button>
+          </label>
+          {% if form.foto.errors %}
+            <span class="error">{% for e in form.foto.errors %}{{ e }}{% endfor %}</span>
+          {% endif %}
+        </div>
+
+        <div class="auth-field">
+          <label for="{{ form.bio.id_for_label }}">{{ form.bio.label }}</label>
+          {{ form.bio }}
+          <span class="char-counter" id="bioCounter"></span>
+          {% if form.bio.errors %}
+            <span class="error">{% for e in form.bio.errors %}{{ e }}{% endfor %}</span>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="eyk-btn eyk-btn-gold">
+          Guardar e continuar
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </button>
+
+        <a href="/" class="eyk-btn eyk-btn-ghost" type="button">
+          Saltar por agora
+        </a>
+      </form>
+    </div>
+  </main>
 </div>
 
 <script>
-document.querySelector('input[type=file]').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-            const img = document.getElementById('preview-img');
-            img.src = ev.target.result;
-            img.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-});
-</script>
-{% endblock %}
+(function() {
+  const fileInput = document.querySelector('input[type=file]');
+  const fileDrop = document.getElementById('fileDrop');
+  const filePreview = document.getElementById('filePreview');
+  const previewImg = document.getElementById('previewImg');
+  const fileClear = document.getElementById('fileClear');
 
-{% block extra_scripts %}
-<script src="{% static 'js/dropzone.js' %}"></script>
+  function setHasFile(v) {
+    fileDrop.classList.toggle('has-file', v);
+    filePreview.classList.toggle('has-file', v);
+    fileClear.classList.toggle('has-file', v);
+  }
+
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        previewImg.src = ev.target.result;
+        setHasFile(true);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setHasFile(false);
+    }
+  });
+
+  fileClear.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    fileInput.value = '';
+    previewImg.src = '#';
+    setHasFile(false);
+  });
+
+  const bio = document.querySelector('textarea');
+  const counter = document.getElementById('bioCounter');
+  if (bio && counter) {
+    function updateCounter() { counter.textContent = bio.value.length + ' caracteres'; }
+    bio.addEventListener('input', updateCounter);
+    updateCounter();
+  }
+})();
+</script>
 {% endblock %}

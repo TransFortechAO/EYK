@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -14,6 +15,14 @@ from .models import Comentario, Post, ReacaoPost
 
 POSTS_POR_PAGINA = 10
 CURSOS_POR_PAGINA = 12
+
+
+def redirect_next(path="/"):
+    """Redireciona para uma rota do frontend Next.js (NEXT_PUBLIC_URL)."""
+    base = settings.NEXT_PUBLIC_URL.rstrip("/")
+    if not path.startswith("/"):
+        path = "/" + path
+    return redirect(base + path)
 
 
 @login_required
@@ -115,7 +124,7 @@ def criar_post(request):
         Post.objects.create(autor=request.user, conteudo=conteudo, imagem=imagem)
         creditar_moedas(request.user, 2, 'post_comunidade')
         messages.success(request, 'Post publicado!')
-    return redirect('feed:comunidade')
+    return redirect_next('/comunidade')
 
 
 @login_required
@@ -143,7 +152,7 @@ def comentar_post(request, post_id):
     conteudo = request.POST.get('conteudo', '').strip()
     if conteudo:
         Comentario.objects.create(post=post, autor=request.user, conteudo=conteudo)
-    return redirect('feed:comunidade')
+    return redirect_next('/comunidade')
 
 
 @login_required
@@ -183,4 +192,4 @@ def assistir_curso(request, curso_id):
 def avaliar_curso(request, curso_id):
     # Guardar avaliação simples (pode ser expandido)
     messages.success(request, 'Avaliação registada! Obrigado.')
-    return redirect('feed:assistir-curso', curso_id=curso_id)
+    return redirect_next('/cursos')

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e7b84a"/>
+      <stop offset="100%" stop-color="#c2912e"/>
+    </linearGradient>
+    <linearGradient id="ribbonLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e7b84a"/>
+      <stop offset="50%" stop-color="#d4a23e"/>
+      <stop offset="100%" stop-color="#a67920"/>
+    </linearGradient>
+    <linearGradient id="ribbonDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8a6516"/>
+      <stop offset="100%" stop-color="#5c4309"/>
+    </linearGradient>
+  </defs>
+
+  <!-- LETRA E -->
+  <g fill="url(#gold)">
+    <polygon points="90,40 222,40 222,72 130,72 130,108 210,108 210,140 130,140 130,178 222,178 222,210 90,210"/>
+    <!-- Sombra/entalhe da seta do E -->
+    <polygon points="146,72 180,108 146,140" fill="#b88929"/>
+  </g>
+
+  <!-- LETRA Y (unida ao E) -->
+  <g fill="url(#gold)">
+    <polygon points="180,108 250,108 285,40 320,40 268,142 268,264 218,264 218,142"/>
+    <polygon points="218,264 268,264 245,300" fill="#c2912e"/>
+  </g>
+
+  <!-- LETRA K estilizada (lado direito, fita) -->
+  <g fill="url(#gold)">
+    <polygon points="290,108 374,108 374,146 330,146 330,184 368,184 368,222 330,222 330,260 380,260 380,296 290,296"/>
+  </g>
+
+  <!-- FITA (ribbon) na perna direita do K -->
+  <g transform="translate(298,140)">
+    <!-- Ribbon strip 1 (light) -->
+    <path d="M36 0 C 70 18, 90 42, 100 74 C 98 92, 90 112, 74 134 C 60 120, 48 104, 38 88 C 28 104, 16 120, 2 134 C -14 112, -22 92, -24 74 C -14 42, 6 18, 40 0 Z"
+          fill="url(#ribbonLight)"/>
+    <!-- Ribbon highlight (brilho superior) -->
+    <path d="M36 6 C 64 22, 82 42, 90 70 C 88 82, 82 96, 74 108 C 64 96, 54 84, 46 74 C 38 84, 28 96, 18 108 C 10 96, 4 82, 2 70 C 10 42, 28 22, 56 6 Z"
+          fill="url(#ribbonDark)" opacity="0.55"/>
+    <!-- Ribbon strip 2 (dark layer behind) -->
+    <path d="M36 -4 C 70 14, 92 40, 102 72 C 100 94, 90 118, 72 142 C 58 126, 46 108, 38 94 C 30 108, 18 126, 4 142 C -14 118, -24 94, -26 72 C -16 40, 6 14, 40 -4 Z"
+          fill="url(#ribbonDark)" opacity="0.9"/>
+  </g>
+
+  <!-- TEXTO: EKOLA YA KELELA -->
+  <g font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-weight="900" letter-spacing="4">
+    <text x="60" y="360" font-size="44" fill="url(#gold)">EKOLA YA</text>
+    <text x="60" y="360" font-size="44" fill="none" stroke="#8a6516" stroke-width="0.4" opacity="0.35">EKOLA YA</text>
+    <text x="262" y="360" font-size="44" fill="#1a1509" stroke="#1a1509" stroke-width="0.6">KELELA</text>
+  </g>
+</svg>

@@ -3,54 +3,363 @@
 
 {% block title %}Registar | EYK{% endblock %}
 
+{% block extra_head %}
+<style>
+  :root {
+    --eyk-bg: #0a0a0a;
+    --eyk-bg-2: #0d0d0d;
+    --eyk-card: #141414;
+    --eyk-border: rgba(255, 255, 255, 0.06);
+    --eyk-gold: #d4a24a;
+    --eyk-gold-2: #e2b45c;
+    --eyk-gold-soft: rgba(212, 162, 74, 0.18);
+    --eyk-gold-glow: rgba(212, 162, 74, 0.35);
+    --eyk-text: #ffffff;
+    --eyk-text-soft: #a8a294;
+    --eyk-text-muted: #8a8478;
+    --eyk-font-serif: 'Fraunces', 'Playfair Display', Georgia, serif;
+    --eyk-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--eyk-bg);
+    color: var(--eyk-text);
+    font-family: var(--eyk-font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .auth-page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--eyk-bg);
+  }
+  @media (max-width: 960px) {
+    .auth-page { grid-template-columns: 1fr; }
+    .auth-page .auth-brand { min-height: 320px; padding: 40px 32px; }
+  }
+
+  /* ===== LADO ESQUERDO: BRAND ===== */
+  .auth-brand {
+    position: relative;
+    padding: 72px 60px;
+    background:
+      radial-gradient(ellipse 70% 60% at 85% 20%, var(--eyk-gold-soft), transparent 55%),
+      linear-gradient(180deg, #0b0a08 0%, #080808 100%);
+    border-right: 1px solid var(--eyk-border);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .auth-brand-logo { display: inline-block; margin-bottom: 40px; }
+  .auth-brand-logo img {
+    height: 72px;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 8px 24px rgba(212,162,74,0.25));
+  }
+  .auth-brand-headline {
+    font-family: var(--eyk-font-serif);
+    font-size: clamp(1.9rem, 3.4vw, 2.8rem);
+    line-height: 1.12;
+    margin: 0 0 18px;
+    letter-spacing: -0.2px;
+    font-weight: 700;
+    max-width: 420px;
+  }
+  .auth-brand-sub {
+    color: var(--eyk-text-soft);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin: 0 0 40px;
+    max-width: 380px;
+  }
+  .auth-brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #cfc8b6;
+    font-size: 0.92rem;
+    max-width: 360px;
+  }
+  .auth-brand-badge svg { flex-shrink: 0; color: var(--eyk-gold-2); }
+  .auth-brand-hand-bg {
+    position: absolute;
+    right: -40px;
+    bottom: -40px;
+    width: 360px;
+    height: 360px;
+    opacity: 0.08;
+    color: var(--eyk-gold);
+    pointer-events: none;
+  }
+
+  /* ===== LADO DIREITO: FORM ===== */
+  .auth-form {
+    padding: 56px 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a0a;
+    overflow-y: auto;
+  }
+  .auth-form-inner {
+    width: 100%;
+    max-width: 480px;
+  }
+  .auth-title {
+    font-family: var(--eyk-font-serif);
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin: 0 0 32px;
+    letter-spacing: -0.1px;
+    color: var(--eyk-text);
+  }
+  .auth-field { margin-bottom: 20px; }
+  .auth-field label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--eyk-text);
+    letter-spacing: 0.1px;
+  }
+  .auth-field input,
+  .auth-field select,
+  .auth-field textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #121212;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--eyk-text);
+    font-size: 0.95rem;
+    font-family: var(--eyk-font-sans);
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .auth-field input::placeholder { color: #6c675c; }
+  .auth-field input:focus,
+  .auth-field select:focus,
+  .auth-field textarea:focus {
+    border-color: rgba(212,162,74,0.55);
+    box-shadow: 0 0 0 4px rgba(212,162,74,0.12);
+    background: #151310;
+  }
+  .auth-field .error {
+    display: block;
+    margin-top: 6px;
+    color: #ff6a6a;
+    font-size: 0.82rem;
+  }
+  .auth-field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 480px) {
+    .auth-field-grid { grid-template-columns: 1fr; }
+  }
+  .eyk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: var(--eyk-font-sans);
+  }
+  .eyk-btn:hover { transform: translateY(-1px); }
+  .eyk-btn-gold {
+    color: #1a1307;
+    background: linear-gradient(145deg, var(--eyk-gold), var(--eyk-gold-2));
+    box-shadow: 0 10px 30px -10px var(--eyk-gold-glow);
+    border-color: rgba(212, 162, 74, 0.55);
+    width: 100%;
+    padding: 16px 22px;
+    font-size: 1rem;
+  }
+  .eyk-btn-gold:hover { box-shadow: 0 14px 36px -10px rgba(212,162,74,0.5); }
+  .eyk-btn-outline {
+    color: var(--eyk-text);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--eyk-border);
+    width: auto;
+    padding: 12px 20px;
+    font-size: 0.9rem;
+  }
+  .eyk-btn-outline:hover { background: rgba(255,255,255,0.08); }
+  .auth-foot {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--eyk-text-muted);
+  }
+  .auth-foot a {
+    color: var(--eyk-gold-2);
+    text-decoration: underline;
+    text-decoration-color: rgba(212,162,74,0.5);
+    text-underline-offset: 3px;
+    font-weight: 700;
+  }
+  .auth-foot a:hover { color: var(--eyk-gold); text-decoration-color: var(--eyk-gold); }
+  .auth-divider {
+    margin: 28px 0 20px;
+    height: 1px;
+    background: var(--eyk-border);
+  }
+  .auth-alt {
+    text-align: center;
+  }
+  .auth-alt p {
+    font-size: 0.9rem;
+    color: var(--eyk-text-muted);
+    margin: 0 0 12px;
+  }
+  .auth-non-field,
+  .auth-form-errors {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: #ff8a8a;
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 0.88rem;
+  }
+  .auth-form-errors ul { list-style: none; padding: 0; margin: 0; }
+  .auth-form-errors li + li { margin-top: 4px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display:grid; grid-template-columns:1fr 1fr; min-height:100vh;">
-    <div style="background:linear-gradient(160deg,#1c1712,#3a2f1e); display:flex; flex-direction:column; justify-content:center; padding:60px; color:#fff; position:relative; overflow:hidden;">
-        <svg class="hand-mark" width="220" height="220" style="position:absolute; right:-40px; bottom:-30px; color:rgba(201,151,30,.14);"><use href="#hand-glyph"/></svg>
-        <a href="{% url 'index' %}" style="display:flex; align-items:center; gap:10px; color:var(--gold); font-family:'Fraunces',serif; font-weight:700; font-size:1.5rem; margin-bottom:40px; text-decoration:none;">
-            <svg class="hand-mark" width="30" height="30"><use href="#hand-glyph"/></svg> EYK
+<div class="auth-page">
+
+  <!-- ===== LADO ESQUERDO: BRANDING ===== -->
+  <aside class="auth-brand">
+    <a href="{% url 'index' %}" class="auth-brand-logo" aria-label="Página inicial EYK">
+      <img src="{% static 'imagens/eyk-logo.svg' %}" alt="Logo EYK — Ekola Ya Kelela">
+    </a>
+
+    <div>
+      <h1 class="auth-brand-headline">
+        Cria a tua conta e começa a aprender hoje.
+      </h1>
+      <p class="auth-brand-sub">
+        Regista-te gratuitamente como aluno e acede a cursos, vídeos e à comunidade EYK.
+      </p>
+      <div class="auth-brand-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="6" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+        </svg>
+        Todos os vídeos têm legendas sempre visíveis.
+      </div>
+    </div>
+
+    <svg class="auth-brand-hand-bg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M18 11V6a2 2 0 0 0-4 0v5"/>
+      <path d="M14 10V4a2 2 0 0 0-4 0v6"/>
+      <path d="M10 10.5V6a2 2 0 0 0-4 0v8"/>
+      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.83L7 15"/>
+    </svg>
+  </aside>
+
+  <!-- ===== LADO DIREITO: FORMULÁRIO ===== -->
+  <main class="auth-form">
+    <div class="auth-form-inner">
+      <h2 class="auth-title">Cria a tua conta</h2>
+
+      {% if form.non_field_errors %}
+        <div class="auth-non-field">
+          {% for err in form.non_field_errors %}{{ err }}{% endfor %}
+        </div>
+      {% endif %}
+      {% if form.errors and not form.non_field_errors %}
+        <div class="auth-form-errors">
+          <ul>
+          {% for field in form %}
+            {% for err in field.errors %}
+              <li><strong>{{ field.label }}:</strong> {{ err }}</li>
+            {% endfor %}
+          {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <form method="POST" novalidate>
+        {% csrf_token %}
+
+        <div class="auth-field">
+          <label for="{{ form.username.id_for_label }}">Nome de utilizador</label>
+          {{ form.username }}
+          {% if form.username.errors and not form.non_field_errors %}
+            <span class="error">{% for e in form.username.errors %}{{ e }}{% endfor %}</span>
+          {% endif %}
+        </div>
+
+        <div class="auth-field">
+          <label for="{{ form.email.id_for_label }}">E-mail</label>
+          {{ form.email }}
+          {% if form.email.errors and not form.non_field_errors %}
+            <span class="error">{% for e in form.email.errors %}{{ e }}{% endfor %}</span>
+          {% endif %}
+        </div>
+
+        <div class="auth-field-grid">
+          <div class="auth-field">
+            <label for="{{ form.password1.id_for_label }}">Palavra-passe</label>
+            {{ form.password1 }}
+            {% if form.password1.errors and not form.non_field_errors %}
+              <span class="error">{% for e in form.password1.errors %}{{ e }}{% endfor %}</span>
+            {% endif %}
+          </div>
+          <div class="auth-field">
+            <label for="{{ form.password2.id_for_label }}">Confirmar</label>
+            {{ form.password2 }}
+            {% if form.password2.errors and not form.non_field_errors %}
+              <span class="error">{% for e in form.password2.errors %}{{ e }}{% endfor %}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit" class="eyk-btn eyk-btn-gold">
+          Criar conta
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </form>
+
+      <p class="auth-foot">
+        Já tens conta? <a href="{% url 'accounts:login' %}">Entrar</a>
+      </p>
+
+      <div class="auth-divider"></div>
+
+      <div class="auth-alt">
+        <p>Queres ensinar na EYK?</p>
+        <a href="https://forms.gle/puLkdWGfdRdUyyyN7" target="_blank" rel="noopener" class="eyk-btn eyk-btn-outline">
+          Formulário de professor
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
         </a>
-        <h2 style="color:#fff; font-size:2rem; max-width:380px; line-height:1.2;">Cria a tua conta e começa a aprender hoje.</h2>
-        <p style="color:#c9c1b0; margin-top:16px; max-width:360px;">Regista-te gratuitamente como aluno e acede a cursos, vídeos e à comunidade EYK.</p>
-        <div class="sr-visual-alert" style="background:rgba(46,142,133,.18); color:#7fd4cb; margin-top:40px; max-width:320px;">
-            <i class="fas fa-closed-captioning"></i> Todos os vídeos têm legendas sempre visíveis.
-        </div>
+      </div>
     </div>
-    <div style="display:flex; align-items:center; justify-content:center; padding:40px;">
-        <div style="width:100%; max-width:380px;">
-            <h2 style="font-size:1.5rem; margin-bottom:22px;">Cria a tua conta</h2>
-            <form method="POST">
-                {% csrf_token %}
-                <div class="form-field">
-                    <label for="{{ form.username.id_for_label }}">Nome de utilizador</label>
-                    {{ form.username }}
-                    <span class="text-danger">{{ form.username.errors }}</span>
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.email.id_for_label }}">E-mail</label>
-                    {{ form.email }}
-                    <span class="text-danger">{{ form.email.errors }}</span>
-                </div>
-                <div class="grid grid-2" style="gap:12px;">
-                    <div class="form-field">
-                        <label for="{{ form.password1.id_for_label }}">Palavra-passe</label>
-                        {{ form.password1 }}
-                        <span class="text-danger">{{ form.password1.errors }}</span>
-                    </div>
-                    <div class="form-field">
-                        <label for="{{ form.password2.id_for_label }}">Confirmar</label>
-                        {{ form.password2 }}
-                        <span class="text-danger">{{ form.password2.errors }}</span>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-gold" style="width:100%; justify-content:center;">Criar conta <i class="fas fa-arrow-right"></i></button>
-            </form>
-            <p style="text-align:center; font-size:.85rem; margin-top:20px; color:var(--ink-soft);">Já tens conta? <a href="{% url 'accounts:login' %}" style="color:var(--teal); font-weight:700;">Entrar</a></p>
-            <div style="text-align:center; margin-top:22px; padding-top:18px; border-top:1px solid var(--border);">
-                <p style="font-size:.85rem; color:var(--ink-soft); margin-bottom:10px;">Queres ensinar na EYK?</p>
-                <a href="https://forms.gle/puLkdWGfdRdUyyyN7" target="_blank" class="btn btn-outline btn-sm">Formulário de professor <i class="fas fa-external-link-alt"></i></a>
-            </div>
-        </div>
-    </div>
+  </main>
 </div>
 {% endblock %}
