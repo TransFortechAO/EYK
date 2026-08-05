@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlayCircle } from "lucide-react";
 import { PageHeader, VideoCard, EmptyState } from "@/components/eyk";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockVideos } from "@/lib/mock-data";
+import { api, type Video } from "@/lib/api";
+
+type Tab = "recent" | "popular" | "short";
 
 export default function VideosPage() {
-  const [tab, setTab] = useState("recent");
-  const videos = tab === "popular"
-    ? [...mockVideos].sort((a, b) => b.views - a.views)
-    : tab === "short"
-    ? mockVideos.filter((v) => parseInt(v.duration.split(":")[0]) < 6)
-    : mockVideos;
+  const [tab, setTab] = useState<Tab>("recent");
+  const [videos, setVideos] = useState<Video[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const list = await api.getVideos(tab);
+      if (alive) setVideos(list);
+    })();
+    return () => { alive = false; };
+  }, [tab]);
 
   return (
     <div className="space-y-8">
@@ -21,7 +28,7 @@ export default function VideosPage() {
         description="Conteúdos avulsos de todos os professores da plataforma."
       />
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList className="bg-surface">
           <TabsTrigger value="recent">Mais recentes</TabsTrigger>
           <TabsTrigger value="popular">Mais vistos</TabsTrigger>

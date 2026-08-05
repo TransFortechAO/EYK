@@ -1,12 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Trophy, Flame, Coins } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { mockLeaderboard } from "@/lib/mock-data";
-import { useAuth } from "@/components/auth-gate";
+import { api, type LeaderRow } from "@/lib/api";
 
 const medals = [
   "from-yellow-400 to-amber-500",
@@ -15,10 +15,23 @@ const medals = [
 ];
 
 export default function LeaderboardPage() {
-  const { user } = useAuth();
-  const top3 = mockLeaderboard.slice(0, 3);
-  const rest = mockLeaderboard.slice(3);
-  const me = mockLeaderboard.find((r) => r.isMe);
+  const [rows, setRows] = useState<LeaderRow[]>([]);
+  const [meStats, setMeStats] = useState<{ coins: number; streak: number }>({ coins: 0, streak: 0 });
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [list, panel] = await Promise.all([api.getLeaderboard(), api.getDadosGamificacao()]);
+      if (!alive) return;
+      setRows(list);
+      setMeStats({ coins: panel.coins, streak: panel.streak });
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const top3 = rows.slice(0, 3);
+  const rest = rows.slice(3);
+  const me = rows.find((r) => r.isMe);
 
   return (
     <div className="space-y-8">
@@ -31,12 +44,13 @@ export default function LeaderboardPage() {
           value={me ? `#${me.rank}` : "—"}
           hint="Continua assim!"
         />
-        <StatCard icon={Coins} label="Moedas EYK" value={user?.coins ?? 0} tone="gold" />
-        <StatCard icon={Flame} label="Streak atual" value={`${user?.streak ?? 0} dias`} tone="streak" />
+        <StatCard icon={Coins} label="Moedas EYK" value={meStats.coins} tone="gold" />
+        <StatCard icon={Flame} label="Streak atual" value={`${meStats.streak} dias`} tone="streak" />
       </div>
 
       <div className="grid grid-cols-3 items-end justify-items-center gap-4 pt-6 pb-10">
         {[top3[1], top3[0], top3[2]].map((row, idx) => {
+          if (!row) return <div key={idx} />;
           const realRank = idx === 0 ? 2 : idx === 1 ? 1 : 3;
           const height = realRank === 1 ? "h-40" : realRank === 2 ? "h-32" : "h-24";
           const medal = medals[realRank - 1];

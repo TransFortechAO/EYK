@@ -1,35 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Users, Send } from "lucide-react";
 import { PageHeader, SectionHeader, PostCard, EmptyState } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { mockPosts } from "@/lib/mock-data";
+import { api, type Post } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 
 export default function ComunidadePage() {
   const { user } = useAuth();
   const [text, setText] = useState("");
-  const [posts, setPosts] = useState(mockPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = () => {
-    if (!text.trim()) return;
-    const newPost = {
-      id: `p${Date.now()}`,
-      author: user?.name || "Utilizador",
-      initials: user?.initials || "?",
-      timeAgo: "agora",
-      content: text.trim(),
-      likes: 0,
-      comments: 0,
-      liked: false,
-    };
-    setPosts([newPost, ...posts]);
-    setText("");
+  const loadPosts = useCallback(async () => {
+    const list = await api.getPosts();
+    setPosts(list);
+  }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
+
+  const submit = async () => {
+    if (!text.trim() || submitting) return;
+    try {
+      setSubmitting(true);
+      const newPost = await api.createPost(text.trim());
+      setPosts((prev) => [newPost, ...prev]);
+      setText("");
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  const toggleLike = async (postId: string) => {
+    try {
+      const res = await api.reactPost(postId);
+      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: res.liked, likes: res.likes } : p));
+    } catch {
+      /* ignora */
+    }
+  };
+
+  const initials = user?.initials || "?";
 
   return (
     <div className="space-y-8">
@@ -42,7 +59,7 @@ export default function ComunidadePage() {
         <div className="flex gap-3">
           <Avatar className="h-10 w-10 shrink-0">
             <AvatarFallback className="bg-gradient-gold text-primary-foreground font-medium">
-              {user?.initials || "?"}
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-3">
@@ -53,9 +70,9 @@ export default function ComunidadePage() {
               className="min-h-[90px] resize-none bg-surface"
             />
             <div className="flex justify-end">
-              <Button onClick={submit} disabled={!text.trim()} className="gap-2">
+              <Button onClick={() => void submit()} disabled={!text.trim() || submitting} className="gap-2">
                 <Send className="h-4 w-4" />
-                Publicar
+                {submitting ? "A publicar…" : "Publicar"}
               </Button>
             </div>
           </div>
@@ -67,7 +84,7 @@ export default function ComunidadePage() {
         {posts.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-2">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard key={post.id} post={post} onToggleLike={() => void toggleLike(post.id)} />
             ))}
           </div>
         ) : (

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Coins, BookOpen, Users, Settings, CheckCheck } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Notification } from "@/lib/mock-data";
-import { mockNotifications } from "@/lib/mock-data";
+import { api, type Notification } from "@/lib/api";
 
 const icons: Record<Notification["type"], typeof Bell> = {
   gamification: Coins,
@@ -24,14 +23,26 @@ const tones: Record<Notification["type"], string> = {
 };
 
 export default function NotificacoesPage() {
-  const [items, setItems] = useState(mockNotifications);
+  const [items, setItems] = useState<Notification[]>([]);
 
-  const markAll = () => setItems(items.map((n) => ({ ...n, read: true })));
+  const load = async () => {
+    const list = await api.getNotificacoes();
+    setItems(list);
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const markAll = async () => {
+    setItems(items.map((n) => ({ ...n, read: true })));
+    for (const n of items) {
+      if (!n.read) void api.marcarNotificacaoLida(n.id);
+    }
+  };
 
   return (
     <div className="space-y-8">
       <PageHeader title="Notificações" description="Mantém-te a par das novidades da tua jornada EYK.">
-        <Button variant="outline" size="sm" onClick={markAll} className="gap-2">
+        <Button variant="outline" size="sm" onClick={() => void markAll()} className="gap-2">
           <CheckCheck className="h-4 w-4" />
           Marcar todas como lidas
         </Button>

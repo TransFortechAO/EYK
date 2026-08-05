@@ -1,14 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Coins, Flame, Target, TrendingUp, Award, History, Sparkles, Zap, Compass, MessageCircle, GraduationCap, Heart, PlayCircle, Trophy } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import type { Badge as BadgeT } from "@/lib/mock-data";
-import { mockBadges, mockWallet } from "@/lib/mock-data";
-import { useAuth } from "@/components/auth-gate";
+import { api, type Badge, type WalletEntry, type GamePanel } from "@/lib/api";
 
 const badgeIcons: Record<string, typeof Sparkles> = {
   Flame,
@@ -19,56 +18,73 @@ const badgeIcons: Record<string, typeof Sparkles> = {
   Heart,
   PlayCircle,
   Trophy,
+  Crown: Trophy,
+  Award,
+  Calendar: Target,
+  Users: MessageCircle,
+  Coins,
 };
 
 export default function GamificacaoPage() {
-  const { user } = useAuth();
-  const coins = user?.coins ?? 0;
-  const streak = user?.streak ?? 0;
-  const streakRecord = user?.streakRecord ?? 0;
-  const level = user?.level ?? 1;
-  const nextLevelCoins = user?.nextLevelCoins ?? (level * 1000);
-  const levelProgress = user?.levelProgress ?? 0;
-  const initials = user?.initials || "?";
-  const name = user?.name || "Estudante";
-  const xpNeeded = Math.max(0, nextLevelCoins - coins);
+  const [panel, setPanel] = useState<GamePanel | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [wallet, setWallet] = useState<WalletEntry[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [p, b, w] = await Promise.all([
+        api.getDadosGamificacao(),
+        api.getBadges(),
+        api.getCarteira(),
+      ]);
+      if (!alive) return;
+      setPanel(p);
+      setBadges(b);
+      setWallet(w);
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const p = panel || { coins: 0, streak: 0, streakRecord: 0, level: 1, levelProgress: 0, nextLevelCoins: 500, initials: "?", name: "Estudante" };
+  const xpNeeded = Math.max(0, p.nextLevelCoins - p.coins);
 
   return (
     <div className="space-y-8">
       <PageHeader title="Gamificação" description="Conquistas, moedas e progresso — acompanha a tua jornada." />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Coins} label="Moedas EYK" value={coins} tone="gold" />
-        <StatCard icon={Flame} label="Streak atual" value={`${streak} dias`} tone="streak" />
-        <StatCard icon={Target} label="Recorde streak" value={`${streakRecord} dias`} />
-        <StatCard icon={TrendingUp} label="Nível atual" value={`Nível ${level}`} tone="success" />
+        <StatCard icon={Coins} label="Moedas EYK" value={p.coins} tone="gold" />
+        <StatCard icon={Flame} label="Streak atual" value={`${p.streak} dias`} tone="streak" />
+        <StatCard icon={Target} label="Recorde streak" value={`${p.streakRecord} dias`} />
+        <StatCard icon={TrendingUp} label="Nível atual" value={`Nível ${p.level}`} tone="success" />
       </div>
 
       <Card className="p-6 shadow-soft">
         <div className="flex flex-col sm:flex-row sm:items-end gap-6">
           <Avatar className="h-20 w-20 shrink-0 shadow-md">
             <AvatarFallback className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold">
-              {initials}
+              {p.initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-2">
             <div className="flex items-end justify-between gap-4 flex-wrap">
               <div>
-                <p className="font-serif text-2xl font-semibold">Olá, {name} 👋</p>
+                <p className="font-serif text-2xl font-semibold">Olá, {p.name} 👋</p>
                 <p className="text-sm text-muted-foreground">
-                  Faltam {xpNeeded} moedas para chegares ao Nível {level + 1}.
+                  Faltam {xpNeeded} moedas para chegares ao Nível {p.level + 1}.
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Progresso nível {level}
+                  Progresso nível {p.level}
                 </p>
                 <p className="font-serif text-2xl font-semibold tabular-nums">
-                  {levelProgress}%
+                  {p.levelProgress}%
                 </p>
               </div>
             </div>
-            <Progress value={levelProgress} className="h-2.5" />
+            <Progress value={p.levelProgress} className="h-2.5" />
           </div>
         </div>
       </Card>
@@ -79,7 +95,7 @@ export default function GamificacaoPage() {
           Conquistas
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {mockBadges.map((badge: BadgeT) => {
+          {badges.map((badge) => {
             const Icon = badgeIcons[badge.icon] || Sparkles;
             return (
               <Card
@@ -124,7 +140,7 @@ export default function GamificacaoPage() {
         </h2>
         <Card className="shadow-soft overflow-hidden">
           <div className="divide-y">
-            {mockWallet.map((entry) => (
+            {wallet.map((entry) => (
               <div
                 key={entry.id}
                 className="flex items-center justify-between gap-4 px-5 py-4"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Bell, Search, Coins, Flame, Sun, Moon, LogOut, User2 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
@@ -23,7 +23,7 @@ import { api, API_BASE_URL } from "@/lib/api";
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
-  const [logoutLoading, setLogoutLoading] = useCallbackState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
 
   const handleLogout = useCallback(async () => {
     if (logoutLoading) return;
@@ -134,10 +134,4 @@ export function Topbar() {
       </div>
     </header>
   );
-}
-
-/* Helper mini hook local para estado com setter tipado */
-import { useState } from "react";
-function useCallbackState<T>(initial: T): [T, (v: T) => void] {
-  return useState<T>(initial);
 }
