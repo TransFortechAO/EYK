@@ -7,9 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { mockPosts, currentUser } from "@/lib/mock-data";
+import { mockPosts } from "@/lib/mock-data";
+import { useAuth } from "@/components/auth-gate";
 
 export default function ComunidadePage() {
+  const { user } = useAuth();
   const [text, setText] = useState("");
   const [posts, setPosts] = useState(mockPosts);
 
@@ -17,8 +19,8 @@ export default function ComunidadePage() {
     if (!text.trim()) return;
     const newPost = {
       id: `p${Date.now()}`,
-      author: currentUser.name,
-      initials: currentUser.initials,
+      author: user?.name || "Utilizador",
+      initials: user?.initials || "?",
       timeAgo: "agora",
       content: text.trim(),
       likes: 0,
@@ -40,7 +42,7 @@ export default function ComunidadePage() {
         <div className="flex gap-3">
           <Avatar className="h-10 w-10 shrink-0">
             <AvatarFallback className="bg-gradient-gold text-primary-foreground font-medium">
-              {currentUser.initials}
+              {user?.initials || "?"}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-3">

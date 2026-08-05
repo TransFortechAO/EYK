@@ -1,19 +1,19 @@
-import { PageHeader, SectionHeader, CourseCard, VideoCard } from "@/components/eyk";
-import { mockCourses, mockVideos, currentUser } from "@/lib/mock-data";
+"use client";
 
-export const metadata = {
-  title: "Início · EYK",
-  description: "O teu ponto de partida na plataforma EYK.",
-};
+import { PageHeader, SectionHeader, CourseCard, VideoCard } from "@/components/eyk";
+import { mockCourses, mockVideos } from "@/lib/mock-data";
+import { useAuth } from "@/components/auth-gate";
 
 export default function HomePage() {
+  const { user } = useAuth();
   const emAndamento = mockCourses.filter((c) => typeof c.progress === "number");
   const recentes = mockVideos.slice(0, 3);
+  const firstName = user?.name?.split(" ")[0] || "Estudante";
 
   return (
     <div className="space-y-10">
       <PageHeader
-        title={`Olá, ${currentUser.name.split(" ")[0]}`}
+        title={`Olá, ${firstName}`}
         description="Continua de onde ficaste ou explora novos conteúdos."
       />
 

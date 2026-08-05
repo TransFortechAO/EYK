@@ -11,9 +11,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { currentUser } from "@/lib/mock-data";
+import { useAuth } from "@/components/auth-gate";
 
 export default function ConfiguracoesPage() {
+  const { user } = useAuth();
   const [show, setShow] = useState(false);
   const [tab, setTab] = useState("perfil");
   const [saved, setSaved] = useState(false);
@@ -22,6 +23,12 @@ export default function ConfiguracoesPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
+
+  const initials = user?.initials || "?";
+  const name = user?.name || "Utilizador";
+  const level = user?.level ?? 1;
+  const coins = user?.coins ?? 0;
+  const email = user?.email || "";
 
   return (
     <div className="space-y-8">
@@ -54,13 +61,13 @@ export default function ConfiguracoesPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                 <Avatar className="h-24 w-24 shadow-md">
                   <AvatarFallback className="text-3xl bg-gradient-gold text-primary-foreground font-serif font-bold">
-                    {currentUser.initials}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-2">
-                  <p className="font-serif text-2xl font-semibold">{currentUser.name}</p>
+                  <p className="font-serif text-2xl font-semibold">{name}</p>
                   <Badge variant="outline" className="text-xs">
-                    Nível {currentUser.level} · {currentUser.coins} moedas
+                    Nível {level} · {coins} moedas
                   </Badge>
                   <div className="flex flex-wrap gap-2 pt-2">
                     <Button variant="outline" size="sm">Alterar foto</Button>
@@ -73,15 +80,15 @@ export default function ConfiguracoesPage() {
             <Card className="p-6 shadow-soft grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome completo</Label>
-                <Input id="nome" defaultValue={currentUser.name} />
+                <Input id="nome" defaultValue={name} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="fabio@exemplo.ao" />
+                <Input id="email" type="email" defaultValue={email} />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="bio">Biografia</Label>
-                <Input id="bio" defaultValue="Estudante EYK apaixonado por finanças e design." />
+                <Input id="bio" defaultValue={user?.bio || ""} />
               </div>
             </Card>
           </TabsContent>

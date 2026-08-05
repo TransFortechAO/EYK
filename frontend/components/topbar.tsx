@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Bell, Search, Coins, Flame, Sun, Moon, LogOut } from "lucide-react";
+import { useCallback } from "react";
+import { Bell, Search, Coins, Flame, Sun, Moon, LogOut, User2 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
 
@@ -17,22 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { currentUser } from "@/lib/mock-data";
-import { useApi } from "@/hooks/useApi";
-import { api, type AuthUser, API_BASE_URL } from "@/lib/api";
-
-type UserShape = AuthUser | typeof currentUser;
+import { useAuth } from "@/components/auth-gate";
+import { api, API_BASE_URL } from "@/lib/api";
 
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
-  const { data: authRes, execute } = useApi<{ authenticated: boolean; user: AuthUser | null }>();
-  const [logoutLoading, setLogoutLoading] = useState(false);
-
-  useEffect(() => {
-    execute(() => api.me()).catch(() => {
-      console.log("Usando dados mockados - API indisponível");
-    });
-  }, [execute]);
+  const { user } = useAuth();
+  const [logoutLoading, setLogoutLoading] = useCallbackState(false);
 
   const handleLogout = useCallback(async () => {
     if (logoutLoading) return;
@@ -43,18 +34,23 @@ export function Topbar() {
       console.warn("logout warning:", err);
     } finally {
       setLogoutLoading(false);
-      // Volta para a landing page pública do Django (porta 8000)
       window.location.assign(API_BASE_URL + "/");
     }
-  }, [logoutLoading]);
+  }, [logoutLoading, setLogoutLoading]);
 
-  const dados: UserShape = (authRes?.authenticated && authRes.user)
-    ? (authRes.user as UserShape)
-    : currentUser;
+  const name = user?.name?.trim() || "Utilizador";
+  const initials =
+    user?.initials?.trim() ||
+    name
+      .split(/\s+/)
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() ||
+    "?";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur md:px-6">
-
       <SidebarTrigger className="shrink-0" />
 
       <div className="relative flex-1 min-w-0 max-w-xl">
@@ -69,12 +65,12 @@ export function Topbar() {
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Coins className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium tabular-nums">
-            {(dados.coins ?? 0).toLocaleString("pt-PT")}
+            {(user?.coins ?? 0).toLocaleString("pt-PT")}
           </span>
         </div>
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Flame className="h-4 w-4 text-streak" />
-          <span className="text-sm font-medium tabular-nums">{dados.streak ?? 0}</span>
+          <span className="text-sm font-medium tabular-nums">{user?.streak ?? 0}</span>
         </div>
 
         <Button
@@ -94,7 +90,6 @@ export function Topbar() {
           </Link>
         </Button>
 
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -103,13 +98,18 @@ export function Topbar() {
             >
               <Avatar className="h-9 w-9 border-2 border-primary/30">
                 <AvatarFallback className="bg-gradient-gold text-primary-foreground font-semibold uppercase">
-                  {dados.initials}
+                  {initials}
                 </AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Olá, {dados.name}</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              <span className="inline-flex items-center gap-2">
+                <User2 className="w-4 h-4 text-muted-foreground" />
+                Olá, {name}
+              </span>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/gamificacao">A minha gamificação</Link>
@@ -134,4 +134,10 @@ export function Topbar() {
       </div>
     </header>
   );
+}
+
+/* Helper mini hook local para estado com setter tipado */
+import { useState } from "react";
+function useCallbackState<T>(initial: T): [T, (v: T) => void] {
+  return useState<T>(initial);
 }

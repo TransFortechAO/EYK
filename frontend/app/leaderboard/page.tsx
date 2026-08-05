@@ -5,7 +5,8 @@ import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { mockLeaderboard, currentUser } from "@/lib/mock-data";
+import { mockLeaderboard } from "@/lib/mock-data";
+import { useAuth } from "@/components/auth-gate";
 
 const medals = [
   "from-yellow-400 to-amber-500",
@@ -14,6 +15,7 @@ const medals = [
 ];
 
 export default function LeaderboardPage() {
+  const { user } = useAuth();
   const top3 = mockLeaderboard.slice(0, 3);
   const rest = mockLeaderboard.slice(3);
   const me = mockLeaderboard.find((r) => r.isMe);
@@ -29,8 +31,8 @@ export default function LeaderboardPage() {
           value={me ? `#${me.rank}` : "—"}
           hint="Continua assim!"
         />
-        <StatCard icon={Coins} label="Moedas EYK" value={currentUser.coins} tone="gold" />
-        <StatCard icon={Flame} label="Streak atual" value={`${currentUser.streak} dias`} tone="streak" />
+        <StatCard icon={Coins} label="Moedas EYK" value={user?.coins ?? 0} tone="gold" />
+        <StatCard icon={Flame} label="Streak atual" value={`${user?.streak ?? 0} dias`} tone="streak" />
       </div>
 
       <div className="grid grid-cols-3 items-end justify-items-center gap-4 pt-6 pb-10">

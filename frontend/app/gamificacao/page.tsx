@@ -7,7 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { Badge as BadgeT } from "@/lib/mock-data";
-import { mockBadges, mockWallet, currentUser } from "@/lib/mock-data";
+import { mockBadges, mockWallet } from "@/lib/mock-data";
+import { useAuth } from "@/components/auth-gate";
 
 const badgeIcons: Record<string, typeof Sparkles> = {
   Flame,
@@ -21,44 +22,53 @@ const badgeIcons: Record<string, typeof Sparkles> = {
 };
 
 export default function GamificacaoPage() {
-  const xpNeeded = currentUser.nextLevelCoins - currentUser.coins;
+  const { user } = useAuth();
+  const coins = user?.coins ?? 0;
+  const streak = user?.streak ?? 0;
+  const streakRecord = user?.streakRecord ?? 0;
+  const level = user?.level ?? 1;
+  const nextLevelCoins = user?.nextLevelCoins ?? (level * 1000);
+  const levelProgress = user?.levelProgress ?? 0;
+  const initials = user?.initials || "?";
+  const name = user?.name || "Estudante";
+  const xpNeeded = Math.max(0, nextLevelCoins - coins);
 
   return (
     <div className="space-y-8">
       <PageHeader title="Gamificação" description="Conquistas, moedas e progresso — acompanha a tua jornada." />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Coins} label="Moedas EYK" value={currentUser.coins} tone="gold" />
-        <StatCard icon={Flame} label="Streak atual" value={`${currentUser.streak} dias`} tone="streak" />
-        <StatCard icon={Target} label="Recorde streak" value={`${currentUser.streakRecord} dias`} />
-        <StatCard icon={TrendingUp} label="Nível atual" value={`Nível ${currentUser.level}`} tone="success" />
+        <StatCard icon={Coins} label="Moedas EYK" value={coins} tone="gold" />
+        <StatCard icon={Flame} label="Streak atual" value={`${streak} dias`} tone="streak" />
+        <StatCard icon={Target} label="Recorde streak" value={`${streakRecord} dias`} />
+        <StatCard icon={TrendingUp} label="Nível atual" value={`Nível ${level}`} tone="success" />
       </div>
 
       <Card className="p-6 shadow-soft">
         <div className="flex flex-col sm:flex-row sm:items-end gap-6">
           <Avatar className="h-20 w-20 shrink-0 shadow-md">
             <AvatarFallback className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold">
-              {currentUser.initials}
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-2">
             <div className="flex items-end justify-between gap-4 flex-wrap">
               <div>
-                <p className="font-serif text-2xl font-semibold">Olá, {currentUser.name} 👋</p>
+                <p className="font-serif text-2xl font-semibold">Olá, {name} 👋</p>
                 <p className="text-sm text-muted-foreground">
-                  Faltam {xpNeeded} moedas para chegares ao Nível {currentUser.level + 1}.
+                  Faltam {xpNeeded} moedas para chegares ao Nível {level + 1}.
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Progresso nível {currentUser.level}
+                  Progresso nível {level}
                 </p>
                 <p className="font-serif text-2xl font-semibold tabular-nums">
-                  {currentUser.levelProgress}%
+                  {levelProgress}%
                 </p>
               </div>
             </div>
-            <Progress value={currentUser.levelProgress} className="h-2.5" />
+            <Progress value={levelProgress} className="h-2.5" />
           </div>
         </div>
       </Card>
