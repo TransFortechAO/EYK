@@ -68,3 +68,41 @@ class UserRegisterForm(StyledFormMixin, UserCreationForm):
 
 class UserLoginForm(StyledFormMixin, AuthenticationForm):
     default_input_class = 'form-control'
+
+    username = forms.CharField(
+        label='Nome de utilizador ou email',
+        max_length=254,
+        widget=forms.TextInput(attrs={'autofocus': True, 'placeholder': 'Introduz o teu username ou email'}),
+    )
+
+    error_messages = {
+        'invalid_login': (
+            'Credenciais inválidas. Verifica o nome de utilizador / email '
+            'e a palavra-passe e tenta novamente.'
+        ),
+        'inactive': 'Esta conta está desativada. Contacta-nos para mais informações.',
+    }
+
+    def clean(self):
+        username_or_email = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if username_or_email and password:
+            # 1) Tentar encontrar user por username OU por email (case-insensitive no email)
+            UserModel = self.user_cache.__class__ if self.user_cache else User
+            user = None
+            try:
+                user = UserModel._default_manager.get_by_natural_key(username_or_email)
+            except UserModel.DoesNotExist:
+                # Se não encontrou por username, tenta por email (case-insensitive)
+                try:
+                    user = UserModel._default_manager.get(email__iexact=username_or_email)
+                except UserModel.DoesNotExist:
+                    user = None
+
+            if user is not None:
+                # Usa a lógica standard do AuthenticationForm a partir do user encontrado
+                self.user_cache = user
+                self.cleaned_data['username'] = user.get_username()
+
+        return super().clean()

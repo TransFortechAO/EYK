@@ -407,10 +407,13 @@
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </button>
+      </form>
 
-        <a href="/" class="eyk-btn eyk-btn-ghost" type="button">
+      <form method="post" class="mt-2">
+        {% csrf_token %}
+        <button type="submit" formaction="{% url 'accounts:saltar-perfil-aluno' %}" class="eyk-btn eyk-btn-ghost">
           Saltar por agora
-        </a>
+        </button>
       </form>
     </div>
   </main>

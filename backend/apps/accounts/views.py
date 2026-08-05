@@ -156,6 +156,28 @@ def completar_perfil_professor(request):
     return render(request, 'accounts/completar_perfil_professor.html', {'form': form})
 
 
+@login_required
+@require_POST
+def saltar_perfil_aluno(request):
+    """Salta a personalização do perfil de aluno — marca como completo e redireciona ao dashboard."""
+    from apps.alunos.models import Aluno
+    Aluno.objects.get_or_create(profile=request.user)
+    request.user.perfil_completo = True
+    request.user.save()
+    messages.info(request, 'Personalização do perfil guardada para mais tarde.')
+    return redirect_next('/')
+
+
+@login_required
+@require_POST
+def saltar_perfil_professor(request):
+    """Salta a personalização do perfil de professor — marca como completo e redireciona ao dashboard."""
+    request.user.perfil_completo = True
+    request.user.save()
+    messages.info(request, 'Personalização do perfil guardada para mais tarde.')
+    return redirect_next('/')
+
+
 # ── Preferências (tema + notificações) ──────────────────────────────────────
 
 @login_required

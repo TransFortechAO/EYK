@@ -295,7 +295,7 @@
         {% csrf_token %}
 
         <div class="auth-field">
-          <label for="{{ form.username.id_for_label }}">Nome de utilizador</label>
+          <label for="{{ form.username.id_for_label }}">Nome de utilizador ou email</label>
           {{ form.username }}
           {% if form.username.errors %}
             <span class="error">{% for e in form.username.errors %}{{ e }}{% endfor %}</span>

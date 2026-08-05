@@ -1,10 +1,12 @@
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
+from django.db.models import Count, Sum
 
-from .models import Curso
-from .serializers import CourseSerializer
+from .models import Categoria, Curso
+from .serializers import CourseSerializer, CategoriaSerializer, VideoSerializer
+from apps.professores.models import Professor, Video
 
 User = get_user_model()
 
@@ -14,19 +16,16 @@ class CursoViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # evita erro com AnonymousUser
-        if self.request.user.is_authenticated:
-            return Curso.objects.filter(user=self.request.user)
-        return Curso.objects.none()
+        return Curso.objects.filter(ativo=True).select_related('professor', 'categoria')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        professor = Professor.objects.get(user=self.request.user)
+        serializer.save(professor=professor)
 
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def usuario_atual(request):
-    """Retorna os dados do usuário autenticado"""
     user = request.user
     data = {
         'id': user.id,
@@ -41,3 +40,45 @@ def usuario_atual(request):
         'tema_preferido': user.tema_preferido,
     }
     return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def categoria_list(request):
+    categorias = list(Categoria.objects.all().values('id', 'nome'))
+    resultado = [{'id': None, 'nome': 'Todos'}] + categorias
+    return Response(resultado)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def video_list(request):
+    tab = request.query_params.get('tab', 'recent')
+
+    videos_queryset = Video.objects.filter(ativo=True).select_related('professor')
+
+    if tab == 'recent':
+        videos_queryset = videos_queryset.order_by('-criado_em')
+    elif tab == 'popular':
+        videos_queryset = videos_queryset.annotate(
+            viz_sum=Sum('visualizacoes__count')
+        ).order_by('-viz_sum', '-criado_em')
+    elif tab == 'short':
+        videos_queryset = videos_queryset.order_by('-criado_em')
+    else:
+        videos_queryset = videos_queryset.order_by('-criado_em')
+
+    serializer = VideoSerializer(videos_queryset, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def video_detail(request, pk):
+    try:
+        video = Video.objects.select_related('professor').get(pk=pk, ativo=True)
+    except Video.DoesNotExist:
+        return Response({'detail': 'Vídeo não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = VideoSerializer(video, context={'request': request})
+    return Response(serializer.data)

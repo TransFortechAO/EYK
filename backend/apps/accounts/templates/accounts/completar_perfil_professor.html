@@ -447,6 +447,13 @@
           </svg>
         </button>
       </form>
+
+      <form method="post" class="mt-2">
+        {% csrf_token %}
+        <button type="submit" formaction="{% url 'accounts:saltar-perfil-professor' %}" class="eyk-btn eyk-btn-ghost">
+          Saltar por agora
+        </button>
+      </form>
     </div>
   </main>
 </div>
