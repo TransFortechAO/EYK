@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   UserPlus,
   Search,
   User,
+  Users,
   Mail,
   Lock,
   BookOpenText,
@@ -27,9 +28,10 @@ import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/components/auth-gate";
 
@@ -112,8 +114,7 @@ export default function AdminProfessoresPage() {
   // === Bloqueio para nãos-staff ===
   useEffect(() => {
     if (!user) return;
-    // @ts-expect-error — isStaff pode não estar tipado em AuthUser mas vem do me()
-    if (user && !user.isStaff) {
+    if (!user.isStaff) {
       router.replace("/");
     }
   }, [user, router]);
@@ -143,7 +144,7 @@ export default function AdminProfessoresPage() {
     setModalAberto(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setFormErrors({});
     const erros: typeof formErrors = {};
@@ -457,9 +458,8 @@ export default function AdminProfessoresPage() {
                   <Label htmlFor="rp-password" className="flex items-center gap-1.5">
                     <Lock className="h-3.5 w-3.5" /> Senha temporária
                   </Label>
-                  <Input
+                  <PasswordInput
                     id="rp-password"
-                    type="text"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="Mínimo 6 caracteres — partilha com o professor."

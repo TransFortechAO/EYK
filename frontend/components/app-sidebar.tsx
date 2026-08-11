@@ -13,9 +13,13 @@ import {
   LogOut,
   Hand,
   TrendingUp,
+  ShieldCheck,
+  GraduationCap,
+  UserCog,
 } from "lucide-react";
 import { useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
+import { useAuth } from "@/components/auth-gate";
 
 import {
   Sidebar,
@@ -46,11 +50,16 @@ const secondary = [
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
+const administracao = [
+  { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },
+  { title: "Utilizadores", url: "/configuracoes/administracao/utilizadores", icon: UserCog },
+];
 
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = !isMobile && state === "collapsed";
   const pathname = usePathname();
+  const { user } = useAuth();
   const [logoutLoading, setLogoutLoading] = useState(false);
   const isActive = (url: string) =>
     url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
@@ -133,6 +142,39 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {user?.isStaff && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled tooltip="Administração" className="opacity-60 cursor-default hover:bg-transparent">
+                      <ShieldCheck />
+                      <span>Administração</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {administracao.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        tooltip={item.title}
+                        className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
+                      >
+                        <Link href={item.url} onClick={closeOnNavigate}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-2">

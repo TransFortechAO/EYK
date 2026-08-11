@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { User, Bell, Shield, Palette, Eye, EyeOff, Save } from "lucide-react";
+import { User, Bell, Shield, Palette, Save } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -15,7 +16,6 @@ import { useAuth } from "@/components/auth-gate";
 
 export default function ConfiguracoesPage() {
   const { user } = useAuth();
-  const [show, setShow] = useState(false);
   const [tab, setTab] = useState("perfil");
   const [saved, setSaved] = useState(false);
 
@@ -115,26 +115,16 @@ export default function ConfiguracoesPage() {
           <TabsContent value="seguranca" className="space-y-5">
             <Card className="p-6 shadow-soft grid gap-5 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label>Palavra-passe atual</Label>
-                <div className="relative">
-                  <Input type={show ? "text" : "password"} defaultValue="********" />
-                  <button
-                    type="button"
-                    onClick={() => setShow(!show)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label="Mostrar palavra-passe"
-                  >
-                    {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+                <Label htmlFor="senha-atual">Palavra-passe atual</Label>
+                <PasswordInput id="senha-atual" defaultValue="********" />
               </div>
               <div className="space-y-2">
-                <Label>Nova palavra-passe</Label>
-                <Input type="password" />
+                <Label htmlFor="senha-nova">Nova palavra-passe</Label>
+                <PasswordInput id="senha-nova" />
               </div>
               <div className="space-y-2">
-                <Label>Confirmar nova</Label>
-                <Input type="password" />
+                <Label htmlFor="senha-confirmar">Confirmar nova</Label>
+                <PasswordInput id="senha-confirmar" />
               </div>
             </Card>
             <Card className="p-6 shadow-soft flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

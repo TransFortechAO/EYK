@@ -100,7 +100,6 @@ export default function AdminUtilizadoresPage() {
   const [operando, setOperando] = useState<number | null>(null);
 
   useEffect(() => {
-    // @ts-expect-error — isStaff vem do me()
     if (authUser && !authUser.isStaff) router.replace("/");
   }, [authUser, router]);
 
@@ -478,7 +477,7 @@ export default function AdminUtilizadoresPage() {
                 <AlertTriangle className="h-7 w-7" />
               </div>
               <h3 id="del-title" className="font-serif text-xl font-semibold">
-                Apagar conta de "{apagar.username}"?
+                Apagar conta de &quot;{apagar.username}&quot;?
               </h3>
               <p id="del-desc" className="text-sm text-muted-foreground mt-2 max-w-sm">
                 Esta ação é permanente. Todos os dados associados a esta conta (posts, comentários, reações, progresso, moedas) serão removidos e não podem ser recuperados.

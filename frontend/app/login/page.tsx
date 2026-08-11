@@ -16,11 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, API_BASE_URL } from "@/lib/api";
 
-export const metadata = {
-  title: "Entrar · EYK",
-  description: "Inicia sessão na plataforma EYK.",
-};
-
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
 const EYK_BG = "#0a0a0a";
@@ -169,7 +164,7 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 disabled={isPending}
-                className="h-12 rounded-2xl bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/35 focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]/40"
+                className="h-12 rounded-2xl bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/55 focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]/40"
               />
             </div>
 
@@ -196,12 +191,11 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isPending}
-                  className="h-12 rounded-2xl pr-12 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/35 focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]/40"
+                  className="h-12 rounded-2xl pr-12 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/55 focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]/40"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  tabIndex={-1}
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-white/45 hover:text-white/80 hover:bg-white/[0.04] transition"
                   aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
                 >
@@ -252,7 +246,7 @@ export default function LoginPage() {
           <p className="mt-8 text-center text-sm text-white/55">
             Ainda não tens conta?{" "}
             <Link
-              href="/register"
+              href={API_BASE_URL + "/accounts/register/"}
               className="font-semibold hover:underline"
               style={{ color: EYK_GOLD }}
             >

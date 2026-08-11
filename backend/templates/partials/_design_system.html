@@ -200,13 +200,18 @@ table.data-table td{padding:14px; border-bottom:1px solid var(--border); vertica
 table.data-table tr:hover td{background:var(--cream);}
 
 .form-field{margin-bottom:18px;}
-.form-field label{display:block; font-weight:700; font-size:.85rem; margin-bottom:6px;}
+.form-field label{display:block; font-weight:700; font-size:.85rem; margin-bottom:6px; color:var(--ink);}
 .form-field .hint{font-size:.75rem; color:var(--ink-soft); margin-top:5px;}
 .form-field input:not([type="checkbox"]):not([type="radio"]), .form-field select, .form-field textarea{
-  width:100%; border:1.5px solid var(--border); border-radius:10px; padding:11px 14px; font-family:inherit; font-size:.9rem; background:var(--paper);
+  width:100%; border:1.5px solid var(--border); border-radius:10px; padding:11px 14px; font-family:inherit; font-size:.9rem; background:var(--paper); color:var(--ink);
 }
+.form-field input::placeholder, .form-field textarea::placeholder{color:var(--ink-soft); opacity:1;}
 .form-field input:focus, .form-field select:focus, .form-field textarea:focus{outline:2px solid var(--gold); border-color:var(--gold);}
 .form-field input[type="checkbox"], .form-field input[type="radio"]{width:auto; margin-right:6px;}
+.pwd-toggle-wrap{position:relative;}
+.pwd-toggle-wrap input{padding-right:42px !important;}
+.pwd-toggle-btn{position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; padding:6px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); cursor:pointer; border-radius:8px;}
+.pwd-toggle-btn:hover{color:var(--ink); background:rgba(127,127,127,.12);}
 .upload-box{border:1.5px dashed var(--border); border-radius:14px; padding:22px; text-align:center; color:var(--ink-soft); background:var(--cream);}
 .upload-box i{color:var(--gold); font-size:1.4rem;}
 .upload-box.required{border-color:var(--teal); background:var(--teal-dim);}

@@ -367,4 +367,5 @@ def _user_payload(user: User) -> dict:
         'initials': initials or user.username[0].upper(),
         'isTeacher': user.is_teacher if hasattr(user, 'is_teacher') else False,
         'isStudent': user.is_student if hasattr(user, 'is_student') else True,
+        'isStaff': bool(user.is_staff),
     }

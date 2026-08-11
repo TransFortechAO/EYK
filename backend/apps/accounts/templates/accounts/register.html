@@ -143,7 +143,16 @@
     outline: none;
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
   }
-  .auth-field input::placeholder { color: #6c675c; }
+  .auth-field input::placeholder { color: var(--eyk-text-muted); opacity: 1; }
+  .pwd-toggle-wrap { position: relative; }
+  .pwd-toggle-wrap input { padding-right: 46px !important; }
+  .pwd-toggle-btn {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; padding: 8px; display: flex;
+    align-items: center; justify-content: center; color: var(--eyk-text-soft);
+    cursor: pointer; border-radius: 10px;
+  }
+  .pwd-toggle-btn:hover { color: var(--eyk-text); background: rgba(255,255,255,0.06); }
   .auth-field input:focus,
   .auth-field select:focus,
   .auth-field textarea:focus {
