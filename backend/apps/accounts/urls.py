@@ -12,6 +12,7 @@ app_name = 'accounts'
 
 urlpatterns = [
     path('register/', views.register_view, name='register'),
+    path('auth/register/', views.auth_register_json, name='auth_register_json'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('completar-perfil/', views.completar_perfil_aluno, name='completar-perfil-aluno'),

@@ -308,6 +308,61 @@ def auth_login_json(request):
 
 @csrf_exempt
 @require_POST
+def auth_register_json(request):
+    """Registo via JSON (para o Next.js). Cria a conta, autentica a sessão e devolve o utilizador.
+
+    Reaproveita o UserRegisterForm (mesmas regras de validação do registo HTML),
+    mapeando o único `password` recebido para password1/password2 do form —
+    a confirmação já é validada no lado do cliente antes deste pedido chegar.
+    """
+    import json
+    try:
+        body = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
+
+    username = (body.get('username') or '').strip()
+    email = (body.get('email') or '').strip()
+    password = body.get('password') or ''
+
+    if not username or not email or not password:
+        return JsonResponse(
+            {'ok': False, 'error': 'Preenche todos os campos.'}, status=400,
+        )
+
+    form = UserRegisterForm(data={
+        'username': username,
+        'email': email,
+        'password1': password,
+        'password2': password,
+    })
+
+    if not form.is_valid():
+        # Devolve a primeira mensagem de erro do form (username/email duplicados,
+        # password fraca, etc.) — mantém o mesmo texto que o registo HTML usaria.
+        primeiro_erro = next(iter(form.errors.values()))[0]
+        return JsonResponse({'ok': False, 'error': primeiro_erro}, status=400)
+
+    user = form.save()
+    user = authenticate(username=username, password=password)
+    if user is None:
+        # Não devia acontecer (acabámos de criar a conta), mas por segurança.
+        return JsonResponse(
+            {'ok': False, 'error': 'Conta criada, mas falha ao iniciar sessão. Tenta entrar manualmente.'},
+            status=500,
+        )
+
+    login(request, user)
+    registrar_atividade_diaria(user)
+
+    return JsonResponse({
+        'ok': True,
+        'user': _user_payload(user),
+    })
+
+
+@csrf_exempt
+@require_POST
 def auth_logout_json(request):
     """Logout via JSON: destrói sessão e limpa cookies."""
     logout(request)

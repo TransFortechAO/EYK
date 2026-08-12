@@ -419,6 +419,19 @@ export const api = {
     );
     return res;
   },
+  // NOTA: assume que existe (ou vai ser criado) o endpoint '/accounts/auth/register/'
+  // no backend Django, seguindo a mesma convenção de '/accounts/auth/login/'.
+  // Confirmar com o backend antes de usar em produção.
+  register: async (username: string, email: string, password: string) => {
+    const res = await fetchAPI<{ ok: boolean; user: AuthUser; error?: string }>(
+      '/accounts/auth/register/',
+      {
+        method: 'POST',
+        body: JSON.stringify({ username, email, password }),
+      },
+    );
+    return res;
+  },
   logout: async () => {
     const res = await fetchAPI<{ ok: boolean }>('/accounts/auth/logout/', {
       method: 'POST',

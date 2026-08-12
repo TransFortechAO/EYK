@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { api, API_BASE_URL } from "@/lib/api";
 
 const EYK_GOLD = "#d4a24a";
+const EYK_GOLD_LIGHT = "#e2b45c"; // variante mais clara para texto sobre fundo escuro
 const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
 const EYK_BG = "#0a0a0a";
 
@@ -43,8 +44,15 @@ export default function LoginPage() {
         }
         window.location.assign("/");
       } catch (err) {
+        // Preferimos usar um status estruturado do wrapper `api`, se existir.
+        // (ex: err.status === 401). Fica o fallback por texto como rede de segurança.
+        const status = (err as { status?: number })?.status;
         const msg = err instanceof Error ? err.message : "Erro ao iniciar sessão.";
-        if (msg.includes("401") || msg.toLowerCase().includes("credencial")) {
+        if (
+          status === 401 ||
+          msg.includes("401") ||
+          msg.toLowerCase().includes("credencial")
+        ) {
           setErrorMsg("Nome de utilizador ou palavra-passe incorretos.");
         } else {
           setErrorMsg(msg);
@@ -72,7 +80,8 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10">
-          <Link
+          {/* Link externo para o backend: <a> normal, não next/link */}
+          <a
             href={API_BASE_URL + "/"}
             className="inline-block mb-12"
             aria-label="Página inicial EYK"
@@ -84,14 +93,14 @@ export default function LoginPage() {
               EYK
             </span>
             <span className="sr-only">Ekola Ya Kelela</span>
-          </Link>
+          </a>
 
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-8 border"
             style={{
               background: "rgba(212,162,74,0.12)",
               borderColor: "rgba(212,162,74,0.28)",
-              color: "#e2b45c",
+              color: EYK_GOLD_LIGHT,
             }}
           >
             <Hand className="w-3.5 h-3.5" aria-hidden />
@@ -102,7 +111,7 @@ export default function LoginPage() {
 
           <h1 className="font-serif font-bold text-white leading-[1.1] max-w-[420px] mb-6 text-4xl lg:text-[42px]">
             Aprende em língua gestual com uma comunidade
-            <em className="not-italic" style={{ color: "#e2b45c" }}>
+            <em className="not-italic" style={{ color: EYK_GOLD_LIGHT }}>
               {" "}
               para ti.
             </em>
@@ -173,12 +182,12 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="text-white/85 text-sm">
                   Palavra-passe
                 </Label>
-                <Link
+                <a
                   href={API_BASE_URL + "/accounts/password_reset/"}
                   className="text-xs font-medium hover:underline text-white/55"
                 >
                   Esqueceste-te?
-                </Link>
+                </a>
               </div>
               <div className="relative">
                 <Input
@@ -200,9 +209,9 @@ export default function LoginPage() {
                   aria-label={showPassword ? "Ocultar palavra-passe" : "Mostrar palavra-passe"}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4.5 h-4.5" aria-hidden />
+                    <EyeOff className="w-4 h-4" aria-hidden />
                   ) : (
-                    <Eye className="w-4.5 h-4.5" aria-hidden />
+                    <Eye className="w-4 h-4" aria-hidden />
                   )}
                 </button>
               </div>
@@ -227,26 +236,28 @@ export default function LoginPage() {
               type="submit"
               disabled={isPending}
               size="lg"
-              className="w-full h-13 rounded-full text-base font-semibold shadow-[0_10px_30px_-10px_rgba(212,162,74,0.45)]"
+              className="w-full h-[52px] rounded-full text-base font-semibold shadow-[0_10px_30px_-10px_rgba(212,162,74,0.45)]"
             >
-              {isPending ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  A entrar…
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  Entrar na plataforma
-                  <LogIn className="w-4 h-4" aria-hidden />
-                </span>
-              )}
+              <span aria-live="polite">
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    A entrar…
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Entrar na plataforma
+                    <LogIn className="w-4 h-4" aria-hidden />
+                  </span>
+                )}
+              </span>
             </Button>
           </form>
 
           <p className="mt-8 text-center text-sm text-white/55">
             Ainda não tens conta?{" "}
             <Link
-              href={API_BASE_URL + "/accounts/register/"}
+              href="/register"
               className="font-semibold hover:underline"
               style={{ color: EYK_GOLD }}
             >
