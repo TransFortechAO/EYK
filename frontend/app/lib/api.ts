@@ -90,10 +90,16 @@ export type AuthUser = {
   name: string;
   username: string;
   email: string;
+  bio?: string;
   initials: string;
   isTeacher: boolean;
   isStudent: boolean;
   isStaff: boolean;
+  perfilCompleto?: boolean;
+  temaPreferido?: 'auto' | 'claro' | 'escuro';
+  notifEmailNovidades?: boolean;
+  notifEmailComunidade?: boolean;
+  notifEmailGamificacao?: boolean;
   coins?: number;
   streak?: number;
   level?: number;

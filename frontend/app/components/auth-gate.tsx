@@ -7,12 +7,14 @@ type AuthState = {
   loading: boolean;
   authenticated: boolean;
   user: AuthUser | null;
+  refresh: () => Promise<void>;
 };
 
 const initialState: AuthState = {
   loading: true,
   authenticated: false,
   user: null,
+  refresh: async () => {},
 };
 
 const AuthContext = createContext<AuthState>(initialState);
@@ -24,32 +26,37 @@ export function useAuth() {
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>(initialState);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const res = await api.me();
-        if (cancelled) return;
-        const authenticated = Boolean(res?.ok && res?.authenticated && res?.user);
-        setState({
-          loading: false,
-          authenticated,
-          user: authenticated ? (res.user as AuthUser) : null,
-        });
-        if (!authenticated) {
-          window.location.assign("/login");
-        }
-      } catch {
-        if (cancelled) return;
-        setState({ loading: false, authenticated: false, user: null });
+  const load = async () => {
+    try {
+      const res = await api.me();
+      const authenticated = Boolean(res?.ok && res?.authenticated && res?.user);
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        authenticated,
+        user: authenticated ? (res.user as AuthUser) : null,
+      }));
+      if (!authenticated) {
         window.location.assign("/login");
       }
-    })();
+    } catch {
+      setState((prev) => ({ ...prev, loading: false, authenticated: false, user: null }));
+      window.location.assign("/login");
+    }
+  };
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!cancelled) await load();
+    })();
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    setState((prev) => ({ ...prev, refresh: load }));
   }, []);
 
   if (state.loading) {

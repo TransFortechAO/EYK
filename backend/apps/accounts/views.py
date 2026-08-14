@@ -412,13 +412,32 @@ def _user_payload(user: User) -> dict:
         ((user.first_name or user.username or '?')[0])
         + ((user.last_name or '')[0:1] or '')
     ).upper()
+
+    bio = ''
+    if user.is_teacher:
+        from apps.professores.models import Professor
+        professor = Professor.objects.filter(user=user).first()
+        if professor:
+            bio = professor.bio or ''
+    else:
+        from apps.alunos.models import Aluno
+        aluno = Aluno.objects.filter(profile=user).first()
+        if aluno:
+            bio = aluno.bio or ''
+
     return {
         'id': user.id,
         'name': name,
         'username': user.username,
         'email': user.email,
+        'bio': bio,
         'initials': initials or user.username[0].upper(),
         'isTeacher': user.is_teacher if hasattr(user, 'is_teacher') else False,
         'isStudent': user.is_student if hasattr(user, 'is_student') else True,
         'isStaff': bool(user.is_staff),
+        'perfilCompleto': bool(user.perfil_completo),
+        'temaPreferido': user.tema_preferido,
+        'notifEmailNovidades': bool(user.notif_email_novidades),
+        'notifEmailComunidade': bool(user.notif_email_comunidade),
+        'notifEmailGamificacao': bool(user.notif_email_gamificacao),
     }

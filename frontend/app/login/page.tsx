@@ -27,6 +27,8 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [precisa2FA, setPrecisa2FA] = useState(false);
+  const [codigo2FA, setCodigo2FA] = useState("");
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,6 +41,10 @@ export default function LoginPage() {
       try {
         const res = await api.login(username.trim(), password);
         if (!res?.ok) {
+          if (res?.requires2fa) {
+            setPrecisa2FA(true);
+            return;
+          }
           setErrorMsg(res?.error || "Credenciais inválidas. Tenta novamente.");
           return;
         }
@@ -57,6 +63,27 @@ export default function LoginPage() {
         } else {
           setErrorMsg(msg);
         }
+      }
+    });
+  };
+
+  const handleSubmit2FA = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    if (codigo2FA.trim().length < 6) {
+      setErrorMsg("Introduz o código de 6 dígitos.");
+      return;
+    }
+    startTransition(async () => {
+      try {
+        const res = await api.verificar2FA(codigo2FA.trim());
+        if (!res?.ok) {
+          setErrorMsg(res?.error || "Código inválido. Tenta novamente.");
+          return;
+        }
+        window.location.assign("/");
+      } catch (err) {
+        setErrorMsg(err instanceof Error ? err.message : "Erro ao verificar o código.");
       }
     });
   };
@@ -152,12 +179,74 @@ export default function LoginPage() {
       <main className="flex items-center justify-center px-8 py-12 lg:px-16 lg:py-20">
         <div className="w-full max-w-[460px]">
           <h2 className="font-serif font-bold text-white text-3xl mb-3">
-            Bem-vindo de volta.
+            {precisa2FA ? "Verificação em duas etapas." : "Bem-vindo de volta."}
           </h2>
           <p className="text-sm text-white/60 mb-10 leading-relaxed">
-            Introduz as tuas credenciais para entrares na tua área pessoal.
+            {precisa2FA
+              ? "Introduz o código de 6 dígitos gerado pela tua app de autenticação."
+              : "Introduz as tuas credenciais para entrares na tua área pessoal."}
           </p>
 
+          {precisa2FA ? (
+            <form onSubmit={handleSubmit2FA} className="space-y-6" noValidate>
+              <div className="space-y-2.5">
+                <Label htmlFor="codigo2fa" className="text-white/85 text-sm">
+                  Código de verificação
+                </Label>
+                <Input
+                  id="codigo2fa"
+                  name="codigo2fa"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="000000"
+                  maxLength={6}
+                  value={codigo2FA}
+                  onChange={(e) => setCodigo2FA(e.target.value)}
+                  required
+                  disabled={isPending}
+                  autoFocus
+                  className="h-12 rounded-2xl bg-white/[0.04] border-white/[0.08] text-white text-center tracking-[0.4em] text-lg placeholder:text-white/55 focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]/40"
+                />
+              </div>
+
+              {errorMsg && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 px-4 py-3 rounded-xl border text-sm"
+                  style={{
+                    background: "rgba(239,68,68,0.08)",
+                    borderColor: "rgba(239,68,68,0.25)",
+                    color: "#fca5a5",
+                  }}
+                >
+                  <span className="font-semibold">!</span>
+                  <span className="leading-snug">{errorMsg}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isPending}
+                size="lg"
+                className="w-full h-[52px] rounded-full text-base font-semibold shadow-[0_10px_30px_-10px_rgba(212,162,74,0.45)]"
+              >
+                {isPending ? "A verificar…" : "Confirmar código"}
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPrecisa2FA(false);
+                  setCodigo2FA("");
+                  setErrorMsg(null);
+                }}
+                className="w-full text-center text-sm text-white/55 hover:underline"
+              >
+                Voltar ao login
+              </button>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="space-y-2.5">
               <Label htmlFor="username" className="text-white/85 text-sm">
@@ -253,17 +342,20 @@ export default function LoginPage() {
               </span>
             </Button>
           </form>
+          )}
 
-          <p className="mt-8 text-center text-sm text-white/55">
-            Ainda não tens conta?{" "}
-            <Link
-              href="/register"
-              className="font-semibold hover:underline"
-              style={{ color: EYK_GOLD }}
-            >
-              Criar conta agora
-            </Link>
-          </p>
+          {!precisa2FA && (
+            <p className="mt-8 text-center text-sm text-white/55">
+              Ainda não tens conta?{" "}
+              <Link
+                href="/register"
+                className="font-semibold hover:underline"
+                style={{ color: EYK_GOLD }}
+              >
+                Criar conta agora
+              </Link>
+            </p>
+          )}
         </div>
       </main>
     </div>
