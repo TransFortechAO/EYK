@@ -39,7 +39,7 @@ class TestLoginView:
         response = client.get(reverse("accounts:login"))
         assert response.status_code == 200
 
-    def test_login_valido_redireciona_para_feed(self, client):
+    def test_login_valido_redireciona_para_o_frontend(self, client, settings):
         User.objects.create_user(
             username="joana", password="SenhaForte123!", perfil_completo=True,
         )
@@ -48,7 +48,7 @@ class TestLoginView:
             "password": "SenhaForte123!",
         })
         assert response.status_code == 302
-        assert response.url == reverse("feed:home")
+        assert response.url == settings.NEXT_PUBLIC_URL.rstrip("/") + "/"
 
     def test_login_invalido_nao_autentica(self, client):
         User.objects.create_user(username="joana", password="SenhaForte123!")

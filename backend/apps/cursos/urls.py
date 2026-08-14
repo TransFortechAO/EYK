@@ -11,9 +11,7 @@ from .views import (
     curso_inscrever,
 )
 from apps.feed.api_views import (
-    comentario_create,
     comentario_list,
-    post_create,
     post_list,
     post_react,
 )
@@ -44,10 +42,8 @@ urlpatterns = [
     path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),
-    path('comunidade/posts/', post_create, name='api-post-create'),
     path('comunidade/posts/<int:post_id>/reagir/', post_react, name='api-post-react'),
     path('comunidade/posts/<int:post_id>/comentarios/', comentario_list, name='api-comentario-list'),
-    path('comunidade/posts/<int:post_id>/comentarios/', comentario_create, name='api-comentario-create'),
 
     path('notificacoes/', notificacao_list, name='notificacao-list'),
     path('notificacoes/<int:pk>/marcar-lida/', notificacao_marcar_lida, name='notificacao-marcar-lida'),

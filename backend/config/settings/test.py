@@ -28,16 +28,6 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
 
-# Disable debug toolbar in tests
-INSTALLED_APPS = [
-    app for app in INSTALLED_APPS if app != 'debug_toolbar'
-]
-
-MIDDLEWARE = [
-    middleware for middleware in MIDDLEWARE 
-    if middleware != 'debug_toolbar.middleware.DebugToolbarMiddleware'
-]
-
 # Email backend for tests
 EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 

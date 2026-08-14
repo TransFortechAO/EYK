@@ -28,19 +28,6 @@ CSRF_TRUSTED_ORIGINS = [
 # Email settings for development (console backend)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Django Debug Toolbar (if installed)
-INSTALLED_APPS += [
-    'debug_toolbar',
-]
-
-MIDDLEWARE += [
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-]
-
-INTERNAL_IPS = [
-    '127.0.0.1',
-]
-
 # Static files in development
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'

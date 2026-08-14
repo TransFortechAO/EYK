@@ -62,6 +62,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.gamificacao.context_processors.gamificacao_context',
+                'config.context_processors.next_url',
             ],
         },
     },

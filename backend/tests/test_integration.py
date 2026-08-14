@@ -28,9 +28,13 @@ class TestJornadaDoAluno:
     def test_publicar_no_feed_credita_moedas_na_carteira(self, client, aluno_user):
         client.force_login(aluno_user)
 
-        response = client.post(reverse("feed:criar-post"), {"conteudo": "O meu primeiro post!"})
+        response = client.post(
+            "/api/comunidade/posts/",
+            data={"conteudo": "O meu primeiro post!"},
+            content_type="application/json",
+        )
 
-        assert response.status_code == 302
+        assert response.status_code == 201
         assert Post.objects.filter(autor=aluno_user, conteudo="O meu primeiro post!").exists()
         carteira = Carteira.objects.get(utilizador=aluno_user)
         assert carteira.saldo == 2

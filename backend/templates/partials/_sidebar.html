@@ -3,7 +3,7 @@
     <div class="d-flex d-lg-none justify-content-end">
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#appSidebar" aria-label="Fechar"></button>
     </div>
-    <a href="{% url 'feed:home' %}" class="app-brand text-decoration-none">
+    <a href="{{ NEXT_URL }}/" class="app-brand text-decoration-none">
         <svg class="hand-mark" width="26" height="26"><use href="#hand-glyph"/></svg> EYK
     </a>
     <nav class="app-nav">
@@ -15,28 +15,22 @@
             {% url 'professores:criar-curso' as url_criar_curso %}
             <a href="{{ url_criar_curso }}" class="{% if request.path == url_criar_curso %}active{% endif %}"><i class="fas fa-plus-circle"></i> Criar Conteúdo</a>
         {% else %}
-            {% url 'feed:home' as url_home %}
-            <a href="{{ url_home }}" class="{% if request.path == url_home %}active{% endif %}"><i class="fas fa-home"></i> Início</a>
-            {% url 'feed:cursos' as url_cursos %}
-            <a href="{{ url_cursos }}" class="{% if request.path == url_cursos %}active{% endif %}"><i class="fas fa-graduation-cap"></i> Cursos</a>
-            {% url 'feed:videos' as url_videos %}
-            <a href="{{ url_videos }}" class="{% if request.path == url_videos %}active{% endif %}"><i class="fas fa-play-circle"></i> Vídeos</a>
+            <a href="{{ NEXT_URL }}/"><i class="fas fa-home"></i> Início</a>
+            <a href="{{ NEXT_URL }}/cursos"><i class="fas fa-graduation-cap"></i> Cursos</a>
+            <a href="{{ NEXT_URL }}/videos"><i class="fas fa-play-circle"></i> Vídeos</a>
         {% endif %}
 
-        {% url 'feed:comunidade' as url_comunidade %}
-        <a href="{{ url_comunidade }}" class="{% if request.path == url_comunidade %}active{% endif %}"><i class="fas fa-users"></i> Comunidade</a>
+        <a href="{{ NEXT_URL }}/comunidade"><i class="fas fa-users"></i> Comunidade</a>
 
         <div class="divider"></div>
 
-        {% url 'feed:notificacoes' as url_notificacoes %}
-        <a href="{{ url_notificacoes }}" class="{% if request.path == url_notificacoes %}active{% endif %}">
+        <a href="{{ NEXT_URL }}/notificacoes">
             <i class="fas fa-bell"></i> Novidades
             {% with total_nao_lidas=request.user.notificacoes.filter.count %}
                 {% if total_nao_lidas > 0 %}<span class="nav-notif-badge">{{ total_nao_lidas }}</span>{% endif %}
             {% endwith %}
         </a>
-        {% url 'gamificacao:leaderboard' as url_leaderboard %}
-        <a href="{{ url_leaderboard }}" class="{% if request.path == url_leaderboard %}active{% endif %}"><i class="fas fa-trophy"></i> Leaderboard</a>
+        <a href="{{ NEXT_URL }}/leaderboard"><i class="fas fa-trophy"></i> Leaderboard</a>
 
         {% if user.is_teacher %}
             {% url 'professores:configuracoes' as url_config %}
