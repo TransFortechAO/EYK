@@ -19,13 +19,11 @@ def redirect_to_next(request, path=''):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('apps.accounts.urls', namespace='accounts')),
-    path('professor/', include('apps.professores.urls', namespace='professores')),
     path('api/', include('apps.cursos.urls')),
     path('aluno/', include('apps.alunos.urls', namespace='aluno')),
     path('health/', views.health_check, name='health_check'),
     path('', views.index, name='index'),
-    re_path(r'^(?P<path>comunidade|cursos|videos|notificacoes|leaderboard|gamificacao|biblioteca|configuracoes)(?P<rest>.*)$', lambda r, path, rest: redirect_to_next(r, path + rest)),
-    re_path(r'^(?!admin|accounts|professor|api|aluno|media|static|health).*$', lambda r: redirect_to_next(r, r.path.lstrip('/'))),
+    re_path(r'^(?!admin|accounts|api|aluno|media|static|health).*$', lambda r: redirect_to_next(r, r.path.lstrip('/'))),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
