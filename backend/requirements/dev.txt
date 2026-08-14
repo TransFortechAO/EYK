@@ -4,7 +4,6 @@
 # Ferramentas de desenvolvimento
 pytest==7.4.4
 pytest-django==4.5.2
-django-debug-toolbar==4.4.6
 factory-boy==3.3.0
 ruff==0.5.5
 ipython==8.26.0
