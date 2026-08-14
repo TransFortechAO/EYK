@@ -242,6 +242,91 @@ export type CriarProfessorPayload = {
   area: string;
 };
 
+// =================== Tipos: perfil, segurança, professor =====================
+
+export type PerfilAluno = {
+  ok: boolean;
+  bio: string;
+  foto: string | null;
+  tem2fa: boolean;
+};
+
+export type ProfessorPerfil = {
+  id: number;
+  nome_publico: string;
+  bio: string;
+  area: string;
+  foto: string | null;
+  ativo: boolean;
+  criado_em: string;
+  username: string;
+  email: string;
+  tem_2fa: boolean;
+  seguidores: number;
+};
+
+export type ProfessorCurso = {
+  id: number;
+  titulo: string;
+  descricao: string;
+  categoria: string | null;
+  preco: string | null;
+  duracao: string | null;
+  thumbnail: string | null;
+  ativo: boolean;
+  publicado_em: string | null;
+  criado_em: string;
+  total_inscritos: number;
+  total_visualizacoes: number;
+};
+
+export type ProfessorCursoPayload = {
+  titulo: string;
+  descricao: string;
+  categoria_nome?: string;
+  preco?: number | string | null;
+  duracao?: string;
+  ativo?: boolean;
+};
+
+export type ProfessorVideo = {
+  id: number;
+  titulo: string;
+  descricao: string;
+  arquivo: string | null;
+  url_externa: string;
+  thumbnail: string | null;
+  criado_em: string;
+  ativo: boolean;
+  ordem: number;
+  total_likes: number;
+  total_visualizacoes: number;
+};
+
+export type ProfessorVideoPayload = {
+  titulo: string;
+  descricao?: string;
+  url_externa?: string;
+  ativo?: boolean;
+};
+
+export type CursoEngajamento = {
+  curso: ProfessorCurso;
+  totalInscritos: number;
+  totalVisualizacoes: number;
+  totalConcluidos: number;
+  taxaConclusao: number;
+  inscricoes: { id: number; aluno: string; inscritoEm: string; concluido: boolean }[];
+};
+
+export type VideoEngajamento = {
+  video: ProfessorVideo;
+  totalLikes: number;
+  totalDislikes: number;
+  totalVisualizacoes: number;
+  reacoes: { id: number; utilizador_nome: string; tipo: string }[];
+};
+
 // --- Tipos Raw (respostas JSON do Django, antes da normalização) ----------------------
 
 type RawProfessor = { nome_publico?: string };
@@ -410,12 +495,19 @@ export const api = {
   //  AUTENTICAÇÃO
   // =========================================================================
   login: async (username: string, password: string) => {
-    const res = await fetchAPI<{ ok: boolean; user: AuthUser; error?: string }>(
+    const res = await fetchAPI<{ ok: boolean; user?: AuthUser; error?: string; requires2fa?: boolean }>(
       '/accounts/auth/login/',
       {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       },
+    );
+    return res;
+  },
+  verificar2FA: async (codigo: string) => {
+    const res = await fetchAPI<{ ok: boolean; user: AuthUser; error?: string }>(
+      '/accounts/auth/verificar-2fa/',
+      { method: 'POST', body: JSON.stringify({ codigo }) },
     );
     return res;
   },
@@ -694,6 +786,157 @@ export const api = {
         { method: 'POST' },
       );
       return { message: res.message };
+    },
+  },
+
+  // =========================================================================
+  //  PERFIL (aluno) + ONBOARDING
+  // =========================================================================
+  perfil: {
+    getAluno: async (): Promise<PerfilAluno> => {
+      return await fetchAPI<PerfilAluno>('/aluno/api/perfil/');
+    },
+    atualizarAluno: async (bio: string): Promise<PerfilAluno> => {
+      return await fetchAPI<PerfilAluno>('/aluno/api/perfil/atualizar/', {
+        method: 'POST',
+        body: JSON.stringify({ bio }),
+      });
+    },
+    completar: async (): Promise<{ ok: boolean; user: AuthUser }> => {
+      return await fetchAPI('/accounts/api/perfil/completar/', { method: 'POST' });
+    },
+    apagarContaAluno: async (): Promise<{ ok: boolean }> => {
+      return await fetchAPI('/aluno/api/apagar-conta/', { method: 'POST' });
+    },
+  },
+
+  // =========================================================================
+  //  PREFERÊNCIAS + SEGURANÇA
+  // =========================================================================
+  preferencias: {
+    atualizar: async (dados: {
+      tema_preferido?: 'auto' | 'claro' | 'escuro';
+      notif_email_novidades?: boolean;
+      notif_email_comunidade?: boolean;
+      notif_email_gamificacao?: boolean;
+    }): Promise<{ ok: boolean; user: AuthUser }> => {
+      return await fetchAPI('/accounts/api/preferencias/', {
+        method: 'POST',
+        body: JSON.stringify(dados),
+      });
+    },
+  },
+
+  seguranca: {
+    alterarSenha: async (senhaAtual: string, novaSenha: string): Promise<{ ok: boolean; error?: string }> => {
+      return await fetchAPI('/accounts/api/seguranca/alterar-senha/', {
+        method: 'POST',
+        body: JSON.stringify({ senha_atual: senhaAtual, nova_senha: novaSenha }),
+      });
+    },
+    status2FA: async (): Promise<{ ok: boolean; ativo: boolean }> => {
+      return await fetchAPI('/accounts/api/seguranca/2fa/status/');
+    },
+    iniciar2FA: async (): Promise<{ ok: boolean; qrBase64: string; secret: string; error?: string }> => {
+      return await fetchAPI('/accounts/api/seguranca/2fa/iniciar/', { method: 'POST' });
+    },
+    confirmar2FA: async (codigo: string): Promise<{ ok: boolean; codigosBackup?: string[]; error?: string }> => {
+      return await fetchAPI('/accounts/api/seguranca/2fa/confirmar/', {
+        method: 'POST',
+        body: JSON.stringify({ codigo }),
+      });
+    },
+    desativar2FA: async (): Promise<{ ok: boolean }> => {
+      return await fetchAPI('/accounts/api/seguranca/2fa/desativar/', { method: 'POST' });
+    },
+  },
+
+  // =========================================================================
+  //  VÍDEOS / CURSOS: interações do aluno
+  // =========================================================================
+  reagirVideo: async (videoId: string | number, tipo: 'like' | 'dislike' = 'like') => {
+    return await fetchAPI<{ likes: number; dislikes: number }>(`/api/videos/${videoId}/reagir/`, {
+      method: 'POST',
+      body: JSON.stringify({ tipo }),
+    });
+  },
+  inscreverCurso: async (cursoId: string | number) => {
+    return await fetchAPI<{ ok: boolean; concluido: boolean }>(`/api/cursos/${cursoId}/inscrever/`, {
+      method: 'POST',
+    });
+  },
+  seguirProfessor: async (professorId: string | number) => {
+    return await fetchAPI<{ seguindo: boolean; seguidores: number }>(
+      `/api/professores/${professorId}/seguir/`,
+      { method: 'POST' },
+    );
+  },
+
+  // =========================================================================
+  //  DASHBOARD DO PROFESSOR
+  // =========================================================================
+  professor: {
+    getPerfil: async (): Promise<ProfessorPerfil> => {
+      return await fetchAPI('/api/professor/perfil/');
+    },
+    atualizarPerfil: async (dados: Partial<Pick<ProfessorPerfil, 'nome_publico' | 'bio' | 'area'>>): Promise<ProfessorPerfil> => {
+      return await fetchAPI('/api/professor/perfil/', {
+        method: 'PATCH',
+        body: JSON.stringify(dados),
+      });
+    },
+    apagarConta: async (): Promise<{ ok: boolean }> => {
+      return await fetchAPI('/api/professor/apagar-conta/', { method: 'POST' });
+    },
+
+    getCursos: async (): Promise<ProfessorCurso[]> => {
+      return await fetchAPI('/api/professor/cursos/');
+    },
+    criarCurso: async (payload: ProfessorCursoPayload): Promise<ProfessorCurso> => {
+      return await fetchAPI('/api/professor/cursos/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    atualizarCurso: async (id: number, payload: Partial<ProfessorCursoPayload>): Promise<ProfessorCurso> => {
+      return await fetchAPI(`/api/professor/cursos/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+    apagarCurso: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/professor/cursos/${id}/`, { method: 'DELETE' });
+    },
+    getCursoEngajamento: async (id: number): Promise<CursoEngajamento> => {
+      return await fetchAPI(`/api/professor/cursos/${id}/engajamento/`);
+    },
+
+    getVideos: async (): Promise<ProfessorVideo[]> => {
+      return await fetchAPI('/api/professor/videos/');
+    },
+    criarVideo: async (payload: ProfessorVideoPayload): Promise<ProfessorVideo> => {
+      return await fetchAPI('/api/professor/videos/', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    atualizarVideo: async (id: number, payload: Partial<ProfessorVideoPayload>): Promise<ProfessorVideo> => {
+      return await fetchAPI(`/api/professor/videos/${id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+    },
+    apagarVideo: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/professor/videos/${id}/`, { method: 'DELETE' });
+    },
+    getVideoEngajamento: async (id: number): Promise<VideoEngajamento> => {
+      return await fetchAPI(`/api/professor/videos/${id}/engajamento/`);
+    },
+    reordenarVideos: async (ordem: number[]): Promise<{ ok: boolean }> => {
+      return await fetchAPI('/api/professor/videos/reordenar/', {
+        method: 'POST',
+        body: JSON.stringify({ ordem }),
+      });
     },
   },
 };

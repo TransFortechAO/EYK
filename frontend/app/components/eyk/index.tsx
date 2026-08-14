@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowRight, Star, Clock, PlayCircle, Hand, MessageCircle, Share2 } from "lucide-react";
@@ -241,11 +241,20 @@ export function VideoCard({ video }: { video: Video }) {
 }
 
 /* ---------- Post card ---------- */
-export function PostCard({ post }: { post: Post }) {
+export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: () => void }) {
   const [liked, setLiked] = useState(post.liked || false);
   const [likes, setLikes] = useState(post.likes);
 
+  useEffect(() => {
+    setLiked(post.liked || false);
+    setLikes(post.likes);
+  }, [post.liked, post.likes]);
+
   const toggleLike = () => {
+    if (onToggleLike) {
+      onToggleLike();
+      return;
+    }
     if (liked) {
       setLikes(likes - 1);
     } else {
