@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { api } from '@/lib/api';
 
 type UseApiState<T> = {
   data: T | null;

@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   GraduationCap,
   UserCog,
+  LayoutDashboard,
+  Video,
 } from "lucide-react";
 import { useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
@@ -53,6 +55,12 @@ const secondary = [
 const administracao = [
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },
   { title: "Utilizadores", url: "/configuracoes/administracao/utilizadores", icon: UserCog },
+];
+
+const professorNav = [
+  { title: "Painel", url: "/professor", icon: LayoutDashboard },
+  { title: "Meus Cursos", url: "/professor/cursos", icon: BookOpen },
+  { title: "Meus Vídeos", url: "/professor/videos", icon: Video },
 ];
 
 export function AppSidebar() {
@@ -142,6 +150,39 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {user?.isTeacher && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled tooltip="Professor" className="opacity-60 cursor-default hover:bg-transparent">
+                      <LayoutDashboard />
+                      <span>Professor</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {professorNav.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        tooltip={item.title}
+                        className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
+                      >
+                        <Link href={item.url} onClick={closeOnNavigate}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
 
         {user?.isStaff && (
           <>
