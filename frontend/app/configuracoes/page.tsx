@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { User, Bell, Shield, Palette, Save, ShieldCheck, ShieldOff, Trash2, Copy, Check } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -367,10 +368,12 @@ export default function ConfiguracoesPage() {
                     Digitaliza o código QR com a tua app de autenticação (Google Authenticator, Authy, …) e introduz o código gerado.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 items-start">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={`data:image/png;base64,${setup2FA.qrBase64}`}
                       alt="Código QR para configurar 2FA"
+                      width={160}
+                      height={160}
+                      unoptimized
                       className="h-40 w-40 rounded-lg border border-border/70 bg-white p-2"
                     />
                     <div className="flex-1 space-y-3 min-w-0">

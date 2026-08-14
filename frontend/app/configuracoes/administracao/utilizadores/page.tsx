@@ -100,7 +100,7 @@ export default function AdminUtilizadoresPage() {
   const [operando, setOperando] = useState<number | null>(null);
 
   useEffect(() => {
-    if (authUser && !authUser.isStaff) router.replace("/");
+    if (authUser && !authUser.isStaff) router.replace("/inicio");
   }, [authUser, router]);
 
   const carregar = async () => {

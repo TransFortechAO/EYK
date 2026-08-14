@@ -115,7 +115,7 @@ export default function AdminProfessoresPage() {
   useEffect(() => {
     if (!user) return;
     if (!user.isStaff) {
-      router.replace("/");
+      router.replace("/inicio");
     }
   }, [user, router]);
 

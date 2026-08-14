@@ -48,7 +48,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Credenciais inválidas. Tenta novamente.");
           return;
         }
-        window.location.assign("/");
+        window.location.assign("/inicio");
       } catch (err) {
         // Preferimos usar um status estruturado do wrapper `api`, se existir.
         // (ex: err.status === 401). Fica o fallback por texto como rede de segurança.
@@ -81,7 +81,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Código inválido. Tenta novamente.");
           return;
         }
-        window.location.assign("/");
+        window.location.assign("/inicio");
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Erro ao verificar o código.");
       }
@@ -107,12 +107,7 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10">
-          {/* Link externo para o backend: <a> normal, não next/link */}
-          <a
-            href={API_BASE_URL + "/"}
-            className="inline-block mb-12"
-            aria-label="Página inicial EYK"
-          >
+          <Link href="/" className="inline-block mb-12" aria-label="Página inicial EYK">
             <span
               className="font-serif text-4xl font-bold tracking-tight"
               style={{ color: EYK_GOLD }}
@@ -120,7 +115,7 @@ export default function LoginPage() {
               EYK
             </span>
             <span className="sr-only">Ekola Ya Kelela</span>
-          </a>
+          </Link>
 
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-8 border"
@@ -271,12 +266,12 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="text-white/85 text-sm">
                   Palavra-passe
                 </Label>
-                <a
+                <Link
                   href={API_BASE_URL + "/accounts/password_reset/"}
                   className="text-xs font-medium hover:underline text-white/55"
                 >
                   Esqueceste-te?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <Input

@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const primary = [
-  { title: "Início", url: "/", icon: Home },
+  { title: "Início", url: "/inicio", icon: Home },
   { title: "Cursos", url: "/cursos", icon: BookOpen },
   { title: "Vídeos", url: "/videos", icon: PlayCircle },
   { title: "Comunidade", url: "/comunidade", icon: Users },
@@ -70,7 +70,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const [logoutLoading, setLogoutLoading] = useState(false);
   const isActive = (url: string) =>
-    url === "/" ? pathname === "/" : pathname === url || pathname.startsWith(url + "/");
+    url === "/inicio" ? pathname === "/inicio" : pathname === url || pathname.startsWith(url + "/");
   const closeOnNavigate = () => {
     if (isMobile) setOpenMobile(false);
   };
@@ -92,7 +92,7 @@ export function AppSidebar() {
   return (
     <Sidebar variant="floating" collapsible="icon">
       <SidebarHeader className="px-4 py-5">
-        <Link href="/" className="flex items-center gap-2" onClick={closeOnNavigate}>
+        <Link href="/inicio" className="flex items-center gap-2" onClick={closeOnNavigate}>
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-gold text-sidebar-primary-foreground font-serif text-lg font-bold shadow-gold">
             E
           </div>

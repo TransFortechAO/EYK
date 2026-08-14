@@ -12,6 +12,7 @@ const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
 const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
 const EYK_BG = "#0a0a0a";
+const PROFESSOR_FORM_URL = "https://forms.gle/qfs6zo8QLHfRsnKX9";
 
 export default function RegisterPage() {
   const [isPending, startTransition] = useTransition();
@@ -167,7 +168,6 @@ export default function RegisterPage() {
                 name="username"
                 type="text"
                 autoComplete="username"
-                placeholder="ex: maria_silva"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -185,7 +185,6 @@ export default function RegisterPage() {
                 name="email"
                 type="email"
                 autoComplete="email"
-                placeholder="ex: maria@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -204,7 +203,6 @@ export default function RegisterPage() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -236,7 +234,6 @@ export default function RegisterPage() {
                   name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   autoComplete="new-password"
-                  placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -307,6 +304,17 @@ export default function RegisterPage() {
               Iniciar sessão
             </Link>
           </p>
+
+          <div className="mt-6 border-t border-white/[0.08] pt-6 text-center">
+            <Link
+              href={PROFESSOR_FORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-white/55 hover:text-white/80 hover:underline"
+            >
+              Quer ser professor no EYK?
+            </Link>
+          </div>
         </div>
       </main>
     </div>

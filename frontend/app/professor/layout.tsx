@@ -11,7 +11,7 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!user) return;
     if (!user.isTeacher) {
-      router.replace("/");
+      router.replace("/inicio");
     }
   }, [user, router]);
 
