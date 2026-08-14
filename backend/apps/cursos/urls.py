@@ -7,6 +7,8 @@ from .views import (
     categoria_list,
     video_list,
     video_detail,
+    video_react,
+    curso_inscrever,
 )
 from apps.feed.api_views import (
     comentario_create,
@@ -25,6 +27,7 @@ from apps.gamificacao.api_views import (
     badges_list,
     carteira_historico,
 )
+from apps.professores.api_views import professor_toggle_seguir
 
 router = DefaultRouter()
 router.register(r'cursos', CursoViewSet, basename='cursos')
@@ -34,6 +37,11 @@ urlpatterns = [
     path('categorias/', categoria_list, name='categoria-list'),
     path('videos/', video_list, name='video-list'),
     path('videos/<int:pk>/', video_detail, name='video-detail'),
+    path('videos/<int:pk>/reagir/', video_react, name='video-react'),
+    path('cursos/<int:pk>/inscrever/', curso_inscrever, name='curso-inscrever'),
+
+    path('professor/', include('apps.professores.urls_api')),
+    path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),
     path('comunidade/posts/', post_create, name='api-post-create'),
