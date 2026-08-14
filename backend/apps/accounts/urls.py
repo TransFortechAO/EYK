@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_api, views
+from . import admin_api, api_perfil, views
 from .admin_dashboard import (
     apagar_usuario,
     gerenciar_usuarios,
@@ -32,6 +32,16 @@ urlpatterns = [
     path('auth/login/', views.auth_login_json, name='auth-login-json'),
     path('auth/logout/', views.auth_logout_json, name='auth-logout-json'),
     path('auth/me/', views.auth_me, name='auth-me'),
+    path('auth/verificar-2fa/', api_perfil.auth_verificar_2fa_json, name='auth-verificar-2fa-json'),
+
+    # ══════════════ JSON: onboarding, preferências, segurança (usado pelo Next.js) ═════
+    path('api/perfil/completar/', api_perfil.perfil_completar, name='api-perfil-completar'),
+    path('api/preferencias/', api_perfil.preferencias_atualizar, name='api-preferencias-atualizar'),
+    path('api/seguranca/alterar-senha/', api_perfil.alterar_senha, name='api-alterar-senha'),
+    path('api/seguranca/2fa/status/', api_perfil.api_2fa_status, name='api-2fa-status'),
+    path('api/seguranca/2fa/iniciar/', api_perfil.api_2fa_iniciar, name='api-2fa-iniciar'),
+    path('api/seguranca/2fa/confirmar/', api_perfil.api_2fa_confirmar, name='api-2fa-confirmar'),
+    path('api/seguranca/2fa/desativar/', api_perfil.api_2fa_desativar, name='api-2fa-desativar-json'),
 
     # ══════════════ JSON Admin API (usado pelo frontend Next.js) ══════════════
     path('api/admin/professores/', admin_api.api_listar_professores, name='api-admin-listar-professores'),

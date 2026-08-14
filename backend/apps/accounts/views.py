@@ -291,10 +291,8 @@ def auth_login_json(request):
         )
 
     if TOTPDevice.objects.filter(user=user, confirmed=True).exists():
-        return JsonResponse(
-            {'ok': False, 'error': '2FA ativo — ainda não suportado neste endpoint.', 'requires2fa': True},
-            status=401,
-        )
+        request.session[PRE_2FA_SESSION_KEY] = user.id
+        return JsonResponse({'ok': False, 'requires2fa': True})
 
     login(request, user)
     if registrar_atividade_diaria(user):
