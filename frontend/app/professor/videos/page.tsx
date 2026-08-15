@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -14,6 +14,8 @@ import {
   Eye,
   ArrowUp,
   ArrowDown,
+  Upload,
+  Film,
 } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -23,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { api, type ProfessorVideo, type ProfessorVideoPayload } from "@/lib/api";
 
 const EMPTY_FORM: ProfessorVideoPayload = {
@@ -38,9 +41,11 @@ export default function ProfessorVideosPage() {
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<ProfessorVideo | null>(null);
   const [form, setForm] = useState<ProfessorVideoPayload>(EMPTY_FORM);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [submetendo, setSubmetendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [reordenando, setReordenando] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const carregar = async () => {
     setLoading(true);
@@ -58,6 +63,7 @@ export default function ProfessorVideosPage() {
   const abrirCriar = () => {
     setEditando(null);
     setForm(EMPTY_FORM);
+    setVideoFile(null);
     setErro(null);
     setModalAberto(true);
   };
@@ -70,8 +76,17 @@ export default function ProfessorVideosPage() {
       url_externa: video.url_externa,
       ativo: video.ativo,
     });
+    setVideoFile(null);
     setErro(null);
     setModalAberto(true);
+  };
+
+  const escolherVideo = () => videoInputRef.current?.click();
+
+  const onVideoSelecionado = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const ficheiro = e.target.files?.[0] || null;
+    if (ficheiro) setVideoFile(ficheiro);
+    e.target.value = "";
   };
 
   const submeter = async (e: FormEvent) => {
@@ -80,17 +95,19 @@ export default function ProfessorVideosPage() {
       setErro("O título é obrigatório.");
       return;
     }
-    if (!form.url_externa?.trim()) {
-      setErro("Indica o link externo do vídeo (ex: YouTube).");
+    const temFicheiroExistente = Boolean(editando?.arquivo) && !videoFile;
+    if (!videoFile && !form.url_externa?.trim() && !temFicheiroExistente) {
+      setErro("Faz upload de um vídeo ou indica um link externo (ex: YouTube).");
       return;
     }
     setSubmetendo(true);
     setErro(null);
     try {
+      const payload: ProfessorVideoPayload = { ...form, arquivo: videoFile };
       if (editando) {
-        await api.professor.atualizarVideo(editando.id, form);
+        await api.professor.atualizarVideo(editando.id, payload);
       } else {
-        await api.professor.criarVideo(form);
+        await api.professor.criarVideo(payload);
       }
       setModalAberto(false);
       await carregar();
@@ -210,29 +227,13 @@ export default function ProfessorVideosPage() {
         </div>
       )}
 
-      {modalAberto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setModalAberto(false);
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <Card className="w-full max-w-lg shadow-2xl border-border">
-            <div className="flex items-center justify-between gap-4 border-b border-border p-5">
-              <h2 className="font-serif text-xl font-semibold">{editando ? "Editar vídeo" : "Publicar vídeo"}</h2>
-              <button
-                type="button"
-                onClick={() => setModalAberto(false)}
-                className="text-muted-foreground hover:text-foreground transition rounded-md p-1"
-                aria-label="Fechar"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editando ? "Editar vídeo" : "Publicar vídeo"}</DialogTitle>
+          </DialogHeader>
 
-            <form onSubmit={submeter} className="p-5 space-y-4">
+          <form id="form-video" onSubmit={submeter} className="flex-1 space-y-4 overflow-y-auto p-5">
               <div className="space-y-2">
                 <Label htmlFor="v-titulo">Título</Label>
                 <Input id="v-titulo" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
@@ -242,7 +243,50 @@ export default function ProfessorVideosPage() {
                 <Textarea id="v-descricao" rows={3} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="v-url">Link do vídeo (YouTube ou outro)</Label>
+                <Label>Ficheiro de vídeo</Label>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={onVideoSelecionado}
+                  disabled={submetendo}
+                  className="sr-only"
+                />
+                <button
+                  type="button"
+                  onClick={escolherVideo}
+                  disabled={submetendo}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  Fazer upload de vídeo
+                </button>
+
+                {videoFile ? (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Film className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                      <span className="truncate">{videoFile.name}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setVideoFile(null)}
+                      disabled={submetendo}
+                      className="shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                      aria-label="Remover ficheiro"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : editando?.arquivo ? (
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Film className="h-3.5 w-3.5 shrink-0" /> Já tem um ficheiro de vídeo enviado.
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="v-url">Link externo (YouTube ou outro, opcional se enviaste um ficheiro)</Label>
                 <Input
                   id="v-url"
                   value={form.url_externa}
@@ -258,20 +302,26 @@ export default function ProfessorVideosPage() {
                 <Switch checked={Boolean(form.ativo)} onCheckedChange={(v) => setForm({ ...form, ativo: v })} />
               </div>
 
-              {erro && <p className="text-sm text-red-400">{erro}</p>}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setModalAberto(false)} disabled={submetendo}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={submetendo} className="bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold">
-                  {submetendo ? "A guardar…" : editando ? "Guardar alterações" : "Publicar vídeo"}
-                </Button>
-              </div>
             </form>
-          </Card>
-        </div>
-      )}
+
+          <DialogFooter>
+            {erro && <p className="text-sm text-red-400">{erro}</p>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setModalAberto(false)} disabled={submetendo}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                form="form-video"
+                disabled={submetendo}
+                className="bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
+              >
+                {submetendo ? "A guardar…" : editando ? "Guardar alterações" : "Publicar vídeo"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

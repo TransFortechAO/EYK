@@ -9,6 +9,7 @@ urlpatterns = [
     path('cursos/', api_views.professor_cursos, name='api-professor-cursos'),
     path('cursos/<int:curso_id>/', api_views.professor_curso_detail, name='api-professor-curso-detail'),
     path('cursos/<int:curso_id>/engajamento/', api_views.professor_curso_engajamento, name='api-professor-curso-engajamento'),
+    path('cursos/<int:curso_id>/videos/<int:video_id>/', api_views.professor_curso_video_delete, name='api-professor-curso-video-delete'),
 
     path('videos/', api_views.professor_videos, name='api-professor-videos'),
     path('videos/reordenar/', api_views.professor_videos_reordenar, name='api-professor-videos-reordenar'),

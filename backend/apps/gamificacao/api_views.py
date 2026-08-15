@@ -25,7 +25,7 @@ def _get_initials(user: User) -> str:
 
 
 def _get_name(user: User) -> str:
-    return user.get_full_name() or user.username
+    return user.get_display_name()
 
 
 def _format_date_transacao(criado_em: datetime) -> str:

@@ -23,6 +23,13 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+    def get_display_name(self) -> str:
+        """Nome para exibição, com a inicial de cada palavra em maiúscula
+        (ex: "joão silva" -> "João Silva"), mesmo que o utilizador se tenha
+        registado com o nome todo em minúsculas."""
+        full = (self.get_full_name() or self.username or '').strip()
+        return ' '.join(word.capitalize() for word in full.split())
+
 
 class Notificacao(models.Model):
     TIPOS = [

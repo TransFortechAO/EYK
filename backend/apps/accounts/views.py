@@ -161,9 +161,7 @@ def auth_me(request):
 
 
 def _user_payload(user: User) -> dict:
-    name = f"{user.first_name or user.username}"
-    if user.last_name:
-        name = f"{name} {user.last_name}".strip()
+    name = user.get_display_name()
     initials = (
         ((user.first_name or user.username or '?')[0])
         + ((user.last_name or '')[0:1] or '')

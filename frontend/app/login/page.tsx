@@ -252,7 +252,6 @@ export default function LoginPage() {
                 name="username"
                 type="text"
                 autoComplete="username"
-                placeholder="ex: maria_silva"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -279,7 +278,6 @@ export default function LoginPage() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

@@ -8,6 +8,9 @@ from .views import (
     video_list,
     video_detail,
     video_react,
+    video_comentarios,
+    video_comentario_detail,
+    video_comentario_reagir,
     curso_inscrever,
 )
 from apps.feed.api_views import (
@@ -36,6 +39,9 @@ urlpatterns = [
     path('videos/', video_list, name='video-list'),
     path('videos/<int:pk>/', video_detail, name='video-detail'),
     path('videos/<int:pk>/reagir/', video_react, name='video-react'),
+    path('videos/<int:pk>/comentarios/', video_comentarios, name='video-comentario-list'),
+    path('videos/<int:pk>/comentarios/<int:comentario_id>/', video_comentario_detail, name='video-comentario-detail'),
+    path('videos/<int:pk>/comentarios/<int:comentario_id>/reagir/', video_comentario_reagir, name='video-comentario-reagir'),
     path('cursos/<int:pk>/inscrever/', curso_inscrever, name='curso-inscrever'),
 
     path('professor/', include('apps.professores.urls_api')),

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Hand, Sparkles, ArrowRight } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { Camera, Hand, Sparkles, ArrowRight } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,21 +13,49 @@ const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
 const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
 const EYK_BG = "#0a0a0a";
+const MAX_FOTO_BYTES = 5 * 1024 * 1024;
 
 export default function PersonalizarPerfilPage() {
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [bio, setBio] = useState("");
+  const [foto, setFoto] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
 
   const firstName = user?.name?.split(" ")[0] || "";
+  const initials = firstName ? firstName.slice(0, 2).toUpperCase() : "EY";
+
+  const escolherFoto = () => fotoInputRef.current?.click();
+
+  const onFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMsg("Escolhe um ficheiro de imagem válido.");
+      return;
+    }
+    if (file.size > MAX_FOTO_BYTES) {
+      setErrorMsg("A imagem deve ter no máximo 5MB.");
+      return;
+    }
+
+    setErrorMsg(null);
+    setFoto(file);
+    setFotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  };
 
   const concluir = () => {
     setErrorMsg(null);
     startTransition(async () => {
       try {
-        if (bio.trim()) {
-          await api.perfil.atualizarAluno(bio.trim());
+        if (bio.trim() || foto) {
+          await api.perfil.atualizarAluno(bio.trim(), foto);
         }
         await api.perfil.completar();
         window.location.assign("/inicio");
@@ -90,6 +119,36 @@ export default function PersonalizarPerfilPage() {
           Conta-nos um pouco sobre ti antes de começares. Podes sempre alterar isto mais
           tarde nas Configurações.
         </p>
+
+        <div className="mb-10 flex flex-col items-center gap-3">
+          <div className="relative">
+            <Avatar className="h-24 w-24 shadow-md">
+              {fotoPreview && <AvatarImage src={fotoPreview} alt="Pré-visualização da foto de perfil" />}
+              <AvatarFallback className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              type="button"
+              onClick={escolherFoto}
+              disabled={isPending}
+              aria-label="Escolher foto de perfil"
+              className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full text-black shadow-md transition hover:brightness-110 disabled:opacity-50"
+              style={{ background: `linear-gradient(135deg, ${EYK_GOLD}, ${EYK_GOLD_LIGHT})` }}
+            >
+              <Camera className="h-4 w-4" aria-hidden />
+            </button>
+            <input
+              ref={fotoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={onFotoChange}
+              disabled={isPending}
+              className="sr-only"
+            />
+          </div>
+          <span className="text-xs text-white/45">Foto de perfil (opcional)</span>
+        </div>
 
         <div className="space-y-2.5 text-left">
           <Label htmlFor="bio" className="text-white/85 text-sm">

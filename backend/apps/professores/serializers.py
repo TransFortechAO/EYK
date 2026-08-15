@@ -27,20 +27,28 @@ class ProfessorSerializer(serializers.ModelSerializer):
         return obj.seguidores.count()
 
 
+class ProfessorCursoVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = ['id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem']
+        read_only_fields = fields
+
+
 class ProfessorCursoSerializer(serializers.ModelSerializer):
     categoria_nome = serializers.CharField(write_only=True, required=False, allow_blank=True)
     categoria = serializers.CharField(source='categoria.nome', read_only=True, default=None)
     total_inscritos = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
+    videos = ProfessorCursoVideoSerializer(many=True, read_only=True)
 
     class Meta:
         model = Curso
         fields = [
             'id', 'titulo', 'descricao', 'categoria', 'categoria_nome', 'preco',
             'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em',
-            'total_inscritos', 'total_visualizacoes',
+            'total_inscritos', 'total_visualizacoes', 'videos',
         ]
-        read_only_fields = ['id', 'criado_em', 'total_inscritos', 'total_visualizacoes']
+        read_only_fields = ['id', 'criado_em', 'total_inscritos', 'total_visualizacoes', 'videos']
 
     def get_total_inscritos(self, obj):
         return obj.total_inscritos()

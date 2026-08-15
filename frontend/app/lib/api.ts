@@ -4,23 +4,42 @@ export const API_BASE_URL = (() => {
   return raw.replace(/\/$/, '');
 })();
 
-// Cache em memória do CSRF token (evita pedidos extra)
-let _cachedCsrf: string | null = null;
+// Resolve um caminho de media relativo (ex: "/media/videos/x.mp4") devolvido
+// pelo Django para um URL absoluto que o browser consegue carregar.
+export function mediaUrl(path?: string | null): string | null {
+  if (!path) return null;
+  if (/^https?:/i.test(path)) return path;
+  return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
+// Lê o cookie "csrftoken" diretamente do browser. Importante: o Django roda
+// este cookie para um valor novo sempre que a sessão muda (login, logout,
+// confirmação de 2FA) — por isso não podemos guardar o token em cache numa
+// variável em memória (ficaria desatualizado e todos os POST/PATCH/DELETE
+// seguintes falhavam com 403 "CSRF Failed"). Lemos sempre o valor atual.
+function readCsrfCookie(): string {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
 
 async function getCsrfToken(): Promise<string> {
-  if (_cachedCsrf) return _cachedCsrf;
+  const fromCookie = readCsrfCookie();
+  if (fromCookie) return fromCookie;
+  // Cookie ainda não existe (primeira visita nesta sessão do browser) — pede
+  // ao backend para o definir.
   try {
     const res = await fetch(`${API_BASE_URL}/accounts/auth/csrf/`, {
       credentials: 'include',
     });
     if (res.ok) {
       const data = await res.json();
-      if (data?.csrfToken) _cachedCsrf = data.csrfToken;
+      if (data?.csrfToken) return data.csrfToken;
     }
   } catch {
     /* ignora */
   }
-  return _cachedCsrf || '';
+  return readCsrfCookie();
 }
 
 /**
@@ -131,6 +150,56 @@ export type Video = {
   views: number;
   daysAgo: number;
   cover: string;
+};
+
+export type VideoDetail = {
+  id: string;
+  title: string;
+  description: string;
+  teacher: string;
+  teacherAvatar: string;
+  professorId: number | null;
+  cover: string;
+  fileUrl: string | null;
+  externalUrl: string;
+  views: number;
+  likes: number;
+  createdAt: string;
+};
+
+export type VideoComment = {
+  id: number;
+  autorId: number;
+  autorNome: string;
+  autorInitials: string;
+  parentId: number | null;
+  conteudo: string;
+  criadoEm: string;
+  editadoEm: string | null;
+  tempo: string;
+  likes: number;
+  liked: boolean;
+  podeEditar: boolean;
+  podeApagar: boolean;
+  respostas: VideoComment[];
+};
+
+export type CourseVideo = {
+  id: number;
+  title: string;
+  description: string;
+  fileUrl: string | null;
+  externalUrl: string;
+  thumbnail: string | null;
+  order: number;
+  likes: number;
+};
+
+export type CourseDetail = Course & {
+  description: string;
+  professorId: number | null;
+  inscrito: boolean;
+  videos: CourseVideo[];
 };
 
 export type Post = {
@@ -271,6 +340,15 @@ export type ProfessorPerfil = {
   seguidores: number;
 };
 
+export type ProfessorCursoVideo = {
+  id: number;
+  titulo: string;
+  arquivo: string | null;
+  url_externa: string;
+  thumbnail: string | null;
+  ordem: number;
+};
+
 export type ProfessorCurso = {
   id: number;
   titulo: string;
@@ -284,6 +362,7 @@ export type ProfessorCurso = {
   criado_em: string;
   total_inscritos: number;
   total_visualizacoes: number;
+  videos: ProfessorCursoVideo[];
 };
 
 export type ProfessorCursoPayload = {
@@ -314,6 +393,7 @@ export type ProfessorVideoPayload = {
   descricao?: string;
   url_externa?: string;
   ativo?: boolean;
+  arquivo?: File | null;
 };
 
 export type CursoEngajamento = {
@@ -346,6 +426,7 @@ type RawCourse = {
   duracao?: number | string | null;
   total_inscritos?: number | string | null;
   progress?: number | null;
+  videos?: RawCourseVideo[] | null;
 };
 
 type RawVideo = {
@@ -355,6 +436,49 @@ type RawVideo = {
   duracao?: string | null;
   total_visualizacoes?: number | string | null;
   criado_em?: string | null;
+};
+
+type RawVideoDetail = RawVideo & {
+  descricao?: string | null;
+  professor?: number | null;
+  arquivo?: string | null;
+  url_externa?: string | null;
+  total_likes?: number | string | null;
+};
+
+type RawVideoComment = {
+  id?: number | string;
+  autor?: number | null;
+  autor_nome?: string | null;
+  autor_initials?: string | null;
+  parent?: number | null;
+  conteudo?: string | null;
+  criado_em?: string | null;
+  editado_em?: string | null;
+  tempo?: string | null;
+  total_likes?: number | string | null;
+  liked?: boolean | null;
+  pode_editar?: boolean | null;
+  pode_apagar?: boolean | null;
+  respostas?: RawVideoComment[] | null;
+};
+
+type RawCourseVideo = {
+  id?: number | string;
+  titulo?: string | null;
+  descricao?: string | null;
+  arquivo?: string | null;
+  url_externa?: string | null;
+  thumbnail?: string | null;
+  ordem?: number | null;
+  total_likes?: number | string | null;
+};
+
+type RawCourseDetail = RawCourse & {
+  descricao?: string | null;
+  professor?: number | null;
+  inscrito?: boolean | null;
+  videos?: RawCourseVideo[] | null;
 };
 
 type RawPost = {
@@ -424,6 +548,22 @@ function daysAgo(d?: string | null): number {
   }
 }
 
+function _appendCursoPayload(formData: FormData, payload: Partial<ProfessorCursoPayload>) {
+  if (payload.titulo !== undefined) formData.append('titulo', payload.titulo);
+  if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
+  if (payload.categoria_nome !== undefined) formData.append('categoria_nome', payload.categoria_nome);
+  if (payload.preco !== undefined && payload.preco !== null) formData.append('preco', String(payload.preco));
+  if (payload.duracao !== undefined) formData.append('duracao', payload.duracao);
+  if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
+}
+
+function _appendVideoPayload(formData: FormData, payload: Omit<Partial<ProfessorVideoPayload>, 'arquivo'>) {
+  if (payload.titulo !== undefined) formData.append('titulo', payload.titulo);
+  if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
+  if (payload.url_externa !== undefined) formData.append('url_externa', payload.url_externa);
+  if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
+}
+
 function initiais(name: string): string {
   const partes = (name || "U").trim().split(/\s+/);
   if (partes.length >= 2) return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
@@ -449,7 +589,7 @@ function normalizeCourse(raw: RawCourse): Course {
     teacherAvatar: initiais(profNome),
     level: "Iniciante",
     durationHours: Number(raw?.duracao ?? 0) || 5,
-    lessons: 20,
+    lessons: raw?.videos && raw.videos.length > 0 ? raw.videos.length : 20,
     rating: 4.7,
     students: Number(raw?.total_inscritos ?? 0) || 0,
     progress: typeof raw?.progress === "number" ? raw.progress : undefined,
@@ -467,6 +607,66 @@ function normalizeVideo(raw: RawVideo): Video {
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
     daysAgo: daysAgo(raw?.criado_em),
     cover: coverFor(raw?.id ?? "v"),
+  };
+}
+
+function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
+  const profNome = raw?.professor_nome || "Professor";
+  return {
+    id: String(raw?.id ?? "v"),
+    title: raw?.titulo || "Vídeo",
+    description: raw?.descricao || "",
+    teacher: profNome,
+    teacherAvatar: initiais(profNome),
+    professorId: typeof raw?.professor === "number" ? raw.professor : null,
+    cover: coverFor(raw?.id ?? "v"),
+    fileUrl: mediaUrl(raw?.arquivo),
+    externalUrl: raw?.url_externa || "",
+    views: Number(raw?.total_visualizacoes ?? 0) || 0,
+    likes: Number(raw?.total_likes ?? 0) || 0,
+    createdAt: raw?.criado_em || "",
+  };
+}
+
+function normalizeVideoComment(raw: RawVideoComment): VideoComment {
+  return {
+    id: Number(raw?.id ?? 0),
+    autorId: Number(raw?.autor ?? 0),
+    autorNome: raw?.autor_nome || "Utilizador",
+    autorInitials: raw?.autor_initials || "??",
+    parentId: typeof raw?.parent === "number" ? raw.parent : null,
+    conteudo: raw?.conteudo || "",
+    criadoEm: raw?.criado_em || "",
+    editadoEm: raw?.editado_em || null,
+    tempo: raw?.tempo || "",
+    likes: Number(raw?.total_likes ?? 0) || 0,
+    liked: Boolean(raw?.liked),
+    podeEditar: Boolean(raw?.pode_editar),
+    podeApagar: Boolean(raw?.pode_apagar),
+    respostas: (raw?.respostas || []).map(normalizeVideoComment),
+  };
+}
+
+function normalizeCourseVideo(raw: RawCourseVideo): CourseVideo {
+  return {
+    id: Number(raw?.id ?? 0),
+    title: raw?.titulo || "Vídeo",
+    description: raw?.descricao || "",
+    fileUrl: mediaUrl(raw?.arquivo),
+    externalUrl: raw?.url_externa || "",
+    thumbnail: mediaUrl(raw?.thumbnail),
+    order: Number(raw?.ordem ?? 0),
+    likes: Number(raw?.total_likes ?? 0) || 0,
+  };
+}
+
+function normalizeCourseDetail(raw: RawCourseDetail): CourseDetail {
+  return {
+    ...normalizeCourse(raw),
+    description: raw?.descricao || "",
+    professorId: typeof raw?.professor === "number" ? raw.professor : null,
+    inscrito: Boolean(raw?.inscrito),
+    videos: (raw?.videos || []).map(normalizeCourseVideo),
   };
 }
 
@@ -531,11 +731,9 @@ export const api = {
     return res;
   },
   logout: async () => {
-    const res = await fetchAPI<{ ok: boolean }>('/accounts/auth/logout/', {
+    return await fetchAPI<{ ok: boolean }>('/accounts/auth/logout/', {
       method: 'POST',
     });
-    _cachedCsrf = null;
-    return res;
   },
   me: async () => {
     const res = await fetchAPI<{ ok: boolean; authenticated: boolean; user: AuthUser | null }>(
@@ -573,10 +771,10 @@ export const api = {
     }
     return mockCourses;
   },
-  getCurso: async (id: number): Promise<Course | null> => {
+  getCurso: async (id: number | string): Promise<CourseDetail | null> => {
     try {
-      const res = await fetchAPI<RawCourse>(`/api/cursos/${id}/`);
-      if (res) return normalizeCourse(res);
+      const res = await fetchAPI<RawCourseDetail>(`/api/cursos/${id}/`);
+      if (res) return normalizeCourseDetail(res);
     } catch {
       /* fallback */
     }
@@ -598,6 +796,15 @@ export const api = {
     if (tab === "popular") return [...mockVideos].sort((a, b) => b.views - a.views);
     if (tab === "short") return mockVideos.filter((v) => parseInt(v.duration.split(":")[0]) < 6);
     return mockVideos;
+  },
+  getVideo: async (id: number | string): Promise<VideoDetail | null> => {
+    try {
+      const res = await fetchAPI<RawVideoDetail>(`/api/videos/${id}/`);
+      if (res) return normalizeVideoDetail(res);
+    } catch {
+      /* vídeo não encontrado ou erro de rede */
+    }
+    return null;
   },
 
   // =========================================================================
@@ -802,7 +1009,16 @@ export const api = {
     getAluno: async (): Promise<PerfilAluno> => {
       return await fetchAPI<PerfilAluno>('/aluno/api/perfil/');
     },
-    atualizarAluno: async (bio: string): Promise<PerfilAluno> => {
+    atualizarAluno: async (bio: string, foto?: File | null): Promise<PerfilAluno> => {
+      if (foto) {
+        const formData = new FormData();
+        formData.append('bio', bio);
+        formData.append('foto', foto);
+        return await fetchAPI<PerfilAluno>('/aluno/api/perfil/atualizar/', {
+          method: 'POST',
+          body: formData,
+        });
+      }
       return await fetchAPI<PerfilAluno>('/aluno/api/perfil/atualizar/', {
         method: 'POST',
         body: JSON.stringify({ bio }),
@@ -866,6 +1082,36 @@ export const api = {
       body: JSON.stringify({ tipo }),
     });
   },
+
+  // =========================================================================
+  //  COMENTÁRIOS EM VÍDEOS (avulsos ou aulas de curso)
+  // =========================================================================
+  comentariosVideo: {
+    listar: async (videoId: string | number): Promise<VideoComment[]> => {
+      const res = await fetchAPI<RawVideoComment[]>(`/api/videos/${videoId}/comentarios/`);
+      return Array.isArray(res) ? res.map(normalizeVideoComment) : [];
+    },
+    criar: async (videoId: string | number, conteudo: string, parentId?: number): Promise<VideoComment> => {
+      const res = await fetchAPI<RawVideoComment>(`/api/videos/${videoId}/comentarios/`, {
+        method: 'POST',
+        body: JSON.stringify(parentId ? { conteudo, parent: parentId } : { conteudo }),
+      });
+      return normalizeVideoComment(res);
+    },
+    editar: async (videoId: string | number, comentarioId: number, conteudo: string): Promise<VideoComment> => {
+      const res = await fetchAPI<RawVideoComment>(`/api/videos/${videoId}/comentarios/${comentarioId}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ conteudo }),
+      });
+      return normalizeVideoComment(res);
+    },
+    apagar: async (videoId: string | number, comentarioId: number): Promise<void> => {
+      await fetchAPI(`/api/videos/${videoId}/comentarios/${comentarioId}/`, { method: 'DELETE' });
+    },
+    reagir: async (videoId: string | number, comentarioId: number): Promise<{ liked: boolean; totalLikes: number }> => {
+      return await fetchAPI(`/api/videos/${videoId}/comentarios/${comentarioId}/reagir/`, { method: 'POST' });
+    },
+  },
   inscreverCurso: async (cursoId: string | number) => {
     return await fetchAPI<{ ok: boolean; concluido: boolean }>(`/api/cursos/${cursoId}/inscrever/`, {
       method: 'POST',
@@ -898,20 +1144,33 @@ export const api = {
     getCursos: async (): Promise<ProfessorCurso[]> => {
       return await fetchAPI('/api/professor/cursos/');
     },
-    criarCurso: async (payload: ProfessorCursoPayload): Promise<ProfessorCurso> => {
-      return await fetchAPI('/api/professor/cursos/', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+    criarCurso: async (payload: ProfessorCursoPayload, videos: File[]): Promise<ProfessorCurso> => {
+      const formData = new FormData();
+      _appendCursoPayload(formData, payload);
+      videos.forEach((v) => formData.append('videos', v));
+      return await fetchAPI('/api/professor/cursos/', { method: 'POST', body: formData });
     },
-    atualizarCurso: async (id: number, payload: Partial<ProfessorCursoPayload>): Promise<ProfessorCurso> => {
-      return await fetchAPI(`/api/professor/cursos/${id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      });
+    atualizarCurso: async (
+      id: number,
+      payload: Partial<ProfessorCursoPayload>,
+      novosVideos: File[] = [],
+    ): Promise<ProfessorCurso> => {
+      if (novosVideos.length === 0) {
+        return await fetchAPI(`/api/professor/cursos/${id}/`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        });
+      }
+      const formData = new FormData();
+      _appendCursoPayload(formData, payload);
+      novosVideos.forEach((v) => formData.append('videos', v));
+      return await fetchAPI(`/api/professor/cursos/${id}/`, { method: 'PATCH', body: formData });
     },
     apagarCurso: async (id: number): Promise<void> => {
       await fetchAPI(`/api/professor/cursos/${id}/`, { method: 'DELETE' });
+    },
+    apagarVideoCurso: async (cursoId: number, videoId: number): Promise<void> => {
+      await fetchAPI(`/api/professor/cursos/${cursoId}/videos/${videoId}/`, { method: 'DELETE' });
     },
     getCursoEngajamento: async (id: number): Promise<CursoEngajamento> => {
       return await fetchAPI(`/api/professor/cursos/${id}/engajamento/`);
@@ -921,16 +1180,24 @@ export const api = {
       return await fetchAPI('/api/professor/videos/');
     },
     criarVideo: async (payload: ProfessorVideoPayload): Promise<ProfessorVideo> => {
-      return await fetchAPI('/api/professor/videos/', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      const { arquivo, ...resto } = payload;
+      if (arquivo) {
+        const formData = new FormData();
+        _appendVideoPayload(formData, resto);
+        formData.append('arquivo', arquivo);
+        return await fetchAPI('/api/professor/videos/', { method: 'POST', body: formData });
+      }
+      return await fetchAPI('/api/professor/videos/', { method: 'POST', body: JSON.stringify(resto) });
     },
     atualizarVideo: async (id: number, payload: Partial<ProfessorVideoPayload>): Promise<ProfessorVideo> => {
-      return await fetchAPI(`/api/professor/videos/${id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify(payload),
-      });
+      const { arquivo, ...resto } = payload;
+      if (arquivo) {
+        const formData = new FormData();
+        _appendVideoPayload(formData, resto);
+        formData.append('arquivo', arquivo);
+        return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: formData });
+      }
+      return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: JSON.stringify(resto) });
     },
     apagarVideo: async (id: number): Promise<void> => {
       await fetchAPI(`/api/professor/videos/${id}/`, { method: 'DELETE' });

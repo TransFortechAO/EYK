@@ -1,4 +1,5 @@
 from django.contrib.auth import logout
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
@@ -57,6 +58,18 @@ def professor_apagar_conta(request):
 
 # ── CURSOS ───────────────────────────────────────────────────────────────────
 
+def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
+    for indice, arquivo in enumerate(arquivos):
+        Video.objects.create(
+            professor=professor,
+            curso=curso,
+            titulo=f'{curso.titulo} — vídeo {ordem_inicial + indice + 1}',
+            arquivo=arquivo,
+            ativo=True,
+            ordem=ordem_inicial + indice,
+        )
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([permissions.IsAuthenticated])
 def professor_cursos(request):
@@ -65,10 +78,24 @@ def professor_cursos(request):
         return _professor_required_response()
 
     if request.method == 'POST':
+        arquivos = request.FILES.getlist('videos')
+        if not arquivos:
+            return Response(
+                {'detail': 'Envia pelo menos um vídeo para criar o curso.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = ProfessorCursoSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        serializer.save(professor=professor)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        with transaction.atomic():
+            curso = serializer.save(professor=professor)
+            _criar_videos_curso(professor, curso, arquivos)
+
+        curso.refresh_from_db()
+        return Response(
+            ProfessorCursoSerializer(curso, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     cursos = Curso.objects.filter(professor=professor).order_by('-criado_em')
     serializer = ProfessorCursoSerializer(cursos, many=True, context={'request': request})
@@ -91,11 +118,31 @@ def professor_curso_detail(request, curso_id):
     if request.method == 'PATCH':
         serializer = ProfessorCursoSerializer(curso, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+        with transaction.atomic():
+            curso = serializer.save()
+            arquivos = request.FILES.getlist('videos')
+            if arquivos:
+                ordem_inicial = curso.videos.count()
+                _criar_videos_curso(professor, curso, arquivos, ordem_inicial)
+
+        curso.refresh_from_db()
+        return Response(ProfessorCursoSerializer(curso, context={'request': request}).data)
 
     serializer = ProfessorCursoSerializer(curso, context={'request': request})
     return Response(serializer.data)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def professor_curso_video_delete(request, curso_id, video_id):
+    professor = _get_professor(request)
+    if not professor:
+        return _professor_required_response()
+
+    curso = get_object_or_404(Curso, id=curso_id, professor=professor)
+    video = get_object_or_404(Video, id=video_id, curso=curso)
+    video.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])
@@ -144,7 +191,7 @@ def professor_videos(request):
         serializer.save(professor=professor)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    videos = Video.objects.filter(professor=professor)
+    videos = Video.objects.filter(professor=professor, curso__isnull=True)
     serializer = ProfessorVideoSerializer(videos, many=True, context={'request': request})
     return Response(serializer.data)
 
@@ -199,7 +246,7 @@ def professor_videos_reordenar(request):
         return _professor_required_response()
 
     ids = request.data.get('ordem', [])
-    videos_por_id = {v.id: v for v in Video.objects.filter(professor=professor, id__in=ids)}
+    videos_por_id = {v.id: v for v in Video.objects.filter(professor=professor, curso__isnull=True, id__in=ids)}
     for posicao, video_id in enumerate(ids):
         video = videos_por_id.get(int(video_id))
         if video:

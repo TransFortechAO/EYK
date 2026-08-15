@@ -18,6 +18,10 @@ class Professor(models.Model):
 
 class Video(models.Model):
     professor = models.ForeignKey(Professor, on_delete=models.CASCADE, related_name='videos')
+    curso = models.ForeignKey(
+        'cursos.Curso', on_delete=models.CASCADE, related_name='videos', null=True, blank=True,
+        help_text='Se preenchido, o vídeo pertence a este curso em vez de ser um vídeo avulso.',
+    )
     titulo = models.CharField(max_length=255)
     descricao = models.TextField(blank=True)
     arquivo = models.FileField(upload_to='videos/', null=True, blank=True)
@@ -61,6 +65,37 @@ class VisualizacaoVideo(models.Model):
 
     class Meta:
         unique_together = ('video', 'utilizador')
+
+
+class ComentarioVideo(models.Model):
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='comentarios')
+    autor = models.ForeignKey(User, on_delete=models.CASCADE)
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='respostas',
+    )
+    conteudo = models.TextField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+    editado_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['criado_em']
+
+    def __str__(self):
+        return f'Comentário de {self.autor.username} em {self.video}'
+
+    def total_likes(self):
+        return self.reacoes.count()
+
+
+class ReacaoComentarioVideo(models.Model):
+    comentario = models.ForeignKey(ComentarioVideo, on_delete=models.CASCADE, related_name='reacoes')
+    utilizador = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('comentario', 'utilizador')
+
+    def __str__(self):
+        return f'{self.utilizador} gosta do comentário {self.comentario_id}'
 
 
 class Seguidor(models.Model):

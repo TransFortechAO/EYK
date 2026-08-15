@@ -34,7 +34,7 @@ class PostSerializer(serializers.ModelSerializer):
         ]
 
     def get_autor_nome(self, obj):
-        return obj.autor.get_full_name() or obj.autor.username
+        return obj.autor.get_display_name()
 
     def get_autor_initials(self, obj):
         nome = obj.autor.get_full_name() or obj.autor.username
@@ -69,7 +69,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
         ]
 
     def get_autor_nome(self, obj):
-        return obj.autor.get_full_name() or obj.autor.username
+        return obj.autor.get_display_name()
 
     def get_autor_initials(self, obj):
         nome = obj.autor.get_full_name() or obj.autor.username

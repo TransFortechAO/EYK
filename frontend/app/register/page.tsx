@@ -12,7 +12,6 @@ const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
 const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
 const EYK_BG = "#0a0a0a";
-const PROFESSOR_FORM_URL = "https://forms.gle/qfs6zo8QLHfRsnKX9";
 
 export default function RegisterPage() {
   const [isPending, startTransition] = useTransition();
@@ -52,8 +51,8 @@ export default function RegisterPage() {
         // `login` devolve `user` e autentica a sessão (cookie); assumimos que
         // `register` faz o mesmo, tal como o resto do padrão. Se o backend
         // exigir confirmação de email antes de autenticar, trocar para
-        // window.location.assign("/login?registered=1") em vez de "/".
-        window.location.assign("/");
+        // window.location.assign("/login?registered=1") em vez desta linha.
+        window.location.assign("/personalizar-perfil");
       } catch (err) {
         const status = (err as { status?: number })?.status;
         const msg = err instanceof Error ? err.message : "Erro ao criar conta.";
@@ -307,7 +306,7 @@ export default function RegisterPage() {
 
           <div className="mt-6 border-t border-white/[0.08] pt-6 text-center">
             <Link
-              href={PROFESSOR_FORM_URL}
+              href="https://forms.gle/KEp7rH9QHuVwkNHA9"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-medium text-white/55 hover:text-white/80 hover:underline"

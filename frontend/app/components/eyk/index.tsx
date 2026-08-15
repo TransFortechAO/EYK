@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowRight, Star, Clock, PlayCircle, Hand, MessageCircle, Share2 } from "lucide-react";
+import { ArrowRight, Star, Clock, PlayCircle, Hand, MessageCircle, Share2, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -141,7 +141,7 @@ export function StatCard({
 export function CourseCard({ course }: { course: Course }) {
   return (
     <Link
-      href="/cursos"
+      href={`/cursos/${course.id}`}
       className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
     >
       <Card className="overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
@@ -210,7 +210,7 @@ export function CourseCard({ course }: { course: Course }) {
 export function VideoCard({ video }: { video: Video }) {
   return (
     <Link
-      href="/videos"
+      href={`/videos/${video.id}`}
       className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
     >
       <Card className="overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
@@ -308,5 +308,84 @@ export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: ()
         </div>
       </div>
     </Card>
+  );
+}
+
+/* ---------- Media player (ficheiro próprio ou embed de link externo) ---------- */
+function youtubeEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "").replace(/^m\./, "");
+    if (host === "youtu.be") {
+      const id = u.pathname.slice(1);
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (host === "youtube.com") {
+      if (u.pathname === "/watch") {
+        const id = u.searchParams.get("v");
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+      if (u.pathname.startsWith("/embed/")) return url;
+      if (u.pathname.startsWith("/shorts/")) {
+        const id = u.pathname.split("/")[2];
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+    }
+  } catch {
+    /* link inválido, cai para o fallback */
+  }
+  return null;
+}
+
+export function MediaPlayer({
+  fileUrl,
+  externalUrl,
+  title,
+  cover,
+}: {
+  fileUrl?: string | null;
+  externalUrl?: string | null;
+  title: string;
+  cover?: string;
+}) {
+  const embed = !fileUrl && externalUrl ? youtubeEmbedUrl(externalUrl) : null;
+  const semConteudo = !fileUrl && !embed && !externalUrl;
+
+  return (
+    <div
+      className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black"
+      style={semConteudo && cover ? { background: cover } : undefined}
+    >
+      {fileUrl ? (
+        <video key={fileUrl} controls className="h-full w-full" src={fileUrl}>
+          O teu browser não suporta reprodução de vídeo.
+        </video>
+      ) : embed ? (
+        <iframe
+          key={embed}
+          src={embed}
+          title={title}
+          className="h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      ) : externalUrl ? (
+        <a
+          href={externalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/90 transition hover:text-white"
+        >
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-white/10 backdrop-blur">
+            <ExternalLink className="h-7 w-7" />
+          </div>
+          <span className="text-sm font-medium">Abrir vídeo em nova aba</span>
+        </a>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-white/70">
+          <PlayCircle className="h-12 w-12" />
+        </div>
+      )}
+    </div>
   );
 }
