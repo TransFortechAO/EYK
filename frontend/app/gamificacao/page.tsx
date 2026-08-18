@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { api, type Badge, type WalletEntry, type GamePanel } from "@/lib/api";
+import {UserAvatar,UserInitialsLink } from "@/components/UserAvatar";
 
 const badgeIcons: Record<string, typeof Sparkles> = {
   Flame,
@@ -63,9 +64,14 @@ export default function GamificacaoPage() {
       <Card className="p-6 shadow-soft">
         <div className="flex flex-col sm:flex-row sm:items-end gap-6">
           <Avatar className="h-20 w-20 shrink-0 shadow-md">
-            <AvatarFallback className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold">
+            {/* <AvatarFallback className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold">
               {p.initials}
-            </AvatarFallback>
+            </AvatarFallback> */}
+            <UserAvatar
+            className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold"
+            name={p.name}
+            initials={p.initials}
+            />
           </Avatar>
           <div className="flex-1 space-y-2">
             <div className="flex items-end justify-between gap-4 flex-wrap">

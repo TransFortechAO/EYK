@@ -24,6 +24,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { api, type Course, type CourseDetail } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
+import { ModernVideoPlayer } from "@/components/ModernVideoPlayer";
+import { UserAvatar, UserInitialsLink } from "@/components/UserAvatar";
+
 
 export default function CoursePlayerPage() {
   const params = useParams<{ id: string }>();
@@ -110,16 +113,16 @@ export default function CoursePlayerPage() {
           <Card className="overflow-hidden rounded-3xl border-border/70 shadow-elevated">
             <div ref={playerWrapRef} className="relative">
               {activeVideo ? (
-                <MediaPlayer
+                <ModernVideoPlayer
                   fileUrl={activeVideo.fileUrl}
                   externalUrl={activeVideo.externalUrl}
                   title={activeVideo.title}
-                  cover={curso.cover}
+                  thumbnail={curso.thumbnail}
                 />
               ) : (
                 <div
                   className="flex aspect-video w-full items-center justify-center text-white/70"
-                  style={{ background: curso.cover }}
+                  style={{ background: curso.thumbnail }}
                 >
                   <PlayCircle className="h-12 w-12" />
                 </div>
@@ -165,7 +168,7 @@ export default function CoursePlayerPage() {
 
           <div className="flex items-center gap-3">
             <Avatar className="h-11 w-11">
-              <AvatarFallback className="bg-secondary">{curso.teacherAvatar}</AvatarFallback>
+              <UserAvatar name={curso.teacher} userId={curso.id}/>
             </Avatar>
             <div>
               <p className="text-sm font-medium">{curso.teacher}</p>

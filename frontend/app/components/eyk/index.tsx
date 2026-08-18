@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Course, Video, Post } from "@/lib/mock-data";
+import { UserAvatar, UserInitialsLink } from "@/components/UserAvatar";
 
 
 /* ---------- Page header ---------- */
@@ -147,7 +148,7 @@ export function CourseCard({ course }: { course: Course }) {
       <Card className="overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
         <div
           className="relative aspect-[16/9] w-full"
-          style={{ background: course.cover }}
+          style={{ background: course.thumbnail }}
           aria-hidden
         >
           <Badge className="absolute left-3 top-3 rounded-full bg-background/90 text-foreground border-0 backdrop-blur">
@@ -214,22 +215,38 @@ export function VideoCard({ video }: { video: Video }) {
       className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
     >
       <Card className="overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
-        <div
-          className="relative aspect-video w-full"
-          style={{ background: video.cover }}
-          aria-hidden
-        >
+        <div className="relative aspect-video w-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+          {/* Thumbnail (se existir) */}
+          {video.thumbnail ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+              style={{ backgroundImage: `url(${video.thumbnail})` }}
+              aria-hidden
+            />
+          ) : (
+            /* Fallback quando não há thumbnail */
+            <PlayCircle className="h-16 w-16 text-white/30 transition-transform duration-200 group-hover:scale-110" />
+          )}
+
+          {/* Overlay com ícone de play (hover) */}
           <div className="absolute inset-0 grid place-items-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-background/90 text-foreground">
+            <div className="grid h-12 w-12 place-items-center rounded-full bg-background/90 text-foreground shadow-lg">
               <PlayCircle className="h-6 w-6" />
             </div>
           </div>
-          <div className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">
-            {video.duration}
-          </div>
+
+          {/* Badge de duração (se existir) */}
+          {video.duration && (
+            <div className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">
+              {video.duration}
+            </div>
+          )}
         </div>
+
         <div className="space-y-2 p-4">
-          <h3 className="font-serif text-base font-semibold leading-snug line-clamp-2">{video.title}</h3>
+          <h3 className="font-serif text-base font-semibold leading-snug line-clamp-2">
+            {video.title}
+          </h3>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{video.teacher}</span>
             <span>{video.views.toLocaleString()} visualizações</span>
@@ -264,15 +281,20 @@ export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: ()
   };
 
   return (
-    <Card className="border-border/70 shadow-soft transition-shadow hover:shadow-elevated">
+    <Card className="border-border/70 shadow-soft transition-shadow">
       <div className="p-5 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-secondary">{post.initials}</AvatarFallback>
+              {/* <AvatarFallback className="bg-secondary">{post.initials}</AvatarFallback> */}
+              <UserAvatar
+              name={post.author}
+              initials={post.initials}
+               userId={post.id}
+              />
             </Avatar>
             <div>
-              <p className="font-medium text-sm">{post.author}</p>
+              <a className="font-medium text-sm">{post.author}</a>
               <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
             </div>
           </div>

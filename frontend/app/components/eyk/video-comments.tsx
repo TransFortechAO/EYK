@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { api, type VideoComment } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
+import { UserInitialsLink } from "@/components/UserAvatar";
+
 
 function contarComentarios(lista: VideoComment[]): number {
   return lista.reduce((acc, c) => acc + 1 + c.respostas.length, 0);
@@ -73,7 +75,7 @@ export function VideoComments({
       ) : (
         <div className="flex gap-3">
           <Avatar className="h-9 w-9 shrink-0">
-            <AvatarFallback className="bg-secondary text-xs">{user?.initials || "?"}</AvatarFallback>
+            <UserInitialsLink/>
           </Avatar>
           <div className="min-w-0 flex-1 space-y-2">
             <Textarea
