@@ -14,13 +14,7 @@ function contarComentarios(lista: VideoComment[]): number {
   return lista.reduce((acc, c) => acc + 1 + c.respostas.length, 0);
 }
 
-export function VideoComments({
-  videoId,
-  isOwner,
-}: {
-  videoId: string | number;
-  isOwner: boolean;
-}) {
+export function VideoComments({ videoId }: { videoId: string | number }) {
   const { user } = useAuth();
   const [comentarios, setComentarios] = useState<VideoComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,36 +62,32 @@ export function VideoComments({
         Comentários{total > 0 && ` (${total})`}
       </h2>
 
-      {isOwner ? (
-        <p className="text-sm text-muted-foreground">Não podes comentar no teu próprio conteúdo.</p>
-      ) : (
-        <div className="flex gap-3">
-          <Avatar className="h-9 w-9 shrink-0">
-            <AvatarFallback className="bg-secondary text-xs">{user?.initials || "?"}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1 space-y-2">
-            <Textarea
-              placeholder="Escreve um comentário…"
-              value={novoComentario}
-              onChange={(e) => setNovoComentario(e.target.value)}
-              disabled={enviando}
-              rows={2}
-              className="min-h-0 rounded-xl"
-            />
-            {erro && <p className="text-xs text-red-400">{erro}</p>}
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                onClick={() => void enviarComentario()}
-                disabled={enviando || !novoComentario.trim()}
-                className="bg-gradient-gold text-primary-foreground hover:opacity-95"
-              >
-                {enviando ? "A publicar…" : "Comentar"}
-              </Button>
-            </div>
+      <div className="flex gap-3">
+        <Avatar className="h-9 w-9 shrink-0">
+          <AvatarFallback className="bg-secondary text-xs">{user?.initials || "?"}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1 space-y-2">
+          <Textarea
+            placeholder="Escreve um comentário…"
+            value={novoComentario}
+            onChange={(e) => setNovoComentario(e.target.value)}
+            disabled={enviando}
+            rows={2}
+            className="min-h-0 rounded-xl"
+          />
+          {erro && <p className="text-xs text-red-400">{erro}</p>}
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              onClick={() => void enviarComentario()}
+              disabled={enviando || !novoComentario.trim()}
+              className="bg-gradient-gold text-primary-foreground hover:opacity-95"
+            >
+              {enviando ? "A publicar…" : "Comentar"}
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
       {loading ? (
         <p className="py-6 text-center text-sm text-muted-foreground">A carregar comentários…</p>
@@ -106,13 +96,7 @@ export function VideoComments({
       ) : (
         <div className="space-y-5">
           {comentarios.map((c) => (
-            <CommentItem
-              key={c.id}
-              comentario={c}
-              videoId={videoId}
-              podeResponder={!isOwner}
-              onChange={carregar}
-            />
+            <CommentItem key={c.id} comentario={c} videoId={videoId} onChange={carregar} />
           ))}
         </div>
       )}
@@ -123,13 +107,11 @@ export function VideoComments({
 function CommentItem({
   comentario,
   videoId,
-  podeResponder,
   onChange,
   nested = false,
 }: {
   comentario: VideoComment;
   videoId: string | number;
-  podeResponder: boolean;
   onChange: () => void | Promise<void>;
   nested?: boolean;
 }) {
@@ -253,7 +235,7 @@ function CommentItem({
             {likes > 0 && likes}
           </button>
 
-          {podeResponder && !nested && (
+          {!nested && (
             <button
               type="button"
               onClick={() => setAResponder((v) => !v)}
@@ -312,7 +294,6 @@ function CommentItem({
                 key={r.id}
                 comentario={r}
                 videoId={videoId}
-                podeResponder={podeResponder}
                 onChange={onChange}
                 nested
               />

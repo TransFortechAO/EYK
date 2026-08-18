@@ -85,7 +85,6 @@ export default function LeaderboardPage() {
         <div className="hidden md:grid md:grid-cols-[80px_1fr_120px_120px] gap-4 px-5 py-3 border-b bg-surface/60 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           <div>Rank</div>
           <div>Nome</div>
-          <div className="text-right">Moedas</div>
           <div className="text-right">Streak</div>
         </div>
         <div className="divide-y">
@@ -111,16 +110,12 @@ export default function LeaderboardPage() {
                   </p>
                 </div>
               </div>
-              <div className="hidden md:flex items-center justify-end gap-1 text-sm tabular-nums">
-                <Coins className="h-4 w-4 text-primary" />
-                {row.coins}
-              </div>
+              
               <div className="hidden md:flex items-center justify-end gap-1 text-sm tabular-nums">
                 <Flame className="h-4 w-4 text-streak" />
                 {row.streak}
               </div>
               <div className="flex md:hidden items-center gap-3 text-sm tabular-nums text-muted-foreground">
-                <span className="inline-flex items-center gap-1"><Coins className="h-3.5 w-3.5 text-primary" />{row.coins}</span>
                 <span className="inline-flex items-center gap-1"><Flame className="h-3.5 w-3.5 text-streak" />{row.streak}</span>
               </div>
             </div>

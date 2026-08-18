@@ -1,9 +1,20 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { ArrowRight, Star, Clock, PlayCircle, Hand, MessageCircle, Share2, ExternalLink } from "lucide-react";
+import {
+  ArrowRight,
+  Star,
+  Clock,
+  PlayCircle,
+  Hand,
+  MessageCircle,
+  Share2,
+  ExternalLink,
+  Check,
+  Link as LinkIcon,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -11,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Course, Video, Post } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 
 
 /* ---------- Page header ---------- */
@@ -276,19 +288,7 @@ export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: ()
               <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
             </div>
           </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2" align="end">
-              <Button variant="ghost" className="w-full justify-start gap-2 text-xs">
-                <MessageCircle className="h-4 w-4" />
-                Partilhar
-              </Button>
-            </PopoverContent>
-          </Popover>
+          <ShareButton url={`/comunidade?post=${post.id}`} titulo="Publicação na comunidade EYK" />
         </div>
         <p className="text-sm leading-relaxed text-foreground">{post.content}</p>
         <div className="flex items-center gap-4 pt-2">
@@ -342,14 +342,51 @@ export function MediaPlayer({
   externalUrl,
   title,
   cover,
+  videoId,
 }: {
   fileUrl?: string | null;
   externalUrl?: string | null;
   title: string;
   cover?: string;
+  /** Quando definido, regista uma "view" ao fim de 1 minuto de reprodução
+   * CONTÍNUA (pausar ou trocar de vídeo reinicia a contagem — regra
+   * anti-fraude do modelo de coins). Só funciona para ficheiro próprio —
+   * embeds do YouTube não expõem o estado de reprodução. */
+  videoId?: string | number;
 }) {
   const embed = !fileUrl && externalUrl ? youtubeEmbedUrl(externalUrl) : null;
   const semConteudo = !fileUrl && !embed && !externalUrl;
+
+  const segundosContinuosRef = useRef(0);
+  const intervaloRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const viewRegistadaRef = useRef(false);
+
+  const pararContagem = () => {
+    segundosContinuosRef.current = 0;
+    if (intervaloRef.current) {
+      clearInterval(intervaloRef.current);
+      intervaloRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    // vídeo novo (ou "sair e reentrar") — reinicia tudo
+    viewRegistadaRef.current = false;
+    pararContagem();
+    return pararContagem;
+  }, [videoId, fileUrl]);
+
+  const aoIniciarReproducao = () => {
+    if (!videoId || viewRegistadaRef.current || intervaloRef.current) return;
+    intervaloRef.current = setInterval(() => {
+      segundosContinuosRef.current += 1;
+      if (segundosContinuosRef.current >= 60) {
+        viewRegistadaRef.current = true;
+        pararContagem();
+        void api.registarViewVideo(videoId);
+      }
+    }, 1000);
+  };
 
   return (
     <div
@@ -357,7 +394,15 @@ export function MediaPlayer({
       style={semConteudo && cover ? { background: cover } : undefined}
     >
       {fileUrl ? (
-        <video key={fileUrl} controls className="h-full w-full" src={fileUrl}>
+        <video
+          key={fileUrl}
+          controls
+          className="h-full w-full"
+          src={fileUrl}
+          onPlay={aoIniciarReproducao}
+          onPause={pararContagem}
+          onEnded={pararContagem}
+        >
           O teu browser não suporta reprodução de vídeo.
         </video>
       ) : embed ? (
@@ -387,5 +432,55 @@ export function MediaPlayer({
         </div>
       )}
     </div>
+  );
+}
+
+/* ---------- Botão de partilha (copia link / partilha nativa) ---------- */
+export function ShareButton({
+  url,
+  titulo,
+  className,
+}: {
+  url: string;
+  titulo?: string;
+  className?: string;
+}) {
+  const [copiado, setCopiado] = useState(false);
+
+  const partilhar = async () => {
+    const absoluta = url.startsWith("http") ? url : `${window.location.origin}${url}`;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ url: absoluta, title: titulo });
+        return;
+      } catch {
+        // utilizador cancelou a partilha nativa — cai para copiar o link
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(absoluta);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      /* clipboard indisponível neste browser */
+    }
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className={cn("h-8 w-8 shrink-0", className)}>
+          <Share2 className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-2" align="end">
+        <Button variant="ghost" className="w-full justify-start gap-2 text-xs" onClick={() => void partilhar()}>
+          {copiado ? <Check className="h-4 w-4 text-primary" /> : <LinkIcon className="h-4 w-4" />}
+          {copiado ? "Link copiado!" : "Copiar link"}
+        </Button>
+      </PopoverContent>
+    </Popover>
   );
 }

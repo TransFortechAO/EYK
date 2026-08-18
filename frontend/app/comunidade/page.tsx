@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Users, Send } from "lucide-react";
 import { PageHeader, SectionHeader, PostCard, EmptyState } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,17 @@ import { api, type Post } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 
 export default function ComunidadePage() {
+  return (
+    <Suspense fallback={null}>
+      <ComunidadeConteudo />
+    </Suspense>
+  );
+}
+
+function ComunidadeConteudo() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const postPartilhado = searchParams.get("post");
   const [text, setText] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -24,6 +35,14 @@ export default function ComunidadePage() {
   useEffect(() => {
     void loadPosts();
   }, [loadPosts]);
+
+  useEffect(() => {
+    if (!postPartilhado || posts.length === 0) return;
+    const alvo = document.getElementById(`post-${postPartilhado}`);
+    if (alvo) {
+      alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [postPartilhado, posts]);
 
   const submit = async () => {
     if (!text.trim() || submitting) return;
@@ -84,7 +103,17 @@ export default function ComunidadePage() {
         {posts.length > 0 ? (
           <div className="grid gap-5 md:grid-cols-2">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} onToggleLike={() => void toggleLike(post.id)} />
+              <div
+                key={post.id}
+                id={`post-${post.id}`}
+                className={
+                  postPartilhado === post.id
+                    ? "rounded-2xl ring-2 ring-primary transition-shadow"
+                    : undefined
+                }
+              >
+                <PostCard post={post} onToggleLike={() => void toggleLike(post.id)} />
+              </div>
             ))}
           </div>
         ) : (

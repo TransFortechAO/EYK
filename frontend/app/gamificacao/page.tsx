@@ -1,34 +1,69 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, Flame, Target, TrendingUp, Award, History, Sparkles, Zap, Compass, MessageCircle, GraduationCap, Heart, PlayCircle, Trophy } from "lucide-react";
+import {
+  Coins,
+  Flame,
+  Target,
+  TrendingUp,
+  Award,
+  History,
+  Sparkles,
+  Zap,
+  GraduationCap,
+  PlayCircle,
+  Video,
+  Shield,
+  Star,
+  Users,
+  Calendar,
+  Crown,
+  Gift,
+  Check,
+  Copy,
+} from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { api, type Badge, type WalletEntry, type GamePanel } from "@/lib/api";
+import { useAuth } from "@/components/auth-gate";
 
 const badgeIcons: Record<string, typeof Sparkles> = {
+  PlayCircle,
+  Video,
   Flame,
-  Compass,
-  MessageCircle,
+  Shield,
+  Star,
   Zap,
   GraduationCap,
-  Heart,
-  PlayCircle,
-  Trophy,
-  Crown: Trophy,
   Award,
-  Calendar: Target,
-  Users: MessageCircle,
+  Users,
+  Calendar,
+  Crown,
   Coins,
 };
 
 export default function GamificacaoPage() {
+  const { user } = useAuth();
   const [panel, setPanel] = useState<GamePanel | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [wallet, setWallet] = useState<WalletEntry[]>([]);
+  const [linkCopiado, setLinkCopiado] = useState(false);
+
+  const copiarLinkConvite = async () => {
+    if (!user?.username) return;
+    const link = `${window.location.origin}/register?ref=${encodeURIComponent(user.username)}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setLinkCopiado(true);
+      setTimeout(() => setLinkCopiado(false), 2000);
+    } catch {
+      /* clipboard indisponível neste browser */
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -46,15 +81,19 @@ export default function GamificacaoPage() {
     return () => { alive = false; };
   }, []);
 
-  const p = panel || { coins: 0, streak: 0, streakRecord: 0, level: 1, levelProgress: 0, nextLevelCoins: 500, initials: "?", name: "Estudante" };
-  const xpNeeded = Math.max(0, p.nextLevelCoins - p.coins);
+  const p = panel || {
+    coins: 0, xp: 0, streak: 0, streakRecord: 0, level: 1,
+    levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante",
+  };
+  const xpNeeded = Math.max(0, p.nextLevelXp - p.xp);
 
   return (
     <div className="space-y-8">
       <PageHeader title="Gamificação" description="Conquistas, moedas e progresso — acompanha a tua jornada." />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard icon={Coins} label="Moedas EYK" value={p.coins} tone="gold" />
+        <StatCard icon={Zap} label="XP total" value={p.xp} />
         <StatCard icon={Flame} label="Streak atual" value={`${p.streak} dias`} tone="streak" />
         <StatCard icon={Target} label="Recorde streak" value={`${p.streakRecord} dias`} />
         <StatCard icon={TrendingUp} label="Nível atual" value={`Nível ${p.level}`} tone="success" />
@@ -72,7 +111,9 @@ export default function GamificacaoPage() {
               <div>
                 <p className="font-serif text-2xl font-semibold">Olá, {p.name} 👋</p>
                 <p className="text-sm text-muted-foreground">
-                  Faltam {xpNeeded} moedas para chegares ao Nível {p.level + 1}.
+                  {xpNeeded > 0
+                    ? `Faltam ${xpNeeded} XP para chegares ao Nível ${p.level + 1}.`
+                    : "Atingiste o nível máximo."}
                 </p>
               </div>
               <div className="text-right">
@@ -132,6 +173,30 @@ export default function GamificacaoPage() {
           })}
         </div>
       </section>
+
+      <Card className="p-6 shadow-soft">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-gold/15 text-primary">
+              <Gift className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-serif text-lg font-semibold">Convida um amigo</p>
+              <p className="text-sm text-muted-foreground">
+                Ganha +200 coins por cada amigo que se registar com o teu link.
+              </p>
+            </div>
+          </div>
+          <Button
+            onClick={() => void copiarLinkConvite()}
+            disabled={!user?.username}
+            className="shrink-0 gap-2 bg-gradient-gold text-primary-foreground hover:opacity-95"
+          >
+            {linkCopiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {linkCopiado ? "Link copiado!" : "Copiar o meu link"}
+          </Button>
+        </div>
+      </Card>
 
       <section className="space-y-4">
         <h2 className="font-serif text-xl font-semibold flex items-center gap-2">

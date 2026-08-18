@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Suspense, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, UserPlus, Hand, BookOpen, Users, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,16 @@ const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
 const EYK_BG = "#0a0a0a";
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterConteudo />
+    </Suspense>
+  );
+}
+
+function RegisterConteudo() {
+  const searchParams = useSearchParams();
+  const ref = searchParams.get("ref") || undefined;
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -43,7 +54,7 @@ export default function RegisterPage() {
 
     startTransition(async () => {
       try {
-        const res = await api.register(username.trim(), email.trim(), password);
+        const res = await api.register(username.trim(), email.trim(), password, ref);
         if (!res?.ok) {
           setErrorMsg(res?.error || "Não foi possível criar a conta. Tenta novamente.");
           return;

@@ -16,6 +16,7 @@ import {
   ArrowDown,
   Upload,
   Film,
+  Image as ImageIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -42,10 +43,12 @@ export default function ProfessorVideosPage() {
   const [editando, setEditando] = useState<ProfessorVideo | null>(null);
   const [form, setForm] = useState<ProfessorVideoPayload>(EMPTY_FORM);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [submetendo, setSubmetendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [reordenando, setReordenando] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const carregar = async () => {
     setLoading(true);
@@ -64,6 +67,7 @@ export default function ProfessorVideosPage() {
     setEditando(null);
     setForm(EMPTY_FORM);
     setVideoFile(null);
+    setThumbnailPreview(null);
     setErro(null);
     setModalAberto(true);
   };
@@ -77,6 +81,7 @@ export default function ProfessorVideosPage() {
       ativo: video.ativo,
     });
     setVideoFile(null);
+    setThumbnailPreview(video.thumbnail || null);
     setErro(null);
     setModalAberto(true);
   };
@@ -86,6 +91,23 @@ export default function ProfessorVideosPage() {
   const onVideoSelecionado = (e: React.ChangeEvent<HTMLInputElement>) => {
     const ficheiro = e.target.files?.[0] || null;
     if (ficheiro) setVideoFile(ficheiro);
+    e.target.value = "";
+  };
+
+  const escolherThumbnail = () => thumbnailInputRef.current?.click();
+
+  const onThumbnailSelecionada = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const ficheiro = e.target.files?.[0] || null;
+    if (!ficheiro) return;
+    if (!ficheiro.type.startsWith("image/")) {
+      setErro("Escolhe um ficheiro de imagem válido.");
+      return;
+    }
+    setForm((prev) => ({ ...prev, thumbnail: ficheiro }));
+    setThumbnailPreview((prev) => {
+      if (prev && prev.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(ficheiro);
+    });
     e.target.value = "";
   };
 
@@ -243,6 +265,44 @@ export default function ProfessorVideosPage() {
                 <Textarea id="v-descricao" rows={3} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
               </div>
               <div className="space-y-2">
+                <Label>Imagem de capa (opcional)</Label>
+                <input
+                  ref={thumbnailInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={onThumbnailSelecionada}
+                  disabled={submetendo}
+                  className="sr-only"
+                />
+                {thumbnailPreview ? (
+                  <button
+                    type="button"
+                    onClick={escolherThumbnail}
+                    disabled={submetendo}
+                    className="group relative block w-full overflow-hidden rounded-xl border border-border/60 disabled:opacity-50"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumbnailPreview} alt="Pré-visualização da capa" className="h-32 w-full object-cover" />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-xs font-medium text-transparent transition group-hover:bg-black/50 group-hover:text-white">
+                      Trocar imagem
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={escolherThumbnail}
+                    disabled={submetendo}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    Escolher imagem de capa
+                  </button>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Se não escolheres uma, é usado automaticamente um frame do vídeo.
+                </p>
+              </div>
+              <div className="space-y-2">
                 <Label>Ficheiro de vídeo</Label>
                 <input
                   ref={videoInputRef}
@@ -285,15 +345,7 @@ export default function ProfessorVideosPage() {
                 ) : null}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="v-url">Link externo (YouTube ou outro, opcional se enviaste um ficheiro)</Label>
-                <Input
-                  id="v-url"
-                  value={form.url_externa}
-                  onChange={(e) => setForm({ ...form, url_externa: e.target.value })}
-                  placeholder="https://youtube.com/..."
-                />
-              </div>
+              
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">Publicar vídeo</p>

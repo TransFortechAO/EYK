@@ -1,7 +1,18 @@
 // Configuração da API para integração com o backend Django
 export const API_BASE_URL = (() => {
-  const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  return raw.replace(/\/$/, '');
+  const env = process.env.NEXT_PUBLIC_API_URL;
+  if (env) return env.replace(/\/$/, '');
+
+  // Sem NEXT_PUBLIC_API_URL definido: deriva o endereço da API a partir de
+  // onde o browser está a aceder à app (mesmo host, porta 8000). Isto faz
+  // o acesso pela rede local funcionar sem configuração — aceder por
+  // http://192.168.x.x:3000 chama automaticamente http://192.168.x.x:8000,
+  // em vez de tentar sempre "localhost" (que, visto de outro dispositivo,
+  // aponta para esse dispositivo, não para o servidor Django).
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  }
+  return 'http://localhost:8000';
 })();
 
 // Resolve um caminho de media relativo (ex: "/media/videos/x.mp4") devolvido
@@ -262,11 +273,12 @@ export type Category = {
 
 export type GamePanel = {
   coins: number;
+  xp: number;
   streak: number;
   streakRecord: number;
   level: number;
   levelProgress: number;
-  nextLevelCoins: number;
+  nextLevelXp: number;
   initials: string;
   name: string;
 };
@@ -372,6 +384,7 @@ export type ProfessorCursoPayload = {
   preco?: number | string | null;
   duracao?: string;
   ativo?: boolean;
+  thumbnail?: File | null;
 };
 
 export type ProfessorVideo = {
@@ -394,6 +407,7 @@ export type ProfessorVideoPayload = {
   url_externa?: string;
   ativo?: boolean;
   arquivo?: File | null;
+  thumbnail?: File | null;
 };
 
 export type CursoEngajamento = {
@@ -426,6 +440,7 @@ type RawCourse = {
   duracao?: number | string | null;
   total_inscritos?: number | string | null;
   progress?: number | null;
+  thumbnail?: string | null;
   videos?: RawCourseVideo[] | null;
 };
 
@@ -436,6 +451,7 @@ type RawVideo = {
   duracao?: string | null;
   total_visualizacoes?: number | string | null;
   criado_em?: string | null;
+  thumbnail?: string | null;
 };
 
 type RawVideoDetail = RawVideo & {
@@ -537,6 +553,15 @@ function coverFor(idLike: number | string): string {
   return COVERS[sum % COVERS.length];
 }
 
+// Usa a imagem de capa real (enviada pelo professor ou gerada automaticamente
+// a partir de um frame do vídeo) quando existir; caso contrário mantém o
+// gradiente decorativo gerado a partir do id.
+function coverOuThumbnail(idLike: number | string, thumbnail?: string | null): string {
+  const url = mediaUrl(thumbnail);
+  if (url) return `url('${url}') center / cover no-repeat`;
+  return coverFor(idLike);
+}
+
 function daysAgo(d?: string | null): number {
   if (!d) return 1;
   try {
@@ -557,7 +582,10 @@ function _appendCursoPayload(formData: FormData, payload: Partial<ProfessorCurso
   if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
 }
 
-function _appendVideoPayload(formData: FormData, payload: Omit<Partial<ProfessorVideoPayload>, 'arquivo'>) {
+function _appendVideoPayload(
+  formData: FormData,
+  payload: Omit<Partial<ProfessorVideoPayload>, 'arquivo' | 'thumbnail'>,
+) {
   if (payload.titulo !== undefined) formData.append('titulo', payload.titulo);
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
   if (payload.url_externa !== undefined) formData.append('url_externa', payload.url_externa);
@@ -593,7 +621,7 @@ function normalizeCourse(raw: RawCourse): Course {
     rating: 4.7,
     students: Number(raw?.total_inscritos ?? 0) || 0,
     progress: typeof raw?.progress === "number" ? raw.progress : undefined,
-    cover: coverFor(raw?.id ?? "c"),
+    cover: coverOuThumbnail(raw?.id ?? "c", raw?.thumbnail),
   };
 }
 
@@ -606,7 +634,7 @@ function normalizeVideo(raw: RawVideo): Video {
     duration: raw?.duracao || "5:00",
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
     daysAgo: daysAgo(raw?.criado_em),
-    cover: coverFor(raw?.id ?? "v"),
+    cover: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
   };
 }
 
@@ -619,7 +647,7 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     teacher: profNome,
     teacherAvatar: initiais(profNome),
     professorId: typeof raw?.professor === "number" ? raw.professor : null,
-    cover: coverFor(raw?.id ?? "v"),
+    cover: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
     fileUrl: mediaUrl(raw?.arquivo),
     externalUrl: raw?.url_externa || "",
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
@@ -720,12 +748,12 @@ export const api = {
   // NOTA: assume que existe (ou vai ser criado) o endpoint '/accounts/auth/register/'
   // no backend Django, seguindo a mesma convenção de '/accounts/auth/login/'.
   // Confirmar com o backend antes de usar em produção.
-  register: async (username: string, email: string, password: string) => {
+  register: async (username: string, email: string, password: string, ref?: string) => {
     const res = await fetchAPI<{ ok: boolean; user: AuthUser; error?: string }>(
       '/accounts/auth/register/',
       {
         method: 'POST',
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify(ref ? { username, email, password, ref } : { username, email, password }),
       },
     );
     return res;
@@ -888,8 +916,8 @@ export const api = {
       /* fallback */
     }
     return {
-      coins: 0, streak: 0, streakRecord: 0, level: 1,
-      levelProgress: 0, nextLevelCoins: 500, initials: "?", name: "Estudante",
+      coins: 0, xp: 0, streak: 0, streakRecord: 0, level: 1,
+      levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante",
     };
   },
   getLeaderboard: async (): Promise<LeaderRow[]> => {
@@ -1082,6 +1110,16 @@ export const api = {
       body: JSON.stringify({ tipo }),
     });
   },
+  registarViewVideo: async (
+    videoId: string | number,
+  ): Promise<{ novaView: boolean; cursoConcluido: boolean } | null> => {
+    try {
+      return await fetchAPI(`/api/videos/${videoId}/registar-view/`, { method: 'POST' });
+    } catch {
+      // tracking de view não é crítico — nunca deve interromper a reprodução
+      return null;
+    }
+  },
 
   // =========================================================================
   //  COMENTÁRIOS EM VÍDEOS (avulsos ou aulas de curso)
@@ -1147,6 +1185,7 @@ export const api = {
     criarCurso: async (payload: ProfessorCursoPayload, videos: File[]): Promise<ProfessorCurso> => {
       const formData = new FormData();
       _appendCursoPayload(formData, payload);
+      if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
       videos.forEach((v) => formData.append('videos', v));
       return await fetchAPI('/api/professor/cursos/', { method: 'POST', body: formData });
     },
@@ -1155,7 +1194,7 @@ export const api = {
       payload: Partial<ProfessorCursoPayload>,
       novosVideos: File[] = [],
     ): Promise<ProfessorCurso> => {
-      if (novosVideos.length === 0) {
+      if (novosVideos.length === 0 && !payload.thumbnail) {
         return await fetchAPI(`/api/professor/cursos/${id}/`, {
           method: 'PATCH',
           body: JSON.stringify(payload),
@@ -1163,6 +1202,7 @@ export const api = {
       }
       const formData = new FormData();
       _appendCursoPayload(formData, payload);
+      if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
       novosVideos.forEach((v) => formData.append('videos', v));
       return await fetchAPI(`/api/professor/cursos/${id}/`, { method: 'PATCH', body: formData });
     },
@@ -1180,21 +1220,23 @@ export const api = {
       return await fetchAPI('/api/professor/videos/');
     },
     criarVideo: async (payload: ProfessorVideoPayload): Promise<ProfessorVideo> => {
-      const { arquivo, ...resto } = payload;
-      if (arquivo) {
+      const { arquivo, thumbnail, ...resto } = payload;
+      if (arquivo || thumbnail) {
         const formData = new FormData();
         _appendVideoPayload(formData, resto);
-        formData.append('arquivo', arquivo);
+        if (arquivo) formData.append('arquivo', arquivo);
+        if (thumbnail) formData.append('thumbnail', thumbnail);
         return await fetchAPI('/api/professor/videos/', { method: 'POST', body: formData });
       }
       return await fetchAPI('/api/professor/videos/', { method: 'POST', body: JSON.stringify(resto) });
     },
     atualizarVideo: async (id: number, payload: Partial<ProfessorVideoPayload>): Promise<ProfessorVideo> => {
-      const { arquivo, ...resto } = payload;
-      if (arquivo) {
+      const { arquivo, thumbnail, ...resto } = payload;
+      if (arquivo || thumbnail) {
         const formData = new FormData();
         _appendVideoPayload(formData, resto);
-        formData.append('arquivo', arquivo);
+        if (arquivo) formData.append('arquivo', arquivo);
+        if (thumbnail) formData.append('thumbnail', thumbnail);
         return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: formData });
       }
       return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: JSON.stringify(resto) });

@@ -4,14 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Heart, Eye, Calendar, Maximize2 } from "lucide-react";
-import { MediaPlayer } from "@/components/eyk";
+import { MediaPlayer, ShareButton } from "@/components/eyk";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { api, type VideoDetail, type Video } from "@/lib/api";
-import { useAuth } from "@/components/auth-gate";
 
 function formatarData(iso: string): string {
   if (!iso) return "";
@@ -25,7 +24,6 @@ function formatarData(iso: string): string {
 export default function VideoPlayerPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuth();
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [outrosVideos, setOutrosVideos] = useState<Video[]>([]);
@@ -97,6 +95,7 @@ export default function VideoPlayerPage() {
                 externalUrl={video.externalUrl}
                 title={video.title}
                 cover={video.cover}
+                videoId={video.id}
               />
               <button
                 type="button"
@@ -120,7 +119,10 @@ export default function VideoPlayerPage() {
             )}
           </div>
 
-          <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{video.title}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{video.title}</h1>
+            <ShareButton url={`/videos/${video.id}`} titulo={video.title} />
+          </div>
 
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-surface/40 px-4 py-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -152,7 +154,7 @@ export default function VideoPlayerPage() {
             </Card>
           )}
 
-          <VideoComments videoId={video.id} isOwner={user?.id === video.professorId} />
+          <VideoComments videoId={video.id} />
         </div>
 
         {/* Sidebar: mais vídeos */}

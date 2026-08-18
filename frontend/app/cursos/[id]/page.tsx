@@ -13,7 +13,7 @@ import {
   Maximize2,
   CheckCircle2,
 } from "lucide-react";
-import { CourseCard, MediaPlayer, SectionHeader, EmptyState } from "@/components/eyk";
+import { CourseCard, MediaPlayer, SectionHeader, EmptyState, ShareButton } from "@/components/eyk";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +23,10 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { api, type Course, type CourseDetail } from "@/lib/api";
-import { useAuth } from "@/components/auth-gate";
 
 export default function CoursePlayerPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuth();
   const [curso, setCurso] = useState<CourseDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
@@ -115,6 +113,7 @@ export default function CoursePlayerPage() {
                   externalUrl={activeVideo.externalUrl}
                   title={activeVideo.title}
                   cover={curso.cover}
+                  videoId={activeVideo.id}
                 />
               ) : (
                 <div
@@ -161,7 +160,10 @@ export default function CoursePlayerPage() {
             </span>
           </div>
 
-          <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{curso.title}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{curso.title}</h1>
+            <ShareButton url={`/cursos/${curso.id}`} titulo={curso.title} />
+          </div>
 
           <div className="flex items-center gap-3">
             <Avatar className="h-11 w-11">
@@ -258,7 +260,7 @@ export default function CoursePlayerPage() {
           </Tabs>
 
           {activeVideo && (
-            <VideoComments videoId={activeVideo.id} isOwner={user?.id === curso.professorId} />
+            <VideoComments videoId={activeVideo.id} />
           )}
 
           {relacionados.length > 0 && (
