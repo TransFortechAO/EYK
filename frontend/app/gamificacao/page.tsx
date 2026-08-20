@@ -26,7 +26,7 @@ import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { api, type Badge, type WalletEntry, type GamePanel } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";

@@ -93,10 +93,6 @@ export function RelatedVideos({
       if (v.teacher && currentVideo.teacher && v.teacher === currentVideo.teacher) {
         score += 10;
       }
-      // Se tiver professorId (mais preciso)
-      if (currentVideo.professorId && (v as any).professorId === currentVideo.professorId) {
-        score += 10;
-      }
 
       // Critério 2: similaridade no título (palavras em comum)
       const similarity = titleSimilarity(currentVideo.title, v.title || "");

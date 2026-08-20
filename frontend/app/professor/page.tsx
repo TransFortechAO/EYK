@@ -2,59 +2,90 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Video, Users, Save, Shield } from "lucide-react";
-import { PageHeader } from "@/components/eyk";
+import { BookOpen, Video, Users, Eye, Sparkles, Shield, User2 } from "lucide-react";
+import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { api, type ProfessorPerfil } from "@/lib/api";
+import { api, tempoRelativo, type ProfessorCurso, type ProfessorVideo } from "@/lib/api";
 
-type SaveState = "idle" | "saving" | "saved" | "error";
+type AtividadeItem = {
+  id: string;
+  tipo: "curso" | "video";
+  titulo: string;
+  visualizacoes: number;
+  criadoEm: string;
+  href: string;
+};
 
-export default function ProfessorPerfilPage() {
-  const [perfil, setPerfil] = useState<ProfessorPerfil | null>(null);
+export default function ProfessorDashboardPage() {
+  const [cursos, setCursos] = useState<ProfessorCurso[]>([]);
+  const [videos, setVideos] = useState<ProfessorVideo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [nomePublico, setNomePublico] = useState("");
-  const [area, setArea] = useState("");
-  const [bio, setBio] = useState("");
-  const [saveState, setSaveState] = useState<SaveState>("idle");
 
   useEffect(() => {
-    api.professor
-      .getPerfil()
-      .then((p) => {
-        setPerfil(p);
-        setNomePublico(p.nome_publico);
-        setArea(p.area);
-        setBio(p.bio || "");
-      })
-      .finally(() => setLoading(false));
+    let alive = true;
+    (async () => {
+      const [c, v] = await Promise.all([api.professor.getCursos(), api.professor.getVideos()]);
+      if (!alive) return;
+      setCursos(c);
+      setVideos(v);
+      setLoading(false);
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const guardar = async () => {
-    setSaveState("saving");
-    try {
-      const p = await api.professor.atualizarPerfil({ nome_publico: nomePublico, area, bio });
-      setPerfil(p);
-      setSaveState("saved");
-    } catch {
-      setSaveState("error");
-    } finally {
-      setTimeout(() => setSaveState("idle"), 2500);
-    }
-  };
+  const totalAlunos = cursos.reduce((acc, c) => acc + c.total_inscritos, 0);
+  const totalVisualizacoes =
+    cursos.reduce((acc, c) => acc + c.total_visualizacoes, 0) +
+    videos.reduce((acc, v) => acc + v.total_visualizacoes, 0);
+  const totalPublicados = cursos.filter((c) => c.ativo).length + videos.filter((v) => v.ativo).length;
 
-  const initials = (nomePublico || "P").trim().slice(0, 2).toUpperCase();
+  const atividade: AtividadeItem[] = [
+    ...cursos.map((c) => ({
+      id: `curso-${c.id}`,
+      tipo: "curso" as const,
+      titulo: c.titulo,
+      visualizacoes: c.total_visualizacoes,
+      criadoEm: c.criado_em,
+      href: `/professor/cursos/${c.id}`,
+    })),
+    ...videos.map((v) => ({
+      id: `video-${v.id}`,
+      tipo: "video" as const,
+      titulo: v.titulo,
+      visualizacoes: v.total_visualizacoes,
+      criadoEm: v.criado_em,
+      href: `/professor/videos/${v.id}`,
+    })),
+  ]
+    .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+    .slice(0, 5);
 
   return (
     <div className="space-y-8">
       <PageHeader title="Painel do Professor" description="Gere o teu perfil público, cursos e vídeos." />
 
       <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard icon={Users} label="Alunos" value={totalAlunos} hint="inscritos nos teus cursos" tone="gold" />
+        <StatCard icon={Eye} label="Visualizações" value={totalVisualizacoes} hint="cursos + vídeos" />
+        <StatCard icon={Sparkles} label="Publicados" value={totalPublicados} hint="conteúdos ativos" tone="success" />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link href="/professor/perfil">
+          <Card className="p-5 shadow-soft hover:shadow-elevated transition-shadow cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500/15 text-violet-300">
+                <User2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-medium">Perfil do Professor</p>
+                <p className="text-xs text-muted-foreground">Biografia, área de atuação e nome público</p>
+              </div>
+            </div>
+          </Card>
+        </Link>
         <Link href="/professor/cursos">
           <Card className="p-5 shadow-soft hover:shadow-elevated transition-shadow cursor-pointer">
             <div className="flex items-center gap-3">
@@ -96,52 +127,43 @@ export default function ProfessorPerfilPage() {
         </Link>
       </div>
 
-      {loading ? (
-        <Card className="p-10 text-center text-muted-foreground shadow-soft">A carregar perfil…</Card>
-      ) : (
-        <Card className="p-6 shadow-soft space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <Avatar className="h-20 w-20 shadow-md">
-              <AvatarFallback className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-2">
-              <p className="font-serif text-xl font-semibold">{perfil?.nome_publico}</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="gap-1 text-xs">
-                  <Users className="h-3 w-3" /> {perfil?.seguidores ?? 0} seguidores
-                </Badge>
-                <Badge className={perfil?.ativo ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-amber-500/15 text-amber-300 border-amber-500/30"}>
-                  {perfil?.ativo ? "Perfil ativo" : "Perfil pendente"}
-                </Badge>
-              </div>
+      <section className="space-y-4">
+        <h2 className="font-serif text-xl font-semibold">Atividade recente</h2>
+        {loading ? (
+          <Card className="p-10 text-center text-muted-foreground shadow-soft">A carregar…</Card>
+        ) : atividade.length === 0 ? (
+          <Card className="p-10 text-center text-muted-foreground shadow-soft">
+            Ainda não tens cursos nem vídeos publicados.
+          </Card>
+        ) : (
+          <Card className="shadow-soft overflow-hidden">
+            <div className="divide-y">
+              {atividade.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-surface/60"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary text-secondary-foreground">
+                      {item.tipo === "curso" ? <BookOpen className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{item.titulo}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.tipo === "curso" ? "Curso" : "Vídeo"} · criado {tempoRelativo(item.criadoEm)}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                    <Eye className="h-3.5 w-3.5" /> {item.visualizacoes}
+                  </span>
+                </Link>
+              ))}
             </div>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="nome-publico">Nome público</Label>
-              <Input id="nome-publico" value={nomePublico} onChange={(e) => setNomePublico(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="area">Área de atuação</Label>
-              <Input id="area" value={area} onChange={(e) => setArea(e.target.value)} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="bio">Biografia</Label>
-              <Textarea id="bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={() => void guardar()} disabled={saveState === "saving"} className="gap-2">
-              <Save className="h-4 w-4" />
-              {saveState === "saving" ? "A guardar…" : saveState === "saved" ? "Guardado ✓" : saveState === "error" ? "Erro — tenta de novo" : "Guardar alterações"}
-            </Button>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
+      </section>
     </div>
   );
 }

@@ -12,11 +12,14 @@ import {
   CircleDot,
   Heart,
   Eye,
+  MessageCircle,
   ArrowUp,
   ArrowDown,
   Upload,
   Film,
   Image as ImageIcon,
+  Search,
+  PlayCircle,
 } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -26,8 +29,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { api, type ProfessorVideo, type ProfessorVideoPayload } from "@/lib/api";
+import { api, tempoRelativo, type ProfessorVideo, type ProfessorVideoPayload } from "@/lib/api";
+
+type FiltroEstado = "todos" | "publicado" | "rascunho";
 
 const EMPTY_FORM: ProfessorVideoPayload = {
   titulo: "",
@@ -47,6 +53,8 @@ export default function ProfessorVideosPage() {
   const [submetendo, setSubmetendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [reordenando, setReordenando] = useState(false);
+  const [pesquisa, setPesquisa] = useState("");
+  const [filtro, setFiltro] = useState<FiltroEstado>("todos");
   const videoInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,6 +168,14 @@ export default function ProfessorVideosPage() {
     }
   };
 
+  const semFiltroAtivo = filtro === "todos" && !pesquisa.trim();
+  const videosFiltrados = videos.filter((video) => {
+    if (filtro === "publicado" && !video.ativo) return false;
+    if (filtro === "rascunho" && video.ativo) return false;
+    if (pesquisa.trim() && !video.titulo.toLowerCase().includes(pesquisa.trim().toLowerCase())) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-8">
       <PageHeader title="Meus Vídeos" description="Publica e organiza os teus vídeos.">
@@ -168,6 +184,27 @@ export default function ProfessorVideosPage() {
           Publicar vídeo
         </Button>
       </PageHeader>
+
+      {!loading && videos.length > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-sm flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={pesquisa}
+              onChange={(e) => setPesquisa(e.target.value)}
+              placeholder="Pesquisar vídeo…"
+              className="rounded-full pl-9"
+            />
+          </div>
+          <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FiltroEstado)}>
+            <TabsList>
+              <TabsTrigger value="todos">Todos</TabsTrigger>
+              <TabsTrigger value="publicado">Publicado</TabsTrigger>
+              <TabsTrigger value="rascunho">Rascunho</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
 
       {loading ? (
         <div className="py-20 text-center text-muted-foreground">
@@ -182,70 +219,90 @@ export default function ProfessorVideosPage() {
           <p className="mt-4 font-serif text-lg">Ainda não tens vídeos.</p>
           <p className="text-sm text-muted-foreground mt-1">Publica o teu primeiro vídeo para começares.</p>
         </Card>
+      ) : videosFiltrados.length === 0 ? (
+        <Card className="p-10 text-center shadow-soft text-muted-foreground">
+          Nenhum vídeo corresponde à pesquisa/filtro.
+        </Card>
       ) : (
         <div className="space-y-3">
-          {videos.map((video, index) => (
-            <Card key={video.id} className="p-4 shadow-soft flex items-center gap-4">
-              <div className="flex flex-col gap-1 shrink-0">
-                <button
-                  type="button"
-                  disabled={index === 0 || reordenando}
-                  onClick={() => void mover(index, -1)}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition"
-                  aria-label="Mover para cima"
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  disabled={index === videos.length - 1 || reordenando}
-                  onClick={() => void mover(index, 1)}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition"
-                  aria-label="Mover para baixo"
-                >
-                  <ArrowDown className="h-4 w-4" />
-                </button>
-              </div>
+          {videosFiltrados.map((video) => {
+            const index = videos.indexOf(video);
+            return (
+              <Card key={video.id} className="p-4 shadow-soft flex items-center gap-4">
+                {semFiltroAtivo && (
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      type="button"
+                      disabled={index === 0 || reordenando}
+                      onClick={() => void mover(index, -1)}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition"
+                      aria-label="Mover para cima"
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={index === videos.length - 1 || reordenando}
+                      onClick={() => void mover(index, 1)}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition"
+                      aria-label="Mover para baixo"
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium truncate">{video.titulo}</p>
-                  {video.ativo ? (
-                    <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shrink-0">Publicado</Badge>
-                  ) : (
-                    <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 shrink-0">Rascunho</Badge>
-                  )}
+                <div
+                  className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-secondary bg-cover bg-center text-secondary-foreground"
+                  style={video.thumbnail ? { backgroundImage: `url('${video.thumbnail}')` } : undefined}
+                >
+                  {!video.thumbnail && <PlayCircle className="h-6 w-6 opacity-60" />}
                 </div>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                  <span className="flex items-center gap-1">
-                    <Heart className="h-3.5 w-3.5" /> {video.total_likes}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-3.5 w-3.5" /> {video.total_visualizacoes}
-                  </span>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirEditar(video)}>
-                  <Pencil className="h-3.5 w-3.5" /> Editar
-                </Button>
-                <Link href={`/professor/videos/${video.id}`}>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <BarChart3 className="h-3.5 w-3.5" /> Engajamento
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{video.titulo}</p>
+                    {video.ativo ? (
+                      <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shrink-0">Publicado</Badge>
+                    ) : (
+                      <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 shrink-0">Rascunho</Badge>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-3.5 w-3.5" /> {video.total_visualizacoes}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Heart className="h-3.5 w-3.5" /> {video.total_likes}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="h-3.5 w-3.5" /> {video.total_comentarios}
+                    </span>
+                    <span className="flex items-center gap-1">{tempoRelativo(video.atualizado_em)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirEditar(video)}>
+                    <Pencil className="h-3.5 w-3.5" /> Editar
                   </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
-                  onClick={() => void apagar(video)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+                  <Link href={`/professor/videos/${video.id}`}>
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <BarChart3 className="h-3.5 w-3.5" /> Engajamento
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                    onClick={() => void apagar(video)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 

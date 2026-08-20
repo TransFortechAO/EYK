@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
   ArrowRight,
-  Star,
+  Calendar,
   Clock,
   PlayCircle,
   Hand,
@@ -22,7 +22,8 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Course, Video, Post } from "@/lib/mock-data";
-import { UserAvatar, UserInitialsLink } from "@/components/UserAvatar";
+import { UserAvatar } from "@/components/UserAvatar";
+import { api, formatarDataCurta } from "@/lib/api";
 
 
 /* ---------- Page header ---------- */
@@ -177,10 +178,12 @@ export function CourseCard({ course }: { course: Course }) {
         <div className="space-y-3 p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="rounded-full bg-secondary px-2 py-0.5">{course.level}</span>
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {course.durationHours}h
-            </span>
+            {course.durationLabel && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {course.durationLabel}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1">
               <PlayCircle className="h-3.5 w-3.5" />
               {course.lessons} aulas
@@ -198,10 +201,12 @@ export function CourseCard({ course }: { course: Course }) {
               </Avatar>
               <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>
             </div>
-            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium">
-              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-              {course.rating}
-            </span>
+            {course.publishedAt && (
+              <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" />
+                {formatarDataCurta(course.publishedAt)}
+              </span>
+            )}
           </div>
           {typeof course.progress === "number" && (
             <div className="pt-1">
@@ -262,6 +267,12 @@ export function VideoCard({ video }: { video: Video }) {
             <span>{video.teacher}</span>
             <span>{video.views.toLocaleString()} visualizações</span>
           </div>
+          {video.publishedAt && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              {formatarDataCurta(video.publishedAt)}
+            </div>
+          )}
         </div>
       </Card>
     </Link>
@@ -297,15 +308,10 @@ export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: ()
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              {/* <AvatarFallback className="bg-secondary">{post.initials}</AvatarFallback> */}
-              <UserAvatar
-              name={post.author}
-              initials={post.initials}
-               userId={post.id}
-              />
+              <UserAvatar name={post.author} initials={post.initials} noLink />
             </Avatar>
             <div>
-              <a className="font-medium text-sm">{post.author}</a>
+              <p className="font-medium text-sm">{post.author}</p>
               <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
             </div>
           </div>

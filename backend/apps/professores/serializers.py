@@ -30,7 +30,7 @@ class ProfessorSerializer(serializers.ModelSerializer):
 class ProfessorCursoVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
-        fields = ['id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem']
+        fields = ['id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem', 'duracao_segundos']
         read_only_fields = fields
 
 
@@ -39,22 +39,33 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
     categoria = serializers.CharField(source='categoria.nome', read_only=True, default=None)
     total_inscritos = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
+    conclusao_media = serializers.SerializerMethodField()
+    duracao_total_segundos = serializers.SerializerMethodField()
     videos = ProfessorCursoVideoSerializer(many=True, read_only=True)
 
     class Meta:
         model = Curso
         fields = [
             'id', 'titulo', 'descricao', 'categoria', 'categoria_nome', 'preco',
-            'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em',
-            'total_inscritos', 'total_visualizacoes', 'videos',
+            'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em',
+            'total_inscritos', 'total_visualizacoes', 'conclusao_media', 'duracao_total_segundos', 'videos',
         ]
-        read_only_fields = ['id', 'criado_em', 'total_inscritos', 'total_visualizacoes', 'videos']
+        read_only_fields = [
+            'id', 'criado_em', 'atualizado_em', 'total_inscritos', 'total_visualizacoes',
+            'conclusao_media', 'duracao_total_segundos', 'videos',
+        ]
 
     def get_total_inscritos(self, obj):
         return obj.total_inscritos()
 
     def get_total_visualizacoes(self, obj):
         return obj.total_visualizacoes()
+
+    def get_conclusao_media(self, obj):
+        return obj.conclusao_media()
+
+    def get_duracao_total_segundos(self, obj):
+        return sum(v.duracao_segundos for v in obj.videos.all())
 
     def create(self, validated_data):
         categoria_nome = (validated_data.pop('categoria_nome', '') or '').strip()
@@ -78,20 +89,28 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
 class ProfessorVideoSerializer(serializers.ModelSerializer):
     total_likes = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
+    total_comentarios = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail',
-            'criado_em', 'ativo', 'ordem', 'total_likes', 'total_visualizacoes',
+            'criado_em', 'atualizado_em', 'ativo', 'ordem', 'duracao_segundos',
+            'total_likes', 'total_visualizacoes', 'total_comentarios',
         ]
-        read_only_fields = ['id', 'criado_em', 'total_likes', 'total_visualizacoes']
+        read_only_fields = [
+            'id', 'criado_em', 'atualizado_em', 'duracao_segundos',
+            'total_likes', 'total_visualizacoes', 'total_comentarios',
+        ]
 
     def get_total_likes(self, obj):
         return obj.total_likes()
 
     def get_total_visualizacoes(self, obj):
         return obj.total_visualizacoes()
+
+    def get_total_comentarios(self, obj):
+        return obj.comentarios.count()
 
     def validate(self, attrs):
         arquivo = attrs.get('arquivo', getattr(self.instance, 'arquivo', None))

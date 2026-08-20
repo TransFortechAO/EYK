@@ -7,9 +7,8 @@ import { PageHeader, SectionHeader, PostCard, EmptyState } from "@/components/ey
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { api, type Post } from "@/lib/api";
-import { useAuth } from "@/components/auth-gate";
 import { UserInitialsLink } from "@/components/UserAvatar";
 
 export default function ComunidadePage() {
@@ -21,7 +20,6 @@ export default function ComunidadePage() {
 }
 
 function ComunidadeConteudo() {
-  const { user } = useAuth();
   const searchParams = useSearchParams();
   const postPartilhado = searchParams.get("post");
   const [text, setText] = useState("");
@@ -65,8 +63,6 @@ function ComunidadeConteudo() {
       /* ignora */
     }
   };
-
-  const initials = user?.initials || "?";
 
   return (
     <div className="space-y-8">

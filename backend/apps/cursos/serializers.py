@@ -22,7 +22,10 @@ class CursoVideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Video
-        fields = ['id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail', 'ordem', 'total_likes']
+        fields = [
+            'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail', 'ordem',
+            'duracao_segundos', 'total_likes',
+        ]
 
     def get_total_likes(self, obj):
         return obj.total_likes()
@@ -35,6 +38,8 @@ class CourseSerializer(serializers.ModelSerializer):
     total_visualizacoes = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     inscrito = serializers.SerializerMethodField()
+    sou_o_professor = serializers.SerializerMethodField()
+    duracao_total_segundos = serializers.SerializerMethodField()
     videos = serializers.SerializerMethodField()
 
     class Meta:
@@ -50,6 +55,9 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_videos(self, obj):
         videos = obj.videos.filter(ativo=True).order_by('ordem', 'criado_em')
         return CursoVideoSerializer(videos, many=True, context=self.context).data
+
+    def get_duracao_total_segundos(self, obj):
+        return sum(obj.videos.filter(ativo=True).values_list('duracao_segundos', flat=True))
 
     def _get_inscricao(self, obj):
         request = self.context.get('request')
@@ -70,6 +78,12 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def get_inscrito(self, obj):
         return self._get_inscricao(obj) is not None
+
+    def get_sou_o_professor(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.professor.user_id == request.user.id
 
 
 class VideoSerializer(serializers.ModelSerializer):

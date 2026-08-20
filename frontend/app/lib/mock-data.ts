@@ -1,5 +1,3 @@
-import type { CourseVideo } from "./api";  // use a mesma definição
-
 export type Course = {
   id: string;
   title: string;
@@ -8,11 +6,12 @@ export type Course = {
   teacherAvatar: string;
   level: "Iniciante" | "Intermédio" | "Avançado";
   durationHours: number;
+  durationLabel: string;
   lessons: number;
-  rating: number;
   students: number;
   progress?: number;
   thumbnail: string; // gradient css
+  publishedAt: string | null;
 };
 
 export type Video = {
@@ -23,6 +22,7 @@ export type Video = {
   views: number;
   daysAgo: number;
   thumbnail: string;
+  publishedAt: string | null;
 };
 
 export type Post = {
@@ -88,11 +88,12 @@ export const mockCourses: Course[] = [
     teacherAvatar: "AC",
     level: "Iniciante",
     durationHours: 6.5,
+    durationLabel: "6h 30min",
     lessons: 24,
-    rating: 4.8,
     students: 1284,
     progress: 42,
     thumbnail: covers[0],
+    publishedAt: "2026-05-12",
   },
   {
     id: "c2",
@@ -102,11 +103,12 @@ export const mockCourses: Course[] = [
     teacherAvatar: "RM",
     level: "Intermédio",
     durationHours: 12,
+    durationLabel: "12h",
     lessons: 38,
-    rating: 4.9,
     students: 892,
     progress: 12,
     thumbnail: covers[1],
+    publishedAt: "2026-04-03",
   },
   {
     id: "c3",
@@ -116,10 +118,11 @@ export const mockCourses: Course[] = [
     teacherAvatar: "BL",
     level: "Avançado",
     durationHours: 9,
+    durationLabel: "9h",
     lessons: 30,
-    rating: 4.7,
     students: 2103,
     thumbnail: covers[2],
+    publishedAt: "2026-06-01",
   },
   {
     id: "c4",
@@ -129,10 +132,11 @@ export const mockCourses: Course[] = [
     teacherAvatar: "JN",
     level: "Iniciante",
     durationHours: 4.5,
+    durationLabel: "4h 30min",
     lessons: 18,
-    rating: 4.6,
     students: 654,
     thumbnail: covers[3],
+    publishedAt: "2026-07-15",
   },
   {
     id: "c5",
@@ -142,10 +146,11 @@ export const mockCourses: Course[] = [
     teacherAvatar: "SR",
     level: "Intermédio",
     durationHours: 5,
+    durationLabel: "5h",
     lessons: 20,
-    rating: 4.9,
     students: 3410,
     thumbnail: covers[4],
+    publishedAt: "2026-03-20",
   },
   {
     id: "c6",
@@ -155,10 +160,11 @@ export const mockCourses: Course[] = [
     teacherAvatar: "DF",
     level: "Iniciante",
     durationHours: 3.5,
+    durationLabel: "3h 30min",
     lessons: 14,
-    rating: 4.5,
     students: 421,
     thumbnail: covers[5],
+    publishedAt: "2026-07-28",
   },
 ];
 
@@ -173,12 +179,12 @@ export const courseCategories = [
 ];
 
 export const mockVideos: Video[] = [
-  { id: "v1", title: "Como definir metas SMART em 5 minutos", teacher: "Sofia Ramos", duration: "5:24", views: 12400, daysAgo: 2, thumbnail: covers[4] },
-  { id: "v2", title: "3 princípios de composição visual", teacher: "Rui Martins", duration: "8:12", views: 8320, daysAgo: 4, thumbnail: covers[1] },
-  { id: "v3", title: "O erro mais comum ao investir", teacher: "Ana Costa", duration: "6:48", views: 15680, daysAgo: 1, thumbnail: covers[0] },
-  { id: "v4", title: "Escreve headlines que convertem", teacher: "João Neves", duration: "4:02", views: 5240, daysAgo: 7, thumbnail: covers[3] },
-  { id: "v5", title: "Anúncios pagos: por onde começar", teacher: "Beatriz Lopes", duration: "11:30", views: 9840, daysAgo: 5, thumbnail: covers[2] },
-  { id: "v6", title: "Fotografa comida como um pro", teacher: "Diogo Faria", duration: "7:18", views: 3420, daysAgo: 9, thumbnail: covers[5] },
+  { id: "v1", title: "Como definir metas SMART em 5 minutos", teacher: "Sofia Ramos", duration: "5:24", views: 12400, daysAgo: 2, thumbnail: covers[4], publishedAt: "2026-08-18" },
+  { id: "v2", title: "3 princípios de composição visual", teacher: "Rui Martins", duration: "8:12", views: 8320, daysAgo: 4, thumbnail: covers[1], publishedAt: "2026-08-16" },
+  { id: "v3", title: "O erro mais comum ao investir", teacher: "Ana Costa", duration: "6:48", views: 15680, daysAgo: 1, thumbnail: covers[0], publishedAt: "2026-08-19" },
+  { id: "v4", title: "Escreve headlines que convertem", teacher: "João Neves", duration: "4:02", views: 5240, daysAgo: 7, thumbnail: covers[3], publishedAt: "2026-08-13" },
+  { id: "v5", title: "Anúncios pagos: por onde começar", teacher: "Beatriz Lopes", duration: "11:30", views: 9840, daysAgo: 5, thumbnail: covers[2], publishedAt: "2026-08-15" },
+  { id: "v6", title: "Fotografa comida como um pro", teacher: "Diogo Faria", duration: "7:18", views: 3420, daysAgo: 9, thumbnail: covers[5], publishedAt: "2026-08-11" },
 ];
 
 export const mockPosts: Post[] = [

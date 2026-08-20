@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   BookOpen,
   Clock,
-  Star,
   Users,
   PlayCircle,
   Lock,
@@ -23,7 +22,6 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { api, type Course, type CourseDetail } from "@/lib/api";
-import { useAuth } from "@/components/auth-gate";
 import { ModernVideoPlayer } from "@/components/ModernVideoPlayer";
 import { UserAvatar } from "@/components/UserAvatar";
 
@@ -141,6 +139,12 @@ export default function CoursePlayerPage() {
             </div>
           </Card>
 
+          {activeVideo && activeVideo.durationLabel && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" /> Duração da aula: {activeVideo.durationLabel}
+            </p>
+          )}
+
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:text-sm">
             <Badge variant="outline" className="rounded-full">
               {curso.category}
@@ -148,17 +152,16 @@ export default function CoursePlayerPage() {
             <Badge variant="outline" className="rounded-full">
               {curso.level}
             </Badge>
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" /> {curso.durationHours}h
-            </span>
+            {curso.durationLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> {curso.durationLabel}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5">
               <PlayCircle className="h-3.5 w-3.5" /> {curso.videos.length} aula{curso.videos.length === 1 ? "" : "s"}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" /> {curso.students.toLocaleString()}
-            </span>
-            <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-              <Star className="h-3.5 w-3.5 fill-primary text-primary" /> {curso.rating}
             </span>
           </div>
 
@@ -197,10 +200,12 @@ export default function CoursePlayerPage() {
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
                   {curso.videos.length} aula{curso.videos.length === 1 ? "" : "s"} em vídeo
                 </div>
-                <div className="flex items-center gap-2.5 text-sm">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
-                  {curso.durationHours}h de conteúdo
-                </div>
+                {curso.durationLabel && (
+                  <div className="flex items-center gap-2.5 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                    {curso.durationLabel} de conteúdo
+                  </div>
+                )}
                 <div className="flex items-center gap-2.5 text-sm">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
                   Categoria {curso.category}
@@ -279,28 +284,30 @@ export default function CoursePlayerPage() {
 
         {/* Sidebar: progresso + currículo */}
         <div className="space-y-4 lg:sticky lg:top-24">
-          <Card className="space-y-3 rounded-2xl border-border/70 p-4 shadow-soft">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progresso do curso</span>
-              <span className="font-medium tabular-nums">{curso.progress ?? 0}%</span>
-            </div>
-            <Progress value={curso.progress ?? 0} className="h-1.5" />
-
-            {curso.inscrito ? (
-              <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2.5 text-sm font-medium text-success">
-                <CheckCircle2 className="h-4 w-4" /> Já estás inscrito
+          {!curso.souOProfessor && (
+            <Card className="space-y-3 rounded-2xl border-border/70 p-4 shadow-soft">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Progresso do curso</span>
+                <span className="font-medium tabular-nums">{curso.progress ?? 0}%</span>
               </div>
-            ) : (
-              <Button
-                onClick={() => void comecarCurso()}
-                disabled={inscrevendo || curso.videos.length === 0}
-                className="w-full gap-2 bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
-              >
-                <PlayCircle className="h-4 w-4" />
-                {inscrevendo ? "A inscrever…" : "Começar curso"}
-              </Button>
-            )}
-          </Card>
+              <Progress value={curso.progress ?? 0} className="h-1.5" />
+
+              {curso.inscrito ? (
+                <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2.5 text-sm font-medium text-success">
+                  <CheckCircle2 className="h-4 w-4" /> Já estás inscrito
+                </div>
+              ) : (
+                <Button
+                  onClick={() => void comecarCurso()}
+                  disabled={inscrevendo || curso.videos.length === 0}
+                  className="w-full gap-2 bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
+                >
+                  <PlayCircle className="h-4 w-4" />
+                  {inscrevendo ? "A inscrever…" : "Começar curso"}
+                </Button>
+              )}
+            </Card>
+          )}
 
           {curso.videos.length > 0 && (
             <Card className="rounded-2xl border-border/70 p-2 shadow-soft">

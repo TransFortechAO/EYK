@@ -15,6 +15,8 @@ import {
   Upload,
   Film,
   Image as ImageIcon,
+  Search,
+  Clock,
 } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -24,8 +26,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { api, type ProfessorCurso, type ProfessorCursoPayload } from "@/lib/api";
+import { api, tempoRelativo, type ProfessorCurso, type ProfessorCursoPayload } from "@/lib/api";
+
+type FiltroEstado = "todos" | "publicado" | "rascunho";
 
 const EMPTY_FORM: ProfessorCursoPayload = {
   titulo: "",
@@ -39,6 +45,8 @@ const EMPTY_FORM: ProfessorCursoPayload = {
 export default function ProfessorCursosPage() {
   const [cursos, setCursos] = useState<ProfessorCurso[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pesquisa, setPesquisa] = useState("");
+  const [filtro, setFiltro] = useState<FiltroEstado>("todos");
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<ProfessorCurso | null>(null);
   const [form, setForm] = useState<ProfessorCursoPayload>(EMPTY_FORM);
@@ -170,6 +178,13 @@ export default function ProfessorCursosPage() {
     await carregar();
   };
 
+  const cursosFiltrados = cursos.filter((curso) => {
+    if (filtro === "publicado" && !curso.ativo) return false;
+    if (filtro === "rascunho" && curso.ativo) return false;
+    if (pesquisa.trim() && !curso.titulo.toLowerCase().includes(pesquisa.trim().toLowerCase())) return false;
+    return true;
+  });
+
   return (
     <div className="space-y-8">
       <PageHeader title="Meus Cursos" description="Cria, edita e acompanha o desempenho dos teus cursos.">
@@ -178,6 +193,27 @@ export default function ProfessorCursosPage() {
           Criar curso
         </Button>
       </PageHeader>
+
+      {!loading && cursos.length > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-sm flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={pesquisa}
+              onChange={(e) => setPesquisa(e.target.value)}
+              placeholder="Pesquisar curso…"
+              className="rounded-full pl-9"
+            />
+          </div>
+          <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FiltroEstado)}>
+            <TabsList>
+              <TabsTrigger value="todos">Todos</TabsTrigger>
+              <TabsTrigger value="publicado">Publicado</TabsTrigger>
+              <TabsTrigger value="rascunho">Rascunho</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
 
       {loading ? (
         <div className="py-20 text-center text-muted-foreground">
@@ -192,50 +228,76 @@ export default function ProfessorCursosPage() {
           <p className="mt-4 font-serif text-lg">Ainda não tens cursos.</p>
           <p className="text-sm text-muted-foreground mt-1">Cria o teu primeiro curso para começares.</p>
         </Card>
+      ) : cursosFiltrados.length === 0 ? (
+        <Card className="p-10 text-center shadow-soft text-muted-foreground">
+          Nenhum curso corresponde à pesquisa/filtro.
+        </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cursos.map((curso) => (
-            <Card key={curso.id} className="p-5 shadow-soft flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{curso.titulo}</p>
-                  <p className="text-xs text-muted-foreground">{curso.categoria || "Sem categoria"}</p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          {cursosFiltrados.map((curso) => (
+            <Card key={curso.id} className="overflow-hidden shadow-soft flex flex-col">
+              <div
+                className="relative h-28 w-full bg-gradient-gold/20 bg-cover bg-center"
+                style={curso.thumbnail ? { backgroundImage: `url('${curso.thumbnail}')` } : undefined}
+              >
+                <div className="absolute right-3 top-3">
+                  {curso.ativo ? (
+                    <Badge className="bg-emerald-500/90 text-white border-0 shadow">Publicado</Badge>
+                  ) : (
+                    <Badge className="bg-amber-500/90 text-white border-0 shadow">Rascunho</Badge>
+                  )}
                 </div>
-                {curso.ativo ? (
-                  <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shrink-0">Publicado</Badge>
-                ) : (
-                  <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 shrink-0">Rascunho</Badge>
-                )}
               </div>
 
-              <p className="text-sm text-muted-foreground line-clamp-2">{curso.descricao}</p>
+              <div className="flex flex-1 flex-col gap-3 p-5">
+                <div>
+                  <p className="font-serif text-lg font-semibold truncate">{curso.titulo}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                    <span>{curso.categoria || "Sem categoria"}</span>
+                    <span>·</span>
+                    <span>{curso.videos.length} aula{curso.videos.length === 1 ? "" : "s"}</span>
+                    <span>·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> atualizado {tempoRelativo(curso.atualizado_em)}
+                    </span>
+                  </p>
+                </div>
 
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5" /> {curso.total_inscritos} inscritos
-                </span>
-                <span className="flex items-center gap-1">
-                  <Eye className="h-3.5 w-3.5" /> {curso.total_visualizacoes} vistas
-                </span>
-              </div>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3.5 w-3.5" /> {curso.total_inscritos}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Eye className="h-3.5 w-3.5" /> {curso.total_visualizacoes}
+                  </span>
+                </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-border/60">
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirEditar(curso)}>
-                  <Pencil className="h-3.5 w-3.5" /> Editar
-                </Button>
-                <Link href={`/professor/cursos/${curso.id}`}>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <BarChart3 className="h-3.5 w-3.5" /> Engajamento
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Conclusão média</span>
+                    <span className="font-medium tabular-nums text-foreground">{curso.conclusao_media}%</span>
+                  </div>
+                  <Progress value={curso.conclusao_media} className="h-1.5" />
+                </div>
+
+                <div className="mt-auto flex items-center gap-2 pt-2 border-t border-border/60">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirEditar(curso)}>
+                    <Pencil className="h-3.5 w-3.5" /> Editar
                   </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 ml-auto text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
-                  onClick={() => void apagar(curso)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                  <Link href={`/professor/cursos/${curso.id}`}>
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <BarChart3 className="h-3.5 w-3.5" /> Engajamento
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 ml-auto text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                    onClick={() => void apagar(curso)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}

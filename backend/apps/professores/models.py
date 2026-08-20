@@ -27,7 +27,11 @@ class Video(models.Model):
     arquivo = models.FileField(upload_to='videos/', null=True, blank=True)
     url_externa = models.URLField(blank=True, help_text='Link do YouTube ou outro')
     thumbnail = models.ImageField(upload_to='videos/thumbs/', null=True, blank=True)
+    duracao_segundos = models.PositiveIntegerField(
+        default=0, help_text='Calculado automaticamente a partir do ficheiro enviado.',
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
     ativo = models.BooleanField(default=True)
     ordem = models.PositiveIntegerField(default=0)
 

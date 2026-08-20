@@ -14,6 +14,7 @@ from .serializers import (
     ProfessorVideoSerializer,
     ReacaoVideoSerializer,
 )
+from .video_processing import atualizar_duracao
 
 
 def _get_professor(request):
@@ -60,7 +61,7 @@ def professor_apagar_conta(request):
 
 def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
     for indice, arquivo in enumerate(arquivos):
-        Video.objects.create(
+        video = Video.objects.create(
             professor=professor,
             curso=curso,
             titulo=f'{curso.titulo} — vídeo {ordem_inicial + indice + 1}',
@@ -68,6 +69,7 @@ def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
             ativo=True,
             ordem=ordem_inicial + indice,
         )
+        atualizar_duracao(video)
 
 
 @api_view(['GET', 'POST'])
@@ -188,8 +190,12 @@ def professor_videos(request):
     if request.method == 'POST':
         serializer = ProfessorVideoSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        serializer.save(professor=professor)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        video = serializer.save(professor=professor)
+        atualizar_duracao(video)
+        return Response(
+            ProfessorVideoSerializer(video, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     videos = Video.objects.filter(professor=professor, curso__isnull=True)
     serializer = ProfessorVideoSerializer(videos, many=True, context={'request': request})
@@ -212,8 +218,10 @@ def professor_video_detail(request, video_id):
     if request.method == 'PATCH':
         serializer = ProfessorVideoSerializer(video, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+        video = serializer.save()
+        if 'arquivo' in request.data:
+            atualizar_duracao(video)
+        return Response(ProfessorVideoSerializer(video, context={'request': request}).data)
 
     serializer = ProfessorVideoSerializer(video, context={'request': request})
     return Response(serializer.data)

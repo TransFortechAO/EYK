@@ -27,6 +27,7 @@ class Curso(models.Model):
     publicado_em = models.DateField(null=True, blank=True)
 
     criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.titulo
@@ -36,6 +37,14 @@ class Curso(models.Model):
 
     def total_visualizacoes(self):
         return sum(e.visualizacoes for e in self.engajamentos.all())
+
+    def conclusao_media(self):
+        """Percentagem de inscritos que já concluíram o curso (0-100)."""
+        total = self.inscricoes.count()
+        if total == 0:
+            return 0
+        concluidos = self.inscricoes.filter(concluido=True).count()
+        return round((concluidos / total) * 100)
 
 
 class Inscricao(models.Model):

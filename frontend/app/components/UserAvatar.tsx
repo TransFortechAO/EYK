@@ -46,6 +46,39 @@ export function UserAvatar({
 
   const isControlled = !!(propName && (propUserId !== undefined || propUsername !== undefined));
 
+  useEffect(() => {
+    if (isControlled) return;
+    let cancelado = false;
+    const fetchUser = async () => {
+      try {
+        const response = await fetch(endpoint, { credentials: 'include' });
+        if (!response.ok) throw new Error(`Erro ${response.status}`);
+        const data = await response.json();
+        if (!data.ok || !data.authenticated || !data.user) {
+          throw new Error('Usuário não autenticado');
+        }
+        const { user: userData } = data;
+        if (cancelado) return;
+        setUser({
+          id: userData.id,
+          name: userData.name || 'Usuário',
+          initials: userData.initials || getInitialsFromName(userData.name),
+          username: userData.username || '',
+        });
+      } catch (err) {
+        if (cancelado) return;
+        console.error('Erro ao carregar perfil:', err);
+        setError(true);
+      } finally {
+        if (!cancelado) setLoading(false);
+      }
+    };
+    void fetchUser();
+    return () => {
+      cancelado = true;
+    };
+  }, [endpoint, isControlled]);
+
   function getInitialsFromName(fullName: string): string {
     if (!fullName) return '?';
     const names = fullName.trim().split(/\s+/);
@@ -110,33 +143,6 @@ export function UserAvatar({
       </Link>
     );
   }
-
-  // --- Modo autônomo (busca /me) ---
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch(endpoint, { credentials: 'include' });
-        if (!response.ok) throw new Error(`Erro ${response.status}`);
-        const data = await response.json();
-        if (!data.ok || !data.authenticated || !data.user) {
-          throw new Error('Usuário não autenticado');
-        }
-        const { user: userData } = data;
-        setUser({
-          id: userData.id,
-          name: userData.name || 'Usuário',
-          initials: userData.initials || getInitialsFromName(userData.name),
-          username: userData.username || '',
-        });
-      } catch (err) {
-        console.error('Erro ao carregar perfil:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, [endpoint]);
 
   if (loading) {
     return (

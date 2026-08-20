@@ -146,11 +146,12 @@ export type Course = {
   teacherAvatar: string;
   level: "Iniciante" | "Intermédio" | "Avançado";
   durationHours: number;
+  durationLabel: string;
   lessons: number;
-  rating: number;
   students: number;
   progress?: number;
   thumbnail: string;
+  publishedAt: string | null;
 };
 
 export type Video = {
@@ -161,6 +162,7 @@ export type Video = {
   views: number;
   daysAgo: number;
   thumbnail: string;
+  publishedAt: string | null;
 };
 
 export type VideoDetail = {
@@ -204,12 +206,15 @@ export type CourseVideo = {
   thumbnail: string | null;
   order: number;
   likes: number;
+  durationSeconds: number;
+  durationLabel: string;
 };
 
 export type CourseDetail = Course & {
   description: string;
   professorId: number | null;
   inscrito: boolean;
+  souOProfessor: boolean;
   videos: CourseVideo[];
 };
 
@@ -372,8 +377,10 @@ export type ProfessorCurso = {
   ativo: boolean;
   publicado_em: string | null;
   criado_em: string;
+  atualizado_em: string;
   total_inscritos: number;
   total_visualizacoes: number;
+  conclusao_media: number;
   videos: ProfessorCursoVideo[];
 };
 
@@ -395,10 +402,12 @@ export type ProfessorVideo = {
   url_externa: string;
   thumbnail: string | null;
   criado_em: string;
+  atualizado_em: string;
   ativo: boolean;
   ordem: number;
   total_likes: number;
   total_visualizacoes: number;
+  total_comentarios: number;
 };
 
 export type ProfessorVideoPayload = {
@@ -438,9 +447,12 @@ type RawCourse = {
   professor?: RawProfessor | null;
   categoria_nome?: string | null;
   duracao?: number | string | null;
+  duracao_total_segundos?: number | null;
   total_inscritos?: number | string | null;
   progress?: number | null;
   thumbnail?: string | null;
+  publicado_em?: string | null;
+  criado_em?: string | null;
   videos?: RawCourseVideo[] | null;
 };
 
@@ -449,6 +461,7 @@ type RawVideo = {
   titulo?: string | null;
   professor_nome?: string | null;
   duracao?: string | null;
+  duracao_segundos?: number | null;
   total_visualizacoes?: number | string | null;
   criado_em?: string | null;
   thumbnail?: string | null;
@@ -487,6 +500,7 @@ type RawCourseVideo = {
   url_externa?: string | null;
   thumbnail?: string | null;
   ordem?: number | null;
+  duracao_segundos?: number | null;
   total_likes?: number | string | null;
 };
 
@@ -494,6 +508,7 @@ type RawCourseDetail = RawCourse & {
   descricao?: string | null;
   professor?: number | null;
   inscrito?: boolean | null;
+  sou_o_professor?: boolean | null;
   videos?: RawCourseVideo[] | null;
 };
 
@@ -573,6 +588,53 @@ function daysAgo(d?: string | null): number {
   }
 }
 
+// Formata uma data ISO como "agora mesmo" / "há N minutos" / "há N horas" /
+// "há N dias", para listas de conteúdo do professor (cursos, vídeos).
+export function tempoRelativo(iso?: string | null): string {
+  if (!iso) return "";
+  try {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "agora mesmo";
+    if (diffMin < 60) return `há ${diffMin} minuto${diffMin === 1 ? "" : "s"}`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `há ${diffH} hora${diffH === 1 ? "" : "s"}`;
+    const diffD = Math.floor(diffH / 24);
+    return `há ${diffD} dia${diffD === 1 ? "" : "s"}`;
+  } catch {
+    return "";
+  }
+}
+
+// Formata uma data ISO/"YYYY-MM-DD" como "12 mar 2026", para a data de
+// publicação em cards de curso/vídeo.
+export function formatarDataCurta(iso?: string | null): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
+// Formata segundos como "M:SS" (duração de uma aula/vídeo individual).
+export function formatarDuracaoCurta(segundos?: number | null): string {
+  if (!segundos || segundos <= 0) return "";
+  const min = Math.floor(segundos / 60);
+  const seg = Math.round(segundos % 60);
+  return `${min}:${String(seg).padStart(2, "0")}`;
+}
+
+// Formata segundos como "1h 20min" / "45min" (duração total de um curso).
+export function formatarDuracaoLonga(segundos?: number | null): string {
+  if (!segundos || segundos <= 0) return "";
+  const horas = Math.floor(segundos / 3600);
+  const min = Math.round((segundos % 3600) / 60);
+  if (horas === 0) return `${min}min`;
+  if (min === 0) return `${horas}h`;
+  return `${horas}h ${min}min`;
+}
+
 function _appendCursoPayload(formData: FormData, payload: Partial<ProfessorCursoPayload>) {
   if (payload.titulo !== undefined) formData.append('titulo', payload.titulo);
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
@@ -601,7 +663,7 @@ function initiais(name: string): string {
 // --- Fallback mock (enquanto a base de dados estiver vazia) ---------------------------
 
 import {
-  mockCourses, mockVideos, mockPosts, mockNotifications,
+  mockVideos, mockPosts, mockNotifications,
   mockLeaderboard, mockBadges, mockWallet, courseCategories,
 } from "@/lib/mock-data";
 
@@ -609,6 +671,7 @@ import {
 
 function normalizeCourse(raw: RawCourse): Course {
   const profNome = raw?.professor_nome || raw?.professor?.nome_publico || "Professor";
+  const duracaoTotalSegundos = Number(raw?.duracao_total_segundos ?? 0) || 0;
   return {
     id: String(raw?.id ?? "c"),
     title: raw?.titulo || "Curso sem título",
@@ -616,12 +679,13 @@ function normalizeCourse(raw: RawCourse): Course {
     teacher: profNome,
     teacherAvatar: initiais(profNome),
     level: "Iniciante",
-    durationHours: Number(raw?.duracao ?? 0) || 5,
-    lessons: raw?.videos && raw.videos.length > 0 ? raw.videos.length : 20,
-    rating: 4.7,
+    durationHours: Math.round((duracaoTotalSegundos / 3600) * 10) / 10,
+    durationLabel: formatarDuracaoLonga(duracaoTotalSegundos),
+    lessons: raw?.videos && raw.videos.length > 0 ? raw.videos.length : 0,
     students: Number(raw?.total_inscritos ?? 0) || 0,
     progress: typeof raw?.progress === "number" ? raw.progress : undefined,
     thumbnail: coverOuThumbnail(raw?.id ?? "c", raw?.thumbnail),
+    publishedAt: raw?.publicado_em || raw?.criado_em || null,
   };
 }
 
@@ -631,10 +695,11 @@ function normalizeVideo(raw: RawVideo): Video {
     id: String(raw?.id ?? "v"),
     title: raw?.titulo || "Vídeo",
     teacher: profNome,
-    duration: raw?.duracao || "5:00",
+    duration: formatarDuracaoCurta(raw?.duracao_segundos),
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
     daysAgo: daysAgo(raw?.criado_em),
     thumbnail: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
+    publishedAt: raw?.criado_em || null,
   };
 }
 
@@ -676,6 +741,7 @@ function normalizeVideoComment(raw: RawVideoComment): VideoComment {
 }
 
 function normalizeCourseVideo(raw: RawCourseVideo): CourseVideo {
+  const durationSeconds = Number(raw?.duracao_segundos ?? 0) || 0;
   return {
     id: Number(raw?.id ?? 0),
     title: raw?.titulo || "Vídeo",
@@ -685,6 +751,8 @@ function normalizeCourseVideo(raw: RawCourseVideo): CourseVideo {
     thumbnail: mediaUrl(raw?.thumbnail),
     order: Number(raw?.ordem ?? 0),
     likes: Number(raw?.total_likes ?? 0) || 0,
+    durationSeconds,
+    durationLabel: formatarDuracaoCurta(durationSeconds),
   };
 }
 
@@ -694,6 +762,7 @@ function normalizeCourseDetail(raw: RawCourseDetail): CourseDetail {
     description: raw?.descricao || "",
     professorId: typeof raw?.professor === "number" ? raw.professor : null,
     inscrito: Boolean(raw?.inscrito),
+    souOProfessor: Boolean(raw?.sou_o_professor),
     videos: (raw?.videos || []).map(normalizeCourseVideo),
   };
 }
