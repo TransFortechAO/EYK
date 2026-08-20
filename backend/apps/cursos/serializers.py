@@ -33,6 +33,7 @@ class CursoVideoSerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     professor_nome = serializers.CharField(source='professor.nome_publico', read_only=True)
+    professor_user_id = serializers.IntegerField(source='professor.user_id', read_only=True)
     categoria_nome = serializers.CharField(source='categoria.nome', read_only=True, allow_null=True)
     total_inscritos = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
@@ -88,6 +89,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
 class VideoSerializer(serializers.ModelSerializer):
     professor_nome = serializers.CharField(source='professor.nome_publico', read_only=True)
+    professor_user_id = serializers.IntegerField(source='professor.user_id', read_only=True)
     total_likes = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
 

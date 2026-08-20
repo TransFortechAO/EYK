@@ -125,4 +125,4 @@ class ReacaoVideoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ReacaoVideo
-        fields = ['id', 'utilizador_nome', 'tipo']
+        fields = ['id', 'utilizador', 'utilizador_nome', 'tipo']

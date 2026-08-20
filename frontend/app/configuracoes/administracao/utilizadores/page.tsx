@@ -31,7 +31,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/components/auth-gate";
 
 type Toast = { tipo: "sucesso" | "erro" | "aviso"; msg: string };
@@ -331,9 +332,7 @@ export default function AdminUtilizadoresPage() {
                       <td className="first:rounded-l-xl last:rounded-r-xl py-3 pr-4 bg-surface/40 group-hover:bg-surface/70 transition border-y border-y-transparent group-hover:border-y-border/50 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-gradient-gold text-primary-foreground font-serif font-bold text-sm">
-                              {initialsOf(u.username)}
-                            </AvatarFallback>
+                            <UserAvatar name={u.username} initials={initialsOf(u.username)} userId={u.id} size={36} />
                           </Avatar>
                           <div>
                             <p className="font-medium leading-tight">{u.username}</p>

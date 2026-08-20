@@ -201,7 +201,7 @@ export default function VideoPlayerPage() {
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-surface/40 px-4 py-3">
             <div className="flex min-w-0 items-center gap-3">
               <Avatar className="h-11 w-11">
-                <UserAvatar name={video.teacher} noLink />
+                <UserAvatar name={video.teacher} userId={video.teacherUserId ?? undefined} />
               </Avatar>
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{video.teacher}</p>

@@ -6,7 +6,8 @@ import { ArrowLeft, Heart, ThumbsDown, Eye } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { api, type VideoEngajamento } from "@/lib/api";
 
@@ -87,7 +88,7 @@ export default function VideoEngajamentoPage() {
             {dados.reacoes.map((r) => (
               <div key={r.id} className="flex items-center gap-3 rounded-xl bg-surface/40 px-3 py-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-xs">{r.utilizador_nome.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <UserAvatar name={r.utilizador_nome} userId={r.utilizador} size={32} />
                 </Avatar>
                 <span className="text-sm">@{r.utilizador_nome}</span>
                 <Badge variant="outline" className="ml-auto text-xs capitalize">{r.tipo}</Badge>

@@ -10,6 +10,7 @@ urlpatterns = [
     path('auth/login/', views.auth_login_json, name='auth-login-json'),
     path('auth/logout/', views.auth_logout_json, name='auth-logout-json'),
     path('auth/me/', views.auth_me, name='auth-me'),
+    path('api/perfil/<int:user_id>/', views.perfil_publico, name='perfil-publico'),
     path('auth/verificar-2fa/', api_perfil.auth_verificar_2fa_json, name='auth-verificar-2fa-json'),
 
     # ══════════════ JSON: onboarding, preferências, segurança (usado pelo Next.js) ═════

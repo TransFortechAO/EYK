@@ -144,6 +144,7 @@ export type Course = {
   category: string;
   teacher: string;
   teacherAvatar: string;
+  teacherUserId: number | null;
   level: "Iniciante" | "Intermédio" | "Avançado";
   durationHours: number;
   durationLabel: string;
@@ -158,6 +159,7 @@ export type Video = {
   id: string;
   title: string;
   teacher: string;
+  teacherUserId: number | null;
   duration: string;
   views: number;
   daysAgo: number;
@@ -172,6 +174,7 @@ export type VideoDetail = {
   teacher: string;
   teacherAvatar: string;
   professorId: number | null;
+  teacherUserId: number | null;
   thumbnail: string;
   fileUrl: string | null;
   externalUrl: string;
@@ -210,6 +213,25 @@ export type CourseVideo = {
   durationLabel: string;
 };
 
+export type PerfilPublico = {
+  id: number;
+  name: string;
+  initials: string;
+  isTeacher: boolean;
+  membroDesde: string | null;
+  souEu: boolean;
+  bio: string;
+  foto: string | null;
+  nomePublico: string | null;
+  area: string | null;
+  seguidores: number | null;
+  aSeguir: boolean;
+  professorId: number | null;
+  totalCursos: number | null;
+  totalVideos: number | null;
+  cursosConcluidos: number | null;
+};
+
 export type CourseDetail = Course & {
   description: string;
   professorId: number | null;
@@ -221,6 +243,7 @@ export type CourseDetail = Course & {
 export type Post = {
   id: string;
   author: string;
+  authorId: number | null;
   initials: string;
   timeAgo: string;
   content: string;
@@ -248,6 +271,7 @@ export type Notification = {
 
 export type LeaderRow = {
   rank: number;
+  userId: number | null;
   name: string;
   initials: string;
   coins: number;
@@ -433,7 +457,7 @@ export type VideoEngajamento = {
   totalLikes: number;
   totalDislikes: number;
   totalVisualizacoes: number;
-  reacoes: { id: number; utilizador_nome: string; tipo: string }[];
+  reacoes: { id: number; utilizador: number; utilizador_nome: string; tipo: string }[];
 };
 
 // --- Tipos Raw (respostas JSON do Django, antes da normalização) ----------------------
@@ -445,6 +469,7 @@ type RawCourse = {
   titulo?: string | null;
   professor_nome?: string | null;
   professor?: RawProfessor | null;
+  professor_user_id?: number | null;
   categoria_nome?: string | null;
   duracao?: number | string | null;
   duracao_total_segundos?: number | null;
@@ -460,6 +485,7 @@ type RawVideo = {
   id?: number | string;
   titulo?: string | null;
   professor_nome?: string | null;
+  professor_user_id?: number | null;
   duracao?: string | null;
   duracao_segundos?: number | null;
   total_visualizacoes?: number | string | null;
@@ -504,6 +530,25 @@ type RawCourseVideo = {
   total_likes?: number | string | null;
 };
 
+type RawPerfilPublico = {
+  id?: number;
+  name?: string | null;
+  initials?: string | null;
+  isTeacher?: boolean | null;
+  membroDesde?: string | null;
+  souEu?: boolean | null;
+  bio?: string | null;
+  foto?: string | null;
+  nomePublico?: string | null;
+  area?: string | null;
+  seguidores?: number | null;
+  aSeguir?: boolean | null;
+  professorId?: number | null;
+  totalCursos?: number | null;
+  totalVideos?: number | null;
+  cursosConcluidos?: number | null;
+};
+
 type RawCourseDetail = RawCourse & {
   descricao?: string | null;
   professor?: number | null;
@@ -514,6 +559,7 @@ type RawCourseDetail = RawCourse & {
 
 type RawPost = {
   id?: number | string;
+  autor?: number | null;
   autor_nome?: string | null;
   autor_initials?: string | null;
   time_ago?: string | null;
@@ -678,6 +724,7 @@ function normalizeCourse(raw: RawCourse): Course {
     category: raw?.categoria_nome || "Geral",
     teacher: profNome,
     teacherAvatar: initiais(profNome),
+    teacherUserId: typeof raw?.professor_user_id === "number" ? raw.professor_user_id : null,
     level: "Iniciante",
     durationHours: Math.round((duracaoTotalSegundos / 3600) * 10) / 10,
     durationLabel: formatarDuracaoLonga(duracaoTotalSegundos),
@@ -695,6 +742,7 @@ function normalizeVideo(raw: RawVideo): Video {
     id: String(raw?.id ?? "v"),
     title: raw?.titulo || "Vídeo",
     teacher: profNome,
+    teacherUserId: typeof raw?.professor_user_id === "number" ? raw.professor_user_id : null,
     duration: formatarDuracaoCurta(raw?.duracao_segundos),
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
     daysAgo: daysAgo(raw?.criado_em),
@@ -712,6 +760,7 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     teacher: profNome,
     teacherAvatar: initiais(profNome),
     professorId: typeof raw?.professor === "number" ? raw.professor : null,
+    teacherUserId: typeof raw?.professor_user_id === "number" ? raw.professor_user_id : null,
     thumbnail: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
     fileUrl: mediaUrl(raw?.arquivo),
     externalUrl: raw?.url_externa || "",
@@ -756,6 +805,27 @@ function normalizeCourseVideo(raw: RawCourseVideo): CourseVideo {
   };
 }
 
+function normalizePerfilPublico(raw: RawPerfilPublico): PerfilPublico {
+  return {
+    id: Number(raw?.id ?? 0),
+    name: raw?.name || "Utilizador",
+    initials: raw?.initials || "??",
+    isTeacher: Boolean(raw?.isTeacher),
+    membroDesde: raw?.membroDesde || null,
+    souEu: Boolean(raw?.souEu),
+    bio: raw?.bio || "",
+    foto: mediaUrl(raw?.foto),
+    nomePublico: raw?.nomePublico || null,
+    area: raw?.area || null,
+    seguidores: typeof raw?.seguidores === "number" ? raw.seguidores : null,
+    aSeguir: Boolean(raw?.aSeguir),
+    professorId: typeof raw?.professorId === "number" ? raw.professorId : null,
+    totalCursos: typeof raw?.totalCursos === "number" ? raw.totalCursos : null,
+    totalVideos: typeof raw?.totalVideos === "number" ? raw.totalVideos : null,
+    cursosConcluidos: typeof raw?.cursosConcluidos === "number" ? raw.cursosConcluidos : null,
+  };
+}
+
 function normalizeCourseDetail(raw: RawCourseDetail): CourseDetail {
   return {
     ...normalizeCourse(raw),
@@ -771,6 +841,7 @@ function normalizePost(raw: RawPost): Post {
   return {
     id: String(raw?.id ?? "p"),
     author: raw?.autor_nome || "Anónimo",
+    authorId: typeof raw?.autor === "number" ? raw.autor : null,
     initials: raw?.autor_initials || "??",
     timeAgo: raw?.time_ago || "há pouco",
     content: raw?.conteudo || "",
@@ -903,6 +974,21 @@ export const api = {
     }
     return null;
   },
+
+  getPerfilPublico: async (userId: number | string): Promise<PerfilPublico | null> => {
+    try {
+      const res = await fetchAPI<{ ok: boolean; perfil: RawPerfilPublico }>(`/accounts/api/perfil/${userId}/`);
+      if (res?.perfil) return normalizePerfilPublico(res.perfil);
+    } catch {
+      /* perfil não encontrado ou erro de rede */
+    }
+    return null;
+  },
+
+  toggleSeguirProfessor: (professorId: number | string) =>
+    fetchAPI<{ seguindo: boolean; seguidores: number }>(`/api/professores/${professorId}/seguir/`, {
+      method: 'POST',
+    }),
 
   // =========================================================================
   //  COMUNIDADE (posts, comentários, reações)

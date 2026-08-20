@@ -5,10 +5,11 @@ import { Check, Heart, MessageCircle, Pencil, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { api, type VideoComment } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
+import { UserAvatar } from "@/components/UserAvatar";
 
 
 function contarComentarios(lista: VideoComment[]): number {
@@ -65,7 +66,7 @@ export function VideoComments({ videoId }: { videoId: string | number }) {
 
       <div className="flex gap-3">
         <Avatar className="h-9 w-9 shrink-0">
-          <AvatarFallback className="bg-secondary text-xs">{user?.initials || "?"}</AvatarFallback>
+          <UserAvatar name={user?.name} initials={user?.initials} userId={user?.id} />
         </Avatar>
         <div className="min-w-0 flex-1 space-y-2">
           <Textarea
@@ -182,7 +183,7 @@ function CommentItem({
   return (
     <div className={cn("flex gap-3", nested && "ml-11")}>
       <Avatar className="h-9 w-9 shrink-0">
-        <AvatarFallback className="bg-secondary text-xs">{comentario.autorInitials}</AvatarFallback>
+        <UserAvatar name={comentario.autorNome} initials={comentario.autorInitials} userId={comentario.autorId} />
       </Avatar>
       <div className="min-w-0 flex-1 space-y-1.5">
         <div className="flex items-baseline gap-2">

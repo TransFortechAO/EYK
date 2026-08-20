@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Trophy, Flame, Coins } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
 import { api, type LeaderRow } from "@/lib/api";
 
@@ -57,11 +58,14 @@ export default function LeaderboardPage() {
           return (
             <div key={row.name} className="flex flex-col items-center gap-3 w-full">
               <Avatar className="h-14 w-14 shadow-md ring-4 ring-background">
-                <AvatarFallback
+                <UserAvatar
+                  name={row.name}
+                  initials={row.initials}
+                  userId={row.userId ?? undefined}
+                  size={56}
+                  backgroundColor="transparent"
                   className={cn("text-white font-semibold bg-gradient-to-br", medal)}
-                >
-                  {row.initials}
-                </AvatarFallback>
+                />
               </Avatar>
               <div className="text-center">
                 <p className="font-medium truncate max-w-[140px]">{row.name}</p>
@@ -99,9 +103,14 @@ export default function LeaderboardPage() {
               <div className="font-serif font-semibold text-muted-foreground">#{row.rank}</div>
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar className="h-9 w-9 shrink-0">
-                  <AvatarFallback className={cn(row.isMe ? "bg-gradient-gold text-primary-foreground" : "bg-secondary")}>
-                    {row.initials}
-                  </AvatarFallback>
+                  <UserAvatar
+                    name={row.name}
+                    initials={row.initials}
+                    userId={row.userId ?? undefined}
+                    size={36}
+                    backgroundColor="transparent"
+                    className={cn(row.isMe ? "bg-gradient-gold text-primary-foreground" : "bg-secondary")}
+                  />
                 </Avatar>
                 <div className="min-w-0">
                   <p className="truncate font-medium">

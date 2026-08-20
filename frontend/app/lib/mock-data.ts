@@ -4,6 +4,7 @@ export type Course = {
   category: string;
   teacher: string;
   teacherAvatar: string;
+  teacherUserId: number | null;
   level: "Iniciante" | "Intermédio" | "Avançado";
   durationHours: number;
   durationLabel: string;
@@ -18,6 +19,7 @@ export type Video = {
   id: string;
   title: string;
   teacher: string;
+  teacherUserId: number | null;
   duration: string;
   views: number;
   daysAgo: number;
@@ -28,6 +30,7 @@ export type Video = {
 export type Post = {
   id: string;
   author: string;
+  authorId: number | null;
   initials: string;
   timeAgo: string;
   content: string;
@@ -47,6 +50,7 @@ export type Notification = {
 
 export type LeaderRow = {
   rank: number;
+  userId: number | null;
   name: string;
   initials: string;
   coins: number;
@@ -86,6 +90,7 @@ export const mockCourses: Course[] = [
     category: "Finanças",
     teacher: "Ana Costa",
     teacherAvatar: "AC",
+    teacherUserId: null,
     level: "Iniciante",
     durationHours: 6.5,
     durationLabel: "6h 30min",
@@ -101,6 +106,7 @@ export const mockCourses: Course[] = [
     category: "Design",
     teacher: "Rui Martins",
     teacherAvatar: "RM",
+    teacherUserId: null,
     level: "Intermédio",
     durationHours: 12,
     durationLabel: "12h",
@@ -116,6 +122,7 @@ export const mockCourses: Course[] = [
     category: "Marketing",
     teacher: "Beatriz Lopes",
     teacherAvatar: "BL",
+    teacherUserId: null,
     level: "Avançado",
     durationHours: 9,
     durationLabel: "9h",
@@ -130,6 +137,7 @@ export const mockCourses: Course[] = [
     category: "Escrita",
     teacher: "João Neves",
     teacherAvatar: "JN",
+    teacherUserId: null,
     level: "Iniciante",
     durationHours: 4.5,
     durationLabel: "4h 30min",
@@ -144,6 +152,7 @@ export const mockCourses: Course[] = [
     category: "Desenvolvimento pessoal",
     teacher: "Sofia Ramos",
     teacherAvatar: "SR",
+    teacherUserId: null,
     level: "Intermédio",
     durationHours: 5,
     durationLabel: "5h",
@@ -158,6 +167,7 @@ export const mockCourses: Course[] = [
     category: "Criativo",
     teacher: "Diogo Faria",
     teacherAvatar: "DF",
+    teacherUserId: null,
     level: "Iniciante",
     durationHours: 3.5,
     durationLabel: "3h 30min",
@@ -179,18 +189,19 @@ export const courseCategories = [
 ];
 
 export const mockVideos: Video[] = [
-  { id: "v1", title: "Como definir metas SMART em 5 minutos", teacher: "Sofia Ramos", duration: "5:24", views: 12400, daysAgo: 2, thumbnail: covers[4], publishedAt: "2026-08-18" },
-  { id: "v2", title: "3 princípios de composição visual", teacher: "Rui Martins", duration: "8:12", views: 8320, daysAgo: 4, thumbnail: covers[1], publishedAt: "2026-08-16" },
-  { id: "v3", title: "O erro mais comum ao investir", teacher: "Ana Costa", duration: "6:48", views: 15680, daysAgo: 1, thumbnail: covers[0], publishedAt: "2026-08-19" },
-  { id: "v4", title: "Escreve headlines que convertem", teacher: "João Neves", duration: "4:02", views: 5240, daysAgo: 7, thumbnail: covers[3], publishedAt: "2026-08-13" },
-  { id: "v5", title: "Anúncios pagos: por onde começar", teacher: "Beatriz Lopes", duration: "11:30", views: 9840, daysAgo: 5, thumbnail: covers[2], publishedAt: "2026-08-15" },
-  { id: "v6", title: "Fotografa comida como um pro", teacher: "Diogo Faria", duration: "7:18", views: 3420, daysAgo: 9, thumbnail: covers[5], publishedAt: "2026-08-11" },
+  { id: "v1", title: "Como definir metas SMART em 5 minutos", teacher: "Sofia Ramos", teacherUserId: null, duration: "5:24", views: 12400, daysAgo: 2, thumbnail: covers[4], publishedAt: "2026-08-18" },
+  { id: "v2", title: "3 princípios de composição visual", teacher: "Rui Martins", teacherUserId: null, duration: "8:12", views: 8320, daysAgo: 4, thumbnail: covers[1], publishedAt: "2026-08-16" },
+  { id: "v3", title: "O erro mais comum ao investir", teacher: "Ana Costa", teacherUserId: null, duration: "6:48", views: 15680, daysAgo: 1, thumbnail: covers[0], publishedAt: "2026-08-19" },
+  { id: "v4", title: "Escreve headlines que convertem", teacher: "João Neves", teacherUserId: null, duration: "4:02", views: 5240, daysAgo: 7, thumbnail: covers[3], publishedAt: "2026-08-13" },
+  { id: "v5", title: "Anúncios pagos: por onde começar", teacher: "Beatriz Lopes", teacherUserId: null, duration: "11:30", views: 9840, daysAgo: 5, thumbnail: covers[2], publishedAt: "2026-08-15" },
+  { id: "v6", title: "Fotografa comida como um pro", teacher: "Diogo Faria", teacherUserId: null, duration: "7:18", views: 3420, daysAgo: 9, thumbnail: covers[5], publishedAt: "2026-08-11" },
 ];
 
 export const mockPosts: Post[] = [
   {
     id: "p1",
     author: "Ema Fernandes",
+    authorId: null,
     initials: "EF",
     timeAgo: "há 2 horas",
     content: "Acabei o módulo 3 de Fundamentos de Investimento — os exercícios práticos fizeram toda a diferença. Recomendo muito começar por aqui se ainda não sabem por onde ir 🔥",
@@ -201,6 +212,7 @@ export const mockPosts: Post[] = [
   {
     id: "p2",
     author: "Miguel Tavares",
+    authorId: null,
     initials: "MT",
     timeAgo: "há 5 horas",
     content: "Alguém já experimentou a nova metodologia de estudo da Sofia Ramos? Estou a testar há uma semana e a minha produtividade duplicou.",
@@ -210,6 +222,7 @@ export const mockPosts: Post[] = [
   {
     id: "p3",
     author: "Rita Almeida",
+    authorId: null,
     initials: "RA",
     timeAgo: "há 1 dia",
     content: "Partilha rápida: acabei a minha primeira campanha de marketing e consegui 3 clientes na primeira semana. Obrigado à comunidade pelo feedback 🙏",
@@ -226,16 +239,16 @@ export const mockNotifications: Notification[] = [
 ];
 
 export const mockLeaderboard: LeaderRow[] = [
-  { rank: 1, name: "Rita Almeida", initials: "RA", coins: 4820, streak: 42 },
-  { rank: 2, name: "Miguel Tavares", initials: "MT", coins: 4210, streak: 31 },
-  { rank: 3, name: "Ema Fernandes", initials: "EF", coins: 3980, streak: 28 },
-  { rank: 4, name: "Sofia Ramos", initials: "SR", coins: 3450, streak: 19 },
-  { rank: 5, name: "João Neves", initials: "JN", coins: 3120, streak: 22 },
-  { rank: 6, name: "Beatriz Lopes", initials: "BL", coins: 2890, streak: 15 },
-  { rank: 7, name: "Diogo Faria", initials: "DF", coins: 2540, streak: 12 },
-  { rank: 8, name: "fábio (tu)", initials: "F", coins: 2380, streak: 9, isMe: true },
-  { rank: 9, name: "Ana Costa", initials: "AC", coins: 2140, streak: 7 },
-  { rank: 10, name: "Rui Martins", initials: "RM", coins: 1980, streak: 5 },
+  { rank: 1, userId: null, name: "Rita Almeida", initials: "RA", coins: 4820, streak: 42 },
+  { rank: 2, userId: null, name: "Miguel Tavares", initials: "MT", coins: 4210, streak: 31 },
+  { rank: 3, userId: null, name: "Ema Fernandes", initials: "EF", coins: 3980, streak: 28 },
+  { rank: 4, userId: null, name: "Sofia Ramos", initials: "SR", coins: 3450, streak: 19 },
+  { rank: 5, userId: null, name: "João Neves", initials: "JN", coins: 3120, streak: 22 },
+  { rank: 6, userId: null, name: "Beatriz Lopes", initials: "BL", coins: 2890, streak: 15 },
+  { rank: 7, userId: null, name: "Diogo Faria", initials: "DF", coins: 2540, streak: 12 },
+  { rank: 8, userId: null, name: "fábio (tu)", initials: "F", coins: 2380, streak: 9, isMe: true },
+  { rank: 9, userId: null, name: "Ana Costa", initials: "AC", coins: 2140, streak: 7 },
+  { rank: 10, userId: null, name: "Rui Martins", initials: "RM", coins: 1980, streak: 5 },
 ];
 
 export const mockBadges: Badge[] = [

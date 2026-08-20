@@ -32,7 +32,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/components/auth-gate";
 
 type Toast = {
@@ -337,9 +338,7 @@ export default function AdminProfessoresPage() {
                     <td className="first:rounded-l-xl last:rounded-r-xl py-3 pr-4 bg-surface/40 group-hover:bg-surface/70 transition border-y border-y-transparent group-hover:border-y-border/50 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-gradient-gold text-primary-foreground font-serif font-bold">
-                            {initialsOf(p.nome_publico)}
-                          </AvatarFallback>
+                          <UserAvatar name={p.nome_publico} initials={initialsOf(p.nome_publico)} userId={p.user.id} size={40} />
                         </Avatar>
                         <div>
                           <p className="font-medium">{p.nome_publico}</p>

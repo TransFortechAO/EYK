@@ -97,6 +97,7 @@ def leaderboard_list(request):
         streak = u._streak if u._streak is not None else 0
         resultado.append({
             'rank': idx,
+            'userId': u.id,
             'name': _get_name(u),
             'initials': _get_initials(u),
             'coins': coins,
