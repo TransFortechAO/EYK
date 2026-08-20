@@ -150,7 +150,7 @@ export type Course = {
   rating: number;
   students: number;
   progress?: number;
-  cover: string;
+  thumbnail: string;
 };
 
 export type Video = {
@@ -160,7 +160,7 @@ export type Video = {
   duration: string;
   views: number;
   daysAgo: number;
-  cover: string;
+  thumbnail: string;
 };
 
 export type VideoDetail = {
@@ -170,7 +170,7 @@ export type VideoDetail = {
   teacher: string;
   teacherAvatar: string;
   professorId: number | null;
-  cover: string;
+  thumbnail: string;
   fileUrl: string | null;
   externalUrl: string;
   views: number;
@@ -546,7 +546,7 @@ const COVERS = [
   "linear-gradient(135deg,#4A4E69,#C9ADA7)",
 ];
 
-function coverFor(idLike: number | string): string {
+function thumbnailFor(idLike: number | string): string {
   const s = String(idLike);
   let sum = 0;
   for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i);
@@ -559,7 +559,7 @@ function coverFor(idLike: number | string): string {
 function coverOuThumbnail(idLike: number | string, thumbnail?: string | null): string {
   const url = mediaUrl(thumbnail);
   if (url) return `url('${url}') center / cover no-repeat`;
-  return coverFor(idLike);
+  return thumbnailFor(idLike);
 }
 
 function daysAgo(d?: string | null): number {
@@ -621,7 +621,7 @@ function normalizeCourse(raw: RawCourse): Course {
     rating: 4.7,
     students: Number(raw?.total_inscritos ?? 0) || 0,
     progress: typeof raw?.progress === "number" ? raw.progress : undefined,
-    cover: coverOuThumbnail(raw?.id ?? "c", raw?.thumbnail),
+    thumbnail: coverOuThumbnail(raw?.id ?? "c", raw?.thumbnail),
   };
 }
 
@@ -634,7 +634,7 @@ function normalizeVideo(raw: RawVideo): Video {
     duration: raw?.duracao || "5:00",
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
     daysAgo: daysAgo(raw?.criado_em),
-    cover: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
+    thumbnail: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
   };
 }
 
@@ -647,7 +647,7 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     teacher: profNome,
     teacherAvatar: initiais(profNome),
     professorId: typeof raw?.professor === "number" ? raw.professor : null,
-    cover: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
+    thumbnail: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
     fileUrl: mediaUrl(raw?.arquivo),
     externalUrl: raw?.url_externa || "",
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
@@ -794,10 +794,10 @@ export const api = {
       if (Array.isArray(res) && res.length > 0) {
         return res.map(normalizeCourse);
       }
+      return []; // array vazio em vez de mock
     } catch {
-      /* fallback para mock */
+      return []; // ou throw new Error('Falha ao carregar cursos')
     }
-    return mockCourses;
   },
   getCurso: async (id: number | string): Promise<CourseDetail | null> => {
     try {

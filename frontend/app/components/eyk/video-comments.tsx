@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { api, type VideoComment } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 
+
 function contarComentarios(lista: VideoComment[]): number {
   return lista.reduce((acc, c) => acc + 1 + c.respostas.length, 0);
 }

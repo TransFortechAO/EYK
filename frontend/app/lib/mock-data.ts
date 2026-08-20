@@ -1,3 +1,5 @@
+import type { CourseVideo } from "./api";  // use a mesma definição
+
 export type Course = {
   id: string;
   title: string;
@@ -10,7 +12,7 @@ export type Course = {
   rating: number;
   students: number;
   progress?: number;
-  cover: string; // gradient css
+  thumbnail: string; // gradient css
 };
 
 export type Video = {
@@ -20,7 +22,7 @@ export type Video = {
   duration: string;
   views: number;
   daysAgo: number;
-  cover: string;
+  thumbnail: string;
 };
 
 export type Post = {
@@ -90,7 +92,7 @@ export const mockCourses: Course[] = [
     rating: 4.8,
     students: 1284,
     progress: 42,
-    cover: covers[0],
+    thumbnail: covers[0],
   },
   {
     id: "c2",
@@ -104,7 +106,7 @@ export const mockCourses: Course[] = [
     rating: 4.9,
     students: 892,
     progress: 12,
-    cover: covers[1],
+    thumbnail: covers[1],
   },
   {
     id: "c3",
@@ -117,7 +119,7 @@ export const mockCourses: Course[] = [
     lessons: 30,
     rating: 4.7,
     students: 2103,
-    cover: covers[2],
+    thumbnail: covers[2],
   },
   {
     id: "c4",
@@ -130,7 +132,7 @@ export const mockCourses: Course[] = [
     lessons: 18,
     rating: 4.6,
     students: 654,
-    cover: covers[3],
+    thumbnail: covers[3],
   },
   {
     id: "c5",
@@ -143,7 +145,7 @@ export const mockCourses: Course[] = [
     lessons: 20,
     rating: 4.9,
     students: 3410,
-    cover: covers[4],
+    thumbnail: covers[4],
   },
   {
     id: "c6",
@@ -156,7 +158,7 @@ export const mockCourses: Course[] = [
     lessons: 14,
     rating: 4.5,
     students: 421,
-    cover: covers[5],
+    thumbnail: covers[5],
   },
 ];
 
@@ -171,12 +173,12 @@ export const courseCategories = [
 ];
 
 export const mockVideos: Video[] = [
-  { id: "v1", title: "Como definir metas SMART em 5 minutos", teacher: "Sofia Ramos", duration: "5:24", views: 12400, daysAgo: 2, cover: covers[4] },
-  { id: "v2", title: "3 princípios de composição visual", teacher: "Rui Martins", duration: "8:12", views: 8320, daysAgo: 4, cover: covers[1] },
-  { id: "v3", title: "O erro mais comum ao investir", teacher: "Ana Costa", duration: "6:48", views: 15680, daysAgo: 1, cover: covers[0] },
-  { id: "v4", title: "Escreve headlines que convertem", teacher: "João Neves", duration: "4:02", views: 5240, daysAgo: 7, cover: covers[3] },
-  { id: "v5", title: "Anúncios pagos: por onde começar", teacher: "Beatriz Lopes", duration: "11:30", views: 9840, daysAgo: 5, cover: covers[2] },
-  { id: "v6", title: "Fotografa comida como um pro", teacher: "Diogo Faria", duration: "7:18", views: 3420, daysAgo: 9, cover: covers[5] },
+  { id: "v1", title: "Como definir metas SMART em 5 minutos", teacher: "Sofia Ramos", duration: "5:24", views: 12400, daysAgo: 2, thumbnail: covers[4] },
+  { id: "v2", title: "3 princípios de composição visual", teacher: "Rui Martins", duration: "8:12", views: 8320, daysAgo: 4, thumbnail: covers[1] },
+  { id: "v3", title: "O erro mais comum ao investir", teacher: "Ana Costa", duration: "6:48", views: 15680, daysAgo: 1, thumbnail: covers[0] },
+  { id: "v4", title: "Escreve headlines que convertem", teacher: "João Neves", duration: "4:02", views: 5240, daysAgo: 7, thumbnail: covers[3] },
+  { id: "v5", title: "Anúncios pagos: por onde começar", teacher: "Beatriz Lopes", duration: "11:30", views: 9840, daysAgo: 5, thumbnail: covers[2] },
+  { id: "v6", title: "Fotografa comida como um pro", teacher: "Diogo Faria", duration: "7:18", views: 3420, daysAgo: 9, thumbnail: covers[5] },
 ];
 
 export const mockPosts: Post[] = [

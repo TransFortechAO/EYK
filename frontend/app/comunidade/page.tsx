@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { api, type Post } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
+import { UserInitialsLink } from "@/components/UserAvatar";
 
 export default function ComunidadePage() {
   return (
@@ -77,9 +78,7 @@ function ComunidadeConteudo() {
       <Card className="p-5 shadow-soft">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10 shrink-0">
-            <AvatarFallback className="bg-gradient-gold text-primary-foreground font-medium">
-              {initials}
-            </AvatarFallback>
+            <UserInitialsLink/>
           </Avatar>
           <div className="flex-1 space-y-3">
             <Textarea

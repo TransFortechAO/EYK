@@ -10,6 +10,7 @@ import {
   Linkedin,
 } from "lucide-react";
 
+
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
 const EYK_BG = "#0a0a0a";
@@ -138,16 +139,22 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="relative">
-            <div className="flex aspect-video w-full flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03]">
-              <Hand className="h-16 w-16 text-white/25" aria-hidden />
-            </div>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/55">
-              <Hand className="h-3.5 w-3.5" aria-hidden />
-              legendas sempre visíveis em todos os vídeos
-            </div>
+          {/* ÁREA DO VÍDEO - CORRIGIDA */}
+          <div className="aspect-square w-full max-w-[500px] overflow-hidden rounded-2xl border border-white/10 bg-black">
+            <video
+              autoPlay
+              muted
+              playsInline
+              loop
+              className="h-full w-full object-cover"
+              src="/assets/eyk-effect.mp4"
+              poster="/videos/thumbnail.jpg"
+            />
           </div>
+
+
         </div>
+
       </section>
 
       {/* O que é a EYK */}
