@@ -10,13 +10,13 @@ from apps.gamificacao.services import creditar_moedas, registrar_atividade_diari
 @pytest.mark.django_db
 class TestCreditarMoedas:
     def test_cria_carteira_se_nao_existir(self, aluno_user):
-        creditar_moedas(aluno_user, 10, "login_diario")
+        creditar_moedas(aluno_user, 10, "ajuste_admin")
         carteira = Carteira.objects.get(utilizador=aluno_user)
         assert carteira.saldo == 10
 
     def test_soma_ao_saldo_existente(self, aluno_user):
         Carteira.objects.create(utilizador=aluno_user, saldo=20)
-        creditar_moedas(aluno_user, 5, "post_comunidade")
+        creditar_moedas(aluno_user, 5, "curso_concluido")
         carteira = Carteira.objects.get(utilizador=aluno_user)
         assert carteira.saldo == 25
 
@@ -27,10 +27,10 @@ class TestCreditarMoedas:
         assert carteira.saldo == 0
 
     def test_regista_transacao_com_motivo(self, aluno_user):
-        creditar_moedas(aluno_user, 5, "login_diario")
+        creditar_moedas(aluno_user, 5, "curso_concluido")
         transacao = TransacaoMoeda.objects.get(utilizador=aluno_user)
         assert transacao.valor == 5
-        assert transacao.motivo == "login_diario"
+        assert transacao.motivo == "curso_concluido"
 
 
 @pytest.mark.django_db

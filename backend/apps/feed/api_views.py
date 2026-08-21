@@ -2,8 +2,6 @@ from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from apps.gamificacao.services import creditar_moedas
-
 from .models import Comentario, Post, ReacaoPost
 from .serializers import ComentarioSerializer, PostSerializer
 
@@ -19,7 +17,6 @@ def post_list(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         post = Post.objects.create(autor=request.user, conteudo=conteudo)
-        creditar_moedas(request.user, 2, 'post_comunidade')
         serializer = PostSerializer(post, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

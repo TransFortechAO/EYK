@@ -279,6 +279,15 @@ export type LeaderRow = {
   isMe?: boolean;
 };
 
+export type ProfessorLeaderRow = {
+  rank: number;
+  userId: number | null;
+  name: string;
+  initials: string;
+  coins: number;
+  isMe?: boolean;
+};
+
 export type Badge = {
   id: string;
   name: string;
@@ -1085,6 +1094,15 @@ export const api = {
       /* fallback */
     }
     return mockLeaderboard;
+  },
+  getLeaderboardProfessores: async (): Promise<ProfessorLeaderRow[]> => {
+    try {
+      const res = await fetchAPI<ProfessorLeaderRow[]>('/api/leaderboard/professores/');
+      if (Array.isArray(res)) return res;
+    } catch {
+      /* fallback */
+    }
+    return [];
   },
   getBadges: async (): Promise<Badge[]> => {
     try {

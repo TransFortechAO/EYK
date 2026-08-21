@@ -15,6 +15,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface VideoSource {
   fileUrl?: string | null;
@@ -51,6 +52,13 @@ interface ModernVideoPlayerProps extends VideoSource {
   hasPrevious?: boolean;
   onNext?: () => void;
   onPrevious?: () => void;
+  /**
+   * Quando definido, regista uma "view" ao fim de 1 minuto de reprodução
+   * CONTÍNUA (pausar ou trocar de vídeo reinicia a contagem — regra
+   * anti-fraude do modelo de coins). Só funciona para ficheiro próprio —
+   * embeds/links externos não expõem o estado de reprodução.
+   */
+  videoId?: string | number;
 }
 
 export function ModernVideoPlayer({
@@ -66,6 +74,7 @@ export function ModernVideoPlayer({
   hasPrevious,
   onNext,
   onPrevious,
+  videoId,
 }: ModernVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -95,6 +104,38 @@ export function ModernVideoPlayer({
     setCurrent({ fileUrl, externalUrl, title, thumbnail });
     setHistory([]);
   }, [fileUrl, externalUrl]);
+
+  // --- Registo de "view" ao fim de 1 min de reprodução contínua ---
+  const segundosContinuosRef = useRef(0);
+  const intervaloViewRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const viewRegistadaRef = useRef(false);
+
+  const pararContagemView = useCallback(() => {
+    segundosContinuosRef.current = 0;
+    if (intervaloViewRef.current) {
+      clearInterval(intervaloViewRef.current);
+      intervaloViewRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    // vídeo novo (troca de fonte) — reinicia a contagem de view
+    viewRegistadaRef.current = false;
+    pararContagemView();
+    return pararContagemView;
+  }, [videoId, fileUrl, pararContagemView]);
+
+  const aoIniciarReproducaoParaView = useCallback(() => {
+    if (!videoId || viewRegistadaRef.current || intervaloViewRef.current) return;
+    intervaloViewRef.current = setInterval(() => {
+      segundosContinuosRef.current += 1;
+      if (segundosContinuosRef.current >= 60) {
+        viewRegistadaRef.current = true;
+        pararContagemView();
+        void api.registarViewVideo(videoId);
+      }
+    }, 1000);
+  }, [videoId, pararContagemView]);
 
   // Mantém a fila de sugestões atualizada quando o pai enviar uma nova lista.
   // Só é relevante no modo NÃO controlado — no modo controlado a fila nem chega a ser usada.
@@ -207,8 +248,14 @@ export function ModernVideoPlayer({
   const handleMouseUp = () => setIsDragging(false);
 
   // --- Event listeners do vídeo ---
-  const onPlay = () => setIsPlaying(true);
-  const onPause = () => setIsPlaying(false);
+  const onPlay = () => {
+    setIsPlaying(true);
+    aoIniciarReproducaoParaView();
+  };
+  const onPause = () => {
+    setIsPlaying(false);
+    pararContagemView();
+  };
   const onTimeUpdate = () => {
     if (!videoRef.current || isDragging) return;
     setCurrentTime(videoRef.current.currentTime);
@@ -227,6 +274,7 @@ export function ModernVideoPlayer({
   };
   const onEnded = () => {
     setIsPlaying(false);
+    pararContagemView();
     // Ao terminar, avança automaticamente para o próximo vídeo sugerido, se houver.
     if (canGoNext) {
       goToNext();

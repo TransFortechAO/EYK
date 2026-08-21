@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Video, Users, Eye, Sparkles, Shield, User2 } from "lucide-react";
+import { BookOpen, Video, Users, Eye, Sparkles, Shield, User2, Coins } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
-import { api, tempoRelativo, type ProfessorCurso, type ProfessorVideo } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { api, tempoRelativo, type ProfessorCurso, type ProfessorVideo, type ProfessorLeaderRow } from "@/lib/api";
 
 type AtividadeItem = {
   id: string;
@@ -19,15 +21,21 @@ type AtividadeItem = {
 export default function ProfessorDashboardPage() {
   const [cursos, setCursos] = useState<ProfessorCurso[]>([]);
   const [videos, setVideos] = useState<ProfessorVideo[]>([]);
+  const [ranking, setRanking] = useState<ProfessorLeaderRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [c, v] = await Promise.all([api.professor.getCursos(), api.professor.getVideos()]);
+      const [c, v, r] = await Promise.all([
+        api.professor.getCursos(),
+        api.professor.getVideos(),
+        api.getLeaderboardProfessores(),
+      ]);
       if (!alive) return;
       setCursos(c);
       setVideos(v);
+      setRanking(r);
       setLoading(false);
     })();
     return () => {
@@ -126,6 +134,43 @@ export default function ProfessorDashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {ranking.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-serif text-xl font-semibold">Ranking mensal de professores</h2>
+            <p className="text-sm text-muted-foreground">
+              Moedas ganhas este mês com visualizações — a cada 20 views geras 30 moedas.
+            </p>
+          </div>
+          <Card className="shadow-soft overflow-hidden">
+            <div className="divide-y">
+              {ranking.map((row) => (
+                <div
+                  key={row.userId ?? row.rank}
+                  className={cn(
+                    "flex items-center justify-between gap-4 px-5 py-3",
+                    row.isMe && "bg-primary/5",
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
+                      {row.rank}
+                    </span>
+                    <p className="font-medium">
+                      {row.name}
+                      {row.isMe && <Badge variant="outline" className="ml-2 text-xs">Tu</Badge>}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium tabular-nums">
+                    <Coins className="h-4 w-4 text-primary" /> {row.coins}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </section>
+      )}
 
       <section className="space-y-4">
         <h2 className="font-serif text-xl font-semibold">Atividade recente</h2>

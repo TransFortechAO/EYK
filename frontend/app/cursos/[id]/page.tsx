@@ -114,6 +114,7 @@ export default function CoursePlayerPage() {
                   externalUrl={activeVideo.externalUrl}
                   title={activeVideo.title}
                   thumbnail={curso.thumbnail}
+                  videoId={activeVideo.id}
                 />
               ) : (
                 <div

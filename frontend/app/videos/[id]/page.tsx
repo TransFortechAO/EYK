@@ -174,6 +174,7 @@ export default function VideoPlayerPage() {
                 externalUrl={video.externalUrl}
                 title={video.title}
                 thumbnail={video.thumbnail || undefined}
+                videoId={video.id}
                 hasNext={relatedVideos.length > 0}
                 hasPrevious={watchHistory.length > 0}
                 onNext={goToNextVideo}

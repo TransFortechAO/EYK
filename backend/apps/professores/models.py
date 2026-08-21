@@ -11,6 +11,9 @@ class Professor(models.Model):
     foto = models.ImageField(upload_to='professores/', blank=True)
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    views_creditadas = models.PositiveIntegerField(
+        default=0, help_text='Nº de blocos de 20 visualizações já pagos (evita pagar duas vezes o mesmo bloco).',
+    )
 
     def __str__(self):
         return self.nome_publico

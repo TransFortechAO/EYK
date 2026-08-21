@@ -10,7 +10,7 @@ from django_otp import match_token
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
-from apps.gamificacao.services import creditar_moedas, registrar_atividade_diaria
+from apps.gamificacao.services import processar_atividade_diaria
 
 from .models import User
 from .views import PRE_2FA_SESSION_KEY, _user_payload
@@ -216,7 +216,6 @@ def auth_verificar_2fa_json(request):
 
     from django.contrib.auth import login
     login(request, user)
-    if registrar_atividade_diaria(user):
-        creditar_moedas(user, 5, 'login_diario')
+    processar_atividade_diaria(user)
 
     return _json({'ok': True, 'user': _user_payload(user)})

@@ -6,9 +6,10 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from .models import Categoria, Curso
+from .models import Categoria, Curso, Inscricao
 from .serializers import CategoriaSerializer, ComentarioVideoSerializer, CourseSerializer, VideoSerializer
 from apps.professores.models import ComentarioVideo, ReacaoComentarioVideo, ReacaoVideo, Video, VisualizacaoVideo
+from apps.gamificacao.services import creditar_curso_concluido, creditar_professor_por_views
 
 User = get_user_model()
 
@@ -82,8 +83,6 @@ def video_detail(request, pk):
     except Video.DoesNotExist:
         return Response({'detail': 'Vídeo não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
-    VisualizacaoVideo.objects.get_or_create(video=video, utilizador=request.user)
-
     serializer = VideoSerializer(video, context={'request': request})
     return Response(serializer.data)
 
@@ -107,30 +106,79 @@ def video_react(request, pk):
             reacao.tipo = tipo
             reacao.save()
 
-    VisualizacaoVideo.objects.get_or_create(video=video, utilizador=request.user)
-
     return Response({
         'likes': video.total_likes(),
         'dislikes': ReacaoVideo.objects.filter(video=video, tipo='dislike').count(),
     })
 
 
+def _verificar_curso_concluido(user, curso) -> bool:
+    from apps.alunos.models import Aluno
+
+    aluno = Aluno.objects.filter(profile=user).first()
+    if not aluno:
+        return False
+
+    inscricao = Inscricao.objects.filter(aluno=aluno, curso=curso).first()
+    if not inscricao or inscricao.concluido:
+        return False
+
+    videos_ids = list(curso.videos.filter(ativo=True).values_list('id', flat=True))
+    if not videos_ids:
+        return False
+
+    assistidos = VisualizacaoVideo.objects.filter(utilizador=user, video_id__in=videos_ids).count()
+    if assistidos >= len(videos_ids):
+        inscricao.concluido = True
+        inscricao.save(update_fields=['concluido'])
+        creditar_curso_concluido(user, curso)
+        return True
+    return False
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def video_registar_view(request, pk):
+    """Regista uma visualização real: só é chamado pelo frontend depois de 1
+    minuto de reprodução CONTÍNUA (regra anti-fraude do modelo de coins).
+
+    Não conta como view quando é o próprio professor a "ver" o seu vídeo —
+    nem para o pagamento por views nem para a conclusão do curso.
+    """
+    try:
+        video = Video.objects.select_related('professor').get(pk=pk, ativo=True)
+    except Video.DoesNotExist:
+        return Response({'detail': 'Vídeo não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+    e_dono = video.professor.user_id == request.user.id
+    if e_dono:
+        return Response({'novaView': False, 'cursoConcluido': False})
+
+    view, criada = VisualizacaoVideo.objects.get_or_create(video=video, utilizador=request.user)
+    if not criada:
+        view.count += 1
+        view.save(update_fields=['count', 'ultima_visualizacao'])
+
+    creditar_professor_por_views(video.professor)
+
+    curso_concluido = False
+    if video.curso_id:
+        curso_concluido = _verificar_curso_concluido(request.user, video.curso)
+
+    return Response({'novaView': criada, 'cursoConcluido': curso_concluido})
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([permissions.IsAuthenticated])
 def video_comentarios(request, pk):
-    """Comentários de um vídeo (avulso ou aula de curso). O dono do vídeo
-    (o professor que o publicou) não pode comentar no próprio conteúdo."""
+    """Comentários de um vídeo (avulso ou aula de curso). O professor pode
+    comentar no seu próprio conteúdo, tal como qualquer aluno."""
     try:
         video = Video.objects.select_related('professor__user').get(pk=pk, ativo=True)
     except Video.DoesNotExist:
         return Response({'detail': 'Vídeo não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'POST':
-        if video.professor.user_id == request.user.id:
-            return Response(
-                {'detail': 'Não podes comentar no teu próprio vídeo.'}, status=status.HTTP_403_FORBIDDEN,
-            )
-
         conteudo = (request.data.get('conteudo') or '').strip()
         if not conteudo:
             return Response({'detail': 'Escreve um comentário.'}, status=status.HTTP_400_BAD_REQUEST)

@@ -8,6 +8,7 @@ from .views import (
     video_list,
     video_detail,
     video_react,
+    video_registar_view,
     video_comentarios,
     video_comentario_detail,
     video_comentario_reagir,
@@ -25,6 +26,7 @@ from apps.accounts.api_notificacoes import (
 from apps.gamificacao.api_views import (
     gamificacao_painel,
     leaderboard_list,
+    leaderboard_professores_mensal,
     badges_list,
     carteira_historico,
 )
@@ -39,6 +41,7 @@ urlpatterns = [
     path('videos/', video_list, name='video-list'),
     path('videos/<int:pk>/', video_detail, name='video-detail'),
     path('videos/<int:pk>/reagir/', video_react, name='video-react'),
+    path('videos/<int:pk>/registar-view/', video_registar_view, name='video-registar-view'),
     path('videos/<int:pk>/comentarios/', video_comentarios, name='video-comentario-list'),
     path('videos/<int:pk>/comentarios/<int:comentario_id>/', video_comentario_detail, name='video-comentario-detail'),
     path('videos/<int:pk>/comentarios/<int:comentario_id>/reagir/', video_comentario_reagir, name='video-comentario-reagir'),
@@ -56,6 +59,7 @@ urlpatterns = [
 
     path('gamificacao/', gamificacao_painel, name='gamificacao-painel'),
     path('leaderboard/', leaderboard_list, name='leaderboard-list'),
+    path('leaderboard/professores/', leaderboard_professores_mensal, name='leaderboard-professores-mensal'),
     path('badges/', badges_list, name='badges-list'),
     path('carteira/', carteira_historico, name='carteira-historico'),
 

@@ -14,21 +14,21 @@ class TestCarteiraModel:
 
     def test_str_inclui_username_e_saldo(self, aluno_user):
         carteira = Carteira.objects.create(utilizador=aluno_user, saldo=100)
-        assert str(carteira) == "aluno1 — 100 moedas"
+        assert str(carteira) == "aluno1 — 100 moedas, 0 XP"
 
 
 @pytest.mark.django_db
 class TestTransacaoMoedaModel:
     def test_str_formata_valor_com_sinal(self, aluno_user):
         transacao = TransacaoMoeda.objects.create(
-            utilizador=aluno_user, valor=5, motivo="login_diario",
+            utilizador=aluno_user, valor=5, motivo="ajuste_admin",
         )
-        assert str(transacao) == "aluno1 +5 (login_diario)"
+        assert str(transacao) == "aluno1 +5 (ajuste_admin)"
 
     def test_ordering_mais_recente_primeiro(self, aluno_user):
-        primeira = TransacaoMoeda.objects.create(utilizador=aluno_user, valor=5, motivo="login_diario")
+        primeira = TransacaoMoeda.objects.create(utilizador=aluno_user, valor=5, motivo="ajuste_admin")
         TransacaoMoeda.objects.filter(pk=primeira.pk).update(criado_em=timezone.now() - timedelta(minutes=1))
-        segunda = TransacaoMoeda.objects.create(utilizador=aluno_user, valor=2, motivo="post_comunidade")
+        segunda = TransacaoMoeda.objects.create(utilizador=aluno_user, valor=2, motivo="curso_concluido")
         assert list(TransacaoMoeda.objects.all()) == [segunda, primeira]
 
 

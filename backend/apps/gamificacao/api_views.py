@@ -1,17 +1,20 @@
 from datetime import datetime, timedelta
-from django.db.models import OuterRef, Subquery, Value, IntegerField, CharField, F
+from django.db.models import OuterRef, Subquery, Sum, Value, IntegerField, CharField, F
 from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from apps.accounts.models import User
-from .models import Carteira, TransacaoMoeda, Ofensiva
+from .models import AlunoBadge, Badge, Carteira, TransacaoMoeda, Ofensiva
+from .services import nivel_info, progresso_badges, verificar_badges
 
 
 MOTIVO_LABEL = {
-    'login_diario': 'Login diário',
-    'post_comunidade': 'Post na comunidade',
+    'curso_concluido': 'Curso concluído',
+    'streak_mensal': 'Streak de 30 dias',
+    'indicacao_amigo': 'Amigo indicado',
+    'views_professor': 'Visualizações',
     'ajuste_admin': 'Ajuste do administrador',
 }
 
@@ -48,8 +51,10 @@ def gamificacao_painel(request):
     try:
         carteira = user.carteira
         coins = carteira.saldo
+        xp = carteira.xp
     except Carteira.DoesNotExist:
         coins = 0
+        xp = 0
 
     try:
         ofensiva = user.ofensiva
@@ -59,21 +64,16 @@ def gamificacao_painel(request):
         streak = 0
         streak_record = 0
 
-    level = (coins // 500) + 1
-    level_min = (level - 1) * 500
-    level_max = level * 500
-    progress_numerator = coins - level_min
-    progress_denominator = level_max - level_min
-    level_progress = int((progress_numerator / progress_denominator) * 100) if progress_denominator > 0 else 100
-    next_level_coins = level * 500
+    nivel = nivel_info(xp)
 
     data = {
         'coins': coins,
+        'xp': xp,
         'streak': streak,
         'streakRecord': streak_record,
-        'level': level,
-        'levelProgress': level_progress,
-        'nextLevelCoins': next_level_coins,
+        'level': nivel['nivel'],
+        'levelProgress': nivel['levelProgress'],
+        'nextLevelXp': nivel['nextLevelXp'],
         'initials': _get_initials(user),
         'name': _get_name(user),
     }
@@ -111,87 +111,24 @@ def leaderboard_list(request):
 @permission_classes([permissions.IsAuthenticated])
 def badges_list(request):
     user = request.user
+    verificar_badges(user)
+    progresso = progresso_badges(user)
+    desbloqueados = set(AlunoBadge.objects.filter(utilizador=user).values_list('badge__slug', flat=True))
 
-    try:
-        coins = user.carteira.saldo
-    except Carteira.DoesNotExist:
-        coins = 0
+    resultado = []
+    for badge in Badge.objects.all().order_by('ordem'):
+        info = progresso.get(badge.slug, {'progresso': 0})
+        earned = badge.slug in desbloqueados
+        resultado.append({
+            'id': badge.slug,
+            'name': badge.nome,
+            'description': badge.descricao,
+            'icon': badge.icone,
+            'earned': earned,
+            'progress': 100 if earned else info['progresso'],
+        })
 
-    try:
-        streak = user.ofensiva.dias_atual
-        streak_record = user.ofensiva.maior_sequencia
-    except Ofensiva.DoesNotExist:
-        streak = 0
-        streak_record = 0
-
-    badges = [
-        {
-            'id': 'b1',
-            'name': 'Primeiros Passos',
-            'description': 'Acumula 500 moedas pela primeira vez',
-            'icon': 'Trophy',
-            'earned': coins >= 500,
-            'progress': min(100, int((coins / 500) * 100)) if coins < 500 else 100,
-        },
-        {
-            'id': 'b2',
-            'name': 'Fiel à Rotina',
-            'description': 'Mantém uma sequência de 7 dias',
-            'icon': 'Flame',
-            'earned': streak >= 7,
-            'progress': min(100, int((streak / 7) * 100)) if streak < 7 else 100,
-        },
-        {
-            'id': 'b3',
-            'name': 'Mestre da Comunidade',
-            'description': 'Contribui com 5 posts na comunidade',
-            'icon': 'Users',
-            'earned': True,
-            'progress': 100,
-        },
-        {
-            'id': 'b4',
-            'name': 'Milionário em Treino',
-            'description': 'Alcança 2000 moedas',
-            'icon': 'Coins',
-            'earned': coins >= 2000,
-            'progress': min(100, int((coins / 2000) * 100)) if coins < 2000 else 100,
-        },
-        {
-            'id': 'b5',
-            'name': 'Sem Falhas',
-            'description': 'Melhor marca: 30 dias consecutivos',
-            'icon': 'Calendar',
-            'earned': streak_record >= 30,
-            'progress': min(100, int((streak_record / 30) * 100)) if streak_record < 30 else 100,
-        },
-        {
-            'id': 'b6',
-            'name': 'Aluno Dedicado',
-            'description': 'Completa o teu primeiro curso',
-            'icon': 'GraduationCap',
-            'earned': False,
-            'progress': 25,
-        },
-        {
-            'id': 'b7',
-            'name': 'Colecionador',
-            'description': 'Desbloqueia 5 badges',
-            'icon': 'Award',
-            'earned': False,
-            'progress': 40,
-        },
-        {
-            'id': 'b8',
-            'name': 'Lenda',
-            'description': 'Entra para o Top 10 da Leaderboard',
-            'icon': 'Crown',
-            'earned': False,
-            'progress': 0,
-        },
-    ]
-
-    return Response(badges)
+    return Response(resultado)
 
 
 @api_view(['GET'])
@@ -205,5 +142,35 @@ def carteira_historico(request):
             'label': MOTIVO_LABEL.get(t.motivo, t.motivo),
             'delta': t.valor,
             'date': _format_date_transacao(t.criado_em),
+        })
+    return Response(resultado)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def leaderboard_professores_mensal(request):
+    """Ranking de professores por moedas ganhas com visualizações (views)
+    desde o início do mês corrente — diferente do leaderboard de alunos,
+    que ordena por saldo total (a gamificação do professor é só views)."""
+    inicio_mes = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    ganhos = (
+        TransacaoMoeda.objects
+        .filter(motivo='views_professor', criado_em__gte=inicio_mes, utilizador__is_teacher=True)
+        .values('utilizador')
+        .annotate(total=Sum('valor'))
+        .order_by('-total')[:20]
+    )
+
+    resultado = []
+    for idx, row in enumerate(ganhos, start=1):
+        u = User.objects.get(id=row['utilizador'])
+        resultado.append({
+            'rank': idx,
+            'userId': u.id,
+            'name': _get_name(u),
+            'initials': _get_initials(u),
+            'coins': row['total'],
+            'isMe': u.id == request.user.id,
         })
     return Response(resultado)

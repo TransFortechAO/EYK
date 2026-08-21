@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
-from apps.gamificacao.services import creditar_moedas, registrar_atividade_diaria
+from apps.gamificacao.services import creditar_moedas, processar_atividade_diaria, verificar_badges
 
 from .forms import UserRegisterForm
 from .models import User
@@ -52,8 +52,7 @@ def auth_login_json(request):
         return JsonResponse({'ok': False, 'requires2fa': True})
 
     login(request, user)
-    if registrar_atividade_diaria(user):
-        creditar_moedas(user, 5, 'login_diario')
+    processar_atividade_diaria(user)
 
     return JsonResponse({
         'ok': True,
@@ -78,6 +77,7 @@ def auth_register_json(request):
     username = (body.get('username') or '').strip()
     email = (body.get('email') or '').strip()
     password = body.get('password') or ''
+    ref = (body.get('ref') or '').strip()
 
     if not username or not email or not password:
         return JsonResponse(
@@ -98,6 +98,15 @@ def auth_register_json(request):
         return JsonResponse({'ok': False, 'error': primeiro_erro}, status=400)
 
     user = form.save()
+
+    if ref and ref != username:
+        referrer = User.objects.filter(username=ref).first()
+        if referrer:
+            user.convidado_por = referrer
+            user.save(update_fields=['convidado_por'])
+            creditar_moedas(referrer, 200, 'indicacao_amigo')
+            verificar_badges(referrer)
+
     user = authenticate(username=username, password=password)
     if user is None:
         # Não devia acontecer (acabámos de criar a conta), mas por segurança.
@@ -107,7 +116,7 @@ def auth_register_json(request):
         )
 
     login(request, user)
-    registrar_atividade_diaria(user)
+    processar_atividade_diaria(user)
 
     return JsonResponse({
         'ok': True,
