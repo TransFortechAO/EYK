@@ -177,7 +177,7 @@ export function RelatedVideos({
               className="h-16 w-28 shrink-0 rounded-lg bg-cover bg-center shadow-sm transition-transform duration-200 group-hover:shadow-md"
               style={{
                 background: video.thumbnail
-                  ? `url(${video.thumbnail}) center/cover`
+                  ? video.thumbnail
                   : 'linear-gradient(135deg, #4A90D9, #6C5B7B)'
               }}
               aria-hidden

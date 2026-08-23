@@ -156,71 +156,75 @@ export function CourseCard({ course }: { course: Course }) {
     <Card className="group relative overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
       <Link
         href={`/cursos/${course.id}`}
-        className="absolute inset-0 z-0 outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
-        aria-label={course.title}
-      />
-      <div
-        className="relative aspect-[16/9] w-full"
-        style={{ background: course.thumbnail }}
-        aria-hidden
+        className="block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Badge className="absolute left-3 top-3 rounded-full bg-background/90 text-foreground border-0 backdrop-blur">
-          {course.category}
-        </Badge>
-        {typeof course.progress === "number" && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
-            <div
-              className="h-full bg-primary-glow"
-              style={{ width: `${course.progress}%` }}
-            />
-          </div>
-        )}
-      </div>
-      <div className="space-y-3 p-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="rounded-full bg-secondary px-2 py-0.5">{course.level}</span>
-          {course.durationLabel && (
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {course.durationLabel}
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1">
-            <PlayCircle className="h-3.5 w-3.5" />
-            {course.lessons} aulas
-          </span>
-        </div>
-        <h3 className="pointer-events-none font-serif text-lg font-semibold leading-snug text-foreground line-clamp-2">
-          {course.title}
-        </h3>
-        <div className="flex items-center justify-between">
-          <div className="relative z-10 flex min-w-0 items-center gap-2">
-            <UserAvatar
-              name={course.teacher}
-              initials={course.teacherAvatar}
-              userId={course.teacherUserId ?? undefined}
-              size={24}
-              className="text-[10px]"
-            />
-            <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>
-          </div>
-          {course.publishedAt && (
-            <span className="pointer-events-none inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-              <Calendar className="h-3.5 w-3.5" />
-              {formatarDataCurta(course.publishedAt)}
-            </span>
-          )}
-        </div>
-        {typeof course.progress === "number" && (
-          <div className="pointer-events-none pt-1">
-            <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Progresso</span>
-              <span className="font-medium tabular-nums">{course.progress}%</span>
+        <div
+          className="relative aspect-[16/9] w-full"
+          style={{ background: course.thumbnail }}
+          aria-hidden
+        >
+          <Badge className="absolute left-3 top-3 rounded-full bg-background/90 text-foreground border-0 backdrop-blur">
+            {course.category}
+          </Badge>
+          {typeof course.progress === "number" && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+              <div
+                className="h-full bg-primary-glow"
+                style={{ width: `${course.progress}%` }}
+              />
             </div>
-            <Progress value={course.progress} className="h-1.5" />
+          )}
+        </div>
+
+        <div className="space-y-3 p-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="rounded-full bg-secondary px-2 py-0.5">{course.level}</span>
+            {course.durationLabel && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {course.durationLabel}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1">
+              <PlayCircle className="h-3.5 w-3.5" />
+              {course.lessons} aulas
+            </span>
           </div>
-        )}
-      </div>
+
+          <h3 className="font-serif text-lg font-semibold leading-snug text-foreground line-clamp-2">
+            {course.title}
+          </h3>
+
+          <div className="flex items-center justify-between">
+            <div className="flex min-w-0 items-center gap-2">
+              <UserAvatar
+                name={course.teacher}
+                initials={course.teacherAvatar}
+                userId={course.teacherUserId ?? undefined}
+                size={24}
+                className="text-[10px]"
+              />
+              <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>
+            </div>
+            {course.publishedAt && (
+              <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5" />
+                {formatarDataCurta(course.publishedAt)}
+              </span>
+            )}
+          </div>
+
+          {typeof course.progress === "number" && (
+            <div className="pt-1">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Progresso</span>
+                <span className="font-medium tabular-nums">{course.progress}%</span>
+              </div>
+              <Progress value={course.progress} className="h-1.5" />
+            </div>
+          )}
+        </div>
+      </Link>
     </Card>
   );
 }
@@ -238,7 +242,7 @@ export function VideoCard({ video }: { video: Video }) {
           {video.thumbnail ? (
             <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-              style={{ backgroundImage: `url(${video.thumbnail})` }}
+              style={{ background: video.thumbnail }}
               aria-hidden
             />
           ) : (

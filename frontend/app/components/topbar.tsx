@@ -3,17 +3,34 @@
 import { Bell, Search, Coins, Flame, Sun, Moon } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
-
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-gate";
 import { ProfileMenu } from "@/components/profile-menu";
+import { api, type LeaderRow } from "@/lib/api";
+
 
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
 
+  const [rows, setRows] = useState<LeaderRow[]>([]);
+  const [meStats, setMeStats] = useState<{ coins: number; streak: number }>({ coins: 0, streak: 0 });
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [list, panel] = await Promise.all([api.getLeaderboard(), api.getDadosGamificacao()]);
+      if (!alive) return;
+      setRows(list);
+      setMeStats({ coins: panel.coins, streak: panel.streak });
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const me = rows.find((r) => r.isMe);
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur md:px-6">
       <SidebarTrigger className="shrink-0" />
@@ -30,12 +47,12 @@ export function Topbar() {
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Coins className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium tabular-nums">
-            {(user?.coins ?? 0).toLocaleString("pt-PT")}
+            {(me?.coins ?? 0).toLocaleString("pt-PT")}
           </span>
         </div>
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Flame className="h-4 w-4 text-streak" />
-          <span className="text-sm font-medium tabular-nums">{user?.streak ?? 0}</span>
+          <span className="text-sm font-medium tabular-nums">{me?.streak ?? 0}</span>
         </div>
 
         <Button
