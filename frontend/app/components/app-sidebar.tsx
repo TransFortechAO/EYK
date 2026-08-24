@@ -93,14 +93,7 @@ export function AppSidebar() {
     <Sidebar variant="floating" collapsible="icon">
       <SidebarHeader className="px-4 py-5">
         <Link href="/inicio" className="flex items-center gap-2" onClick={closeOnNavigate}>
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-gold text-sidebar-primary-foreground font-serif text-lg font-bold shadow-gold">
-            E
-          </div>
-          {!collapsed && (
-            <span className="font-serif text-xl font-semibold tracking-tight text-sidebar-primary">
-              EYK
-            </span>
-          )}
+         <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt="logo-eyk" className="h-20 w-auto object-contain" />
         </Link>
       </SidebarHeader>
 

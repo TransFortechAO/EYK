@@ -14,7 +14,7 @@ const initialState: AuthState = {
   loading: true,
   authenticated: false,
   user: null,
-  refresh: async () => {},
+  refresh: async () => { },
 };
 
 const AuthContext = createContext<AuthState>(initialState);
@@ -83,7 +83,7 @@ function AuthLoader() {
           className="font-serif text-4xl font-bold tracking-tight"
           style={{ color: "#d4a24a" }}
         >
-          EYK
+          <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt="logo-eyk" className="h-40 w-auto object-contain" />
         </div>
         <div className="w-10 h-10 border-2 rounded-full animate-spin border-[#d4a24a] border-t-transparent" />
         <p className="text-white/50 text-sm">A verificar sessão…</p>
