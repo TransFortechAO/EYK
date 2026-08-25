@@ -84,3 +84,5 @@ static/CACHE/
 *.sqlite3
 *.db
 db.sqlite3
+backend/venv.zip
+backend/venv/
