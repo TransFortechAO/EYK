@@ -10,9 +10,9 @@ export const API_BASE_URL = (() => {
   // em vez de tentar sempre "localhost" (que, visto de outro dispositivo,
   // aponta para esse dispositivo, não para o servidor Django).
   if (typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}:8001`;
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
   }
-  return 'http://localhost:8001';
+  return 'http://localhost:8000';
 })();
 
 // Resolve um caminho de media relativo (ex: "/media/videos/x.mp4") devolvido

@@ -173,7 +173,7 @@ export default function CoursePlayerPage() {
 
           <div className="flex items-center gap-3">
             <Avatar className="h-11 w-11">
-              <UserAvatar name={curso.teacher} userId={curso.teacherUserId ?? undefined} />
+              <UserAvatar noLink name={curso.teacher} userId={curso.teacherUserId ?? undefined} />
             </Avatar>
             <div>
               <p className="text-sm font-medium">{curso.teacher}</p>

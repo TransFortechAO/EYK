@@ -202,6 +202,7 @@ export function CourseCard({ course }: { course: Course }) {
                 initials={course.teacherAvatar}
                 userId={course.teacherUserId ?? undefined}
                 size={24}
+                noLink
                 className="text-[10px]"
               />
               <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>

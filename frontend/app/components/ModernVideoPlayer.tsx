@@ -13,6 +13,7 @@ import {
   SkipForward,
   ChevronsLeft,
   ChevronsRight,
+  Repeat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -89,6 +90,12 @@ export function ModernVideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
+
+  // --- Contagem regressiva antes de avançar automaticamente para o próximo vídeo ---
+  const NEXT_COUNTDOWN_SECONDS = 5;
+  const [nextCountdown, setNextCountdown] = useState<number | null>(null); // null = sem contagem ativa
+  const nextCountdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // --- Vídeo atual e navegação (seguinte / anterior) ---
   const [current, setCurrent] = useState<VideoSource>({ fileUrl, externalUrl, title, thumbnail });
@@ -177,17 +184,66 @@ export function ModernVideoPlayer({
     });
   }, [current, onVideoChange, isControlledNav, onPrevious]);
 
+  // Cancela a contagem regressiva de "próximo vídeo" (chamado ao trocar de vídeo,
+  // ao desmontar, ou quando o utilizador cancela manualmente).
+  const cancelNextCountdown = useCallback(() => {
+    if (nextCountdownIntervalRef.current) {
+      clearInterval(nextCountdownIntervalRef.current);
+      nextCountdownIntervalRef.current = null;
+    }
+    setNextCountdown(null);
+  }, []);
+
+  // Inicia a contagem regressiva de 5s ao fim do vídeo, dando ao utilizador a
+  // oportunidade de cancelar antes de avançar automaticamente.
+  const startNextCountdown = useCallback(() => {
+    setNextCountdown(NEXT_COUNTDOWN_SECONDS);
+    nextCountdownIntervalRef.current = setInterval(() => {
+      // O updater faz APENAS o cálculo do próximo valor — nada de efeitos
+      // colaterais aqui (como chamar goToNext/router.push), ou o React acusa
+      // "Cannot update a component while rendering a different component".
+      setNextCountdown((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) return 0; // sinaliza "contagem terminou"; o avanço real acontece no useEffect abaixo
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // Quando a contagem chega a 0, é seguro chamar goToNext (fora da fase de
+  // render/reducer). Aqui também limpamos o interval, já que o updater acima
+  // não faz mais isso.
+  useEffect(() => {
+    if (nextCountdown !== 0) return;
+    if (nextCountdownIntervalRef.current) {
+      clearInterval(nextCountdownIntervalRef.current);
+      nextCountdownIntervalRef.current = null;
+    }
+    goToNext();
+    setNextCountdown(null);
+  }, [nextCountdown, goToNext]);
+
   // Reinicia o estado de reprodução sempre que o vídeo atual muda.
   useEffect(() => {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
     setIsLoading(true);
+    cancelNextCountdown();
     if (videoRef.current) {
       videoRef.current.load();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.fileUrl, current.externalUrl]);
+
+  // Garante que o intervalo é limpo se o componente for desmontado a meio da contagem.
+  useEffect(() => {
+    return () => {
+      if (nextCountdownIntervalRef.current) {
+        clearInterval(nextCountdownIntervalRef.current);
+      }
+    };
+  }, []);
 
   // --- Controles ---
   const togglePlay = useCallback(() => {
@@ -232,7 +288,15 @@ export function ModernVideoPlayer({
 
   const skip = (seconds: number) => {
     if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
+    // Usa sempre a duração real do elemento <video>, não o estado `duration` do React
+    // (que só é atualizado no 'loadedmetadata' e pode ficar desatualizado). Alguns
+    // ficheiros reportam `duration` como NaN antes do 'durationchange' disparar — nesse
+    // caso, Math.min(x, NaN) devolve NaN, e atribuir currentTime = NaN faz o browser
+    // reiniciar o vídeo para 0, dando a falsa sensação de que o botão "avançar" recua.
+    const videoDuration = videoRef.current.duration;
+    const safeDuration = Number.isFinite(videoDuration) ? videoDuration : Infinity;
+    const newTime = videoRef.current.currentTime + seconds;
+    videoRef.current.currentTime = Math.max(0, Math.min(newTime, safeDuration));
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -275,9 +339,14 @@ export function ModernVideoPlayer({
   const onEnded = () => {
     setIsPlaying(false);
     pararContagemView();
-    // Ao terminar, avança automaticamente para o próximo vídeo sugerido, se houver.
+    // Com loop ativo, o próprio atributo `loop` do <video> trata da repetição
+    // e este evento nem chega a disparar na maioria dos browsers — mas mantemos
+    // esta verificação por segurança.
+    if (isLooping) return;
+    // Ao terminar, inicia uma contagem regressiva de 5s antes de avançar
+    // automaticamente para o próximo vídeo, dando tempo ao utilizador para cancelar.
     if (canGoNext) {
-      goToNext();
+      startNextCountdown();
     }
   };
   const onError = () => {
@@ -322,8 +391,22 @@ export function ModernVideoPlayer({
 
   // --- Atalhos de teclado ---
   useEffect(() => {
+    // Verifica se o alvo do evento é um campo de escrita (input, textarea, select,
+    // contentEditable) ou está dentro de uma zona explicitamente marcada como
+    // "sem atalhos do player" (ex: caixa de comentários), para não conflituar
+    // com outros componentes que também escutam teclas como espaço, setas, f, m, n, p.
+    const isTypingOrExcludedTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false;
+      const tag = target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (target.isContentEditable) return true;
+      if (target.closest('[contenteditable="true"]')) return true;
+      if (target.closest("[data-video-shortcuts-disabled]")) return true;
+      return false;
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return; // ignora inputs
+      if (isTypingOrExcludedTarget(e.target)) return; // ignora inputs/textareas/contentEditable/zonas excluídas
       switch (e.key) {
         case " ":
           e.preventDefault();
@@ -356,6 +439,11 @@ export function ModernVideoPlayer({
         case "P":
           e.preventDefault();
           if (canGoPrevious) goToPrevious();
+          break;
+        case "l":
+        case "L":
+          e.preventDefault();
+          setIsLooping((prev) => !prev);
           break;
       }
     };
@@ -488,12 +576,48 @@ export function ModernVideoPlayer({
         disablePictureInPicture
         playsInline
         preload="metadata"
+        loop={isLooping}
       />
 
       {/* Loading overlay */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <LoaderCircle className="h-14 w-14 animate-spin text-white/80" />
+        </div>
+      )}
+
+      {/* Contagem regressiva antes de avançar automaticamente para o próximo vídeo */}
+      {nextCountdown !== null && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-black/85 backdrop-blur-sm px-6 text-center text-white">
+          {!isControlledNav && queue[0]?.thumbnail && (
+            <img
+              src={queue[0].thumbnail}
+              alt=""
+              className="h-24 w-40 rounded-lg object-cover"
+            />
+          )}
+          <p className="text-sm text-white/60">A seguir</p>
+          {!isControlledNav && queue[0]?.title && (
+            <p className="max-w-xs font-medium line-clamp-1">{queue[0].title}</p>
+          )}
+          <p className="text-4xl font-bold tabular-nums">{nextCountdown}</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={cancelNextCountdown}
+              className="rounded-full border border-white/30 px-4 py-2 text-sm font-medium transition hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => {
+                cancelNextCountdown();
+                goToNext();
+              }}
+              className="rounded-full bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-white/90"
+            >
+              Reproduzir agora
+            </button>
+          </div>
         </div>
       )}
 
@@ -658,6 +782,19 @@ export function ModernVideoPlayer({
             </div>
 
             <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsLooping((prev) => !prev)}
+                className={cn(
+                  "p-1.5 rounded-full transition",
+                  isLooping ? "bg-white/30 text-white" : "hover:bg-white/20 text-white"
+                )}
+                aria-label={isLooping ? "Desativar repetição" : "Repetir vídeo"}
+                aria-pressed={isLooping}
+                title={isLooping ? "Repetição ativada" : "Repetir vídeo"}
+              >
+                <Repeat className="h-4 w-4" />
+              </button>
+
               <button
                 onClick={toggleFullscreen}
                 className="p-1.5 rounded-full hover:bg-white/20 transition"

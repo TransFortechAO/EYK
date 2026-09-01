@@ -121,14 +121,19 @@ export function UserAvatar({
     // Se houver onClick, usamos um botão/div com clique
     if (onClick) {
       return (
-        <button
-          type="button"
-          onClick={onClick}
-          className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105"
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClick();
+          }}
+          className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105 cursor-pointer"
           style={{ width: size, height: size }}
         >
           {avatar}
-        </button>
+        </span>
       );
     }
 

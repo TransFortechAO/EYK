@@ -338,7 +338,7 @@ export default function AdminProfessoresPage() {
                     <td className="first:rounded-l-xl last:rounded-r-xl py-3 pr-4 bg-surface/40 group-hover:bg-surface/70 transition border-y border-y-transparent group-hover:border-y-border/50 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10">
-                          <UserAvatar name={p.nome_publico} initials={initialsOf(p.nome_publico)} userId={p.user.id} size={40} />
+                          <UserAvatar noLink name={p.nome_publico} initials={initialsOf(p.nome_publico)} userId={p.user.id} size={40} />
                         </Avatar>
                         <div>
                           <p className="font-medium">{p.nome_publico}</p>

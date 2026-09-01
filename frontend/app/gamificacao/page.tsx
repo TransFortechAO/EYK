@@ -104,6 +104,7 @@ export default function GamificacaoPage() {
         <div className="flex flex-col sm:flex-row sm:items-end gap-6">
           <Avatar className="h-20 w-20 shrink-0 shadow-md">
             <UserAvatar
+              noLink
               className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold"
               name={p.name}
               initials={p.initials}

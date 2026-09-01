@@ -88,7 +88,7 @@ export default function VideoEngajamentoPage() {
             {dados.reacoes.map((r) => (
               <div key={r.id} className="flex items-center gap-3 rounded-xl bg-surface/40 px-3 py-2">
                 <Avatar className="h-8 w-8">
-                  <UserAvatar name={r.utilizador_nome} userId={r.utilizador} size={32} />
+                  <UserAvatar noLink name={r.utilizador_nome} userId={r.utilizador} size={32} />
                 </Avatar>
                 <span className="text-sm">@{r.utilizador_nome}</span>
                 <Badge variant="outline" className="ml-auto text-xs capitalize">{r.tipo}</Badge>
