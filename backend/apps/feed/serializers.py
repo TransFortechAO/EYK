@@ -20,6 +20,7 @@ def _format_time_ago(data):
 class PostSerializer(serializers.ModelSerializer):
     autor_nome = serializers.SerializerMethodField()
     autor_initials = serializers.SerializerMethodField()
+    autor_foto = serializers.SerializerMethodField()
     time_ago = serializers.SerializerMethodField()
     likes = serializers.SerializerMethodField()
     comentarios = serializers.SerializerMethodField()
@@ -28,7 +29,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = [
-            'id', 'autor', 'autor_nome', 'autor_initials',
+            'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto',
             'conteudo', 'imagem', 'criado_em', 'time_ago',
             'likes', 'comentarios', 'liked'
         ]
@@ -39,6 +40,23 @@ class PostSerializer(serializers.ModelSerializer):
     def get_autor_initials(self, obj):
         nome = obj.autor.get_full_name() or obj.autor.username
         return _get_initials(nome)
+
+    def get_autor_foto(self, obj):
+        user = obj.autor
+        try:
+            if getattr(user, 'is_teacher', False):
+                from apps.professores.models import Professor
+                prof = Professor.objects.filter(user=user).first()
+                if prof and prof.foto:
+                    return prof.foto.url
+            else:
+                from apps.alunos.models import Aluno
+                aluno = Aluno.objects.filter(profile=user).first()
+                if aluno and aluno.foto:
+                    return aluno.foto.url
+        except Exception:
+            pass
+        return None
 
     def get_time_ago(self, obj):
         return _format_time_ago(obj.criado_em)
@@ -59,12 +77,13 @@ class PostSerializer(serializers.ModelSerializer):
 class ComentarioSerializer(serializers.ModelSerializer):
     autor_nome = serializers.SerializerMethodField()
     autor_initials = serializers.SerializerMethodField()
+    autor_foto = serializers.SerializerMethodField()
     time_ago = serializers.SerializerMethodField()
 
     class Meta:
         model = Comentario
         fields = [
-            'id', 'autor', 'autor_nome', 'autor_initials',
+            'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto',
             'conteudo', 'criado_em', 'time_ago'
         ]
 
@@ -74,6 +93,23 @@ class ComentarioSerializer(serializers.ModelSerializer):
     def get_autor_initials(self, obj):
         nome = obj.autor.get_full_name() or obj.autor.username
         return _get_initials(nome)
+
+    def get_autor_foto(self, obj):
+        user = obj.autor
+        try:
+            if getattr(user, 'is_teacher', False):
+                from apps.professores.models import Professor
+                prof = Professor.objects.filter(user=user).first()
+                if prof and prof.foto:
+                    return prof.foto.url
+            else:
+                from apps.alunos.models import Aluno
+                aluno = Aluno.objects.filter(profile=user).first()
+                if aluno and aluno.foto:
+                    return aluno.foto.url
+        except Exception:
+            pass
+        return None
 
     def get_time_ago(self, obj):
         return _format_time_ago(obj.criado_em)

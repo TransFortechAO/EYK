@@ -66,7 +66,12 @@ export function VideoComments({ videoId }: { videoId: string | number }) {
 
       <div className="flex gap-3">
         <Avatar className="h-9 w-9 shrink-0">
-          <UserAvatar name={user?.name} initials={user?.initials} userId={user?.id} />
+          <UserAvatar
+            name={user?.name}
+            initials={user?.initials}
+            foto={user?.foto ?? undefined}
+            userId={user?.id}
+          />
         </Avatar>
         <div className="min-w-0 flex-1 space-y-2">
           <Textarea
@@ -183,7 +188,12 @@ function CommentItem({
   return (
     <div className={cn("flex gap-3", nested && "ml-11")}>
       <Avatar className="h-9 w-9 shrink-0">
-        <UserAvatar name={comentario.autorNome} initials={comentario.autorInitials} userId={comentario.autorId} />
+        <UserAvatar
+          name={comentario.autorNome}
+          initials={comentario.autorInitials}
+          foto={comentario.autorFoto ?? undefined}
+          userId={comentario.autorId}
+        />
       </Avatar>
       <div className="min-w-0 flex-1 space-y-1.5">
         <div className="flex items-baseline gap-2">

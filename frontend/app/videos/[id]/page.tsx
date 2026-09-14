@@ -1,8 +1,9 @@
 "use client";
 //Video Player Page
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Heart, Eye, Calendar } from "lucide-react";
+import { ArrowLeft, Heart, Eye, Calendar, Clock } from "lucide-react";
 import { ShareButton } from "@/components/eyk";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
@@ -187,6 +188,11 @@ export default function VideoPlayerPage() {
             <span className="inline-flex items-center gap-1.5">
               <Eye className="h-3.5 w-3.5" /> {video.views.toLocaleString()} visualizações
             </span>
+            {video.durationLabel && (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" /> {video.durationLabel}
+              </span>
+            )}
             {video.createdAt && (
               <span className="inline-flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" /> {formatarData(video.createdAt)}
@@ -205,7 +211,16 @@ export default function VideoPlayerPage() {
                 <UserAvatar name={video.teacher} userId={video.teacherUserId ?? undefined} />
               </Avatar>
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{video.teacher}</p>
+                {video.teacherUserId ? (
+                  <Link
+                    href={`/perfil/${video.teacherUserId}`}
+                    className="truncate text-sm font-medium hover:underline underline-offset-2 transition-colors"
+                  >
+                    {video.teacher}
+                  </Link>
+                ) : (
+                  <p className="truncate text-sm font-medium">{video.teacher}</p>
+                )}
                 <p className="text-xs text-muted-foreground">Professor EYK</p>
               </div>
             </div>

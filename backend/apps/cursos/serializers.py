@@ -34,6 +34,7 @@ class CursoVideoSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     professor_nome = serializers.CharField(source='professor.nome_publico', read_only=True)
     professor_user_id = serializers.IntegerField(source='professor.user_id', read_only=True)
+    professor_foto = serializers.SerializerMethodField()
     categoria_nome = serializers.CharField(source='categoria.nome', read_only=True, allow_null=True)
     total_inscritos = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
@@ -46,6 +47,10 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Curso
         fields = '__all__'
+
+    def get_professor_foto(self, obj):
+        prof = obj.professor
+        return prof.foto.url if prof and prof.foto else None
 
     def get_total_inscritos(self, obj):
         return obj.total_inscritos()
@@ -90,12 +95,17 @@ class CourseSerializer(serializers.ModelSerializer):
 class VideoSerializer(serializers.ModelSerializer):
     professor_nome = serializers.CharField(source='professor.nome_publico', read_only=True)
     professor_user_id = serializers.IntegerField(source='professor.user_id', read_only=True)
+    professor_foto = serializers.SerializerMethodField()
     total_likes = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
         fields = '__all__'
+
+    def get_professor_foto(self, obj):
+        prof = obj.professor
+        return prof.foto.url if prof and prof.foto else None
 
     def get_total_likes(self, obj):
         return obj.total_likes()
@@ -107,6 +117,7 @@ class VideoSerializer(serializers.ModelSerializer):
 class ComentarioVideoSerializer(serializers.ModelSerializer):
     autor_nome = serializers.SerializerMethodField()
     autor_initials = serializers.SerializerMethodField()
+    autor_foto = serializers.SerializerMethodField()
     tempo = serializers.SerializerMethodField()
     total_likes = serializers.SerializerMethodField()
     liked = serializers.SerializerMethodField()
@@ -117,7 +128,7 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComentarioVideo
         fields = [
-            'id', 'autor', 'autor_nome', 'autor_initials', 'parent', 'conteudo',
+            'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto', 'parent', 'conteudo',
             'criado_em', 'editado_em', 'tempo', 'total_likes', 'liked',
             'pode_editar', 'pode_apagar', 'respostas',
         ]
@@ -132,6 +143,23 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
         if len(partes) >= 2:
             return (partes[0][0] + partes[-1][0]).upper()
         return nome[:2].upper() if nome else '??'
+
+    def get_autor_foto(self, obj):
+        user = obj.autor
+        try:
+            if getattr(user, 'is_teacher', False):
+                from apps.professores.models import Professor
+                prof = Professor.objects.filter(user=user).first()
+                if prof and prof.foto:
+                    return prof.foto.url
+            else:
+                from apps.alunos.models import Aluno
+                aluno = Aluno.objects.filter(profile=user).first()
+                if aluno and aluno.foto:
+                    return aluno.foto.url
+        except Exception:
+            pass
+        return None
 
     def get_tempo(self, obj):
         return _tempo_desde(obj.criado_em)

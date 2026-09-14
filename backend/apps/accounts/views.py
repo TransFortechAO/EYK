@@ -235,6 +235,62 @@ def perfil_publico(request, user_id):
     return JsonResponse({'ok': True, 'perfil': perfil})
 
 
+@require_GET
+def pesquisar_utilizadores(request):
+    """Pesquisa utilizadores por nome/username. Devolve os primeiros 20
+    resultados compatíveis, para usar no campo de pesquisa do início."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'ok': False, 'error': 'Não autenticado.'}, status=401)
+
+    q = (request.GET.get('q') or '').strip()
+    if len(q) < 2:
+        return JsonResponse({'ok': True, 'utilizadores': []})
+
+    from django.db.models import Q
+
+    users = (
+        User.objects.filter(
+            Q(username__icontains=q)
+            | Q(first_name__icontains=q)
+            | Q(last_name__icontains=q)
+        )
+        .filter(is_active=True)
+        .exclude(id=request.user.id)
+    )[:20]
+
+    resultados = []
+    for u in users:
+        is_teacher = getattr(u, 'is_teacher', False)
+        foto = None
+        if is_teacher:
+            from apps.professores.models import Professor
+            prof = Professor.objects.filter(user=u).first()
+            if prof and prof.foto:
+                foto = prof.foto.url
+        else:
+            from apps.alunos.models import Aluno
+            aluno = Aluno.objects.filter(profile=u).first()
+            if aluno and aluno.foto:
+                foto = aluno.foto.url
+
+        name = u.get_display_name()
+        initials = (
+            ((u.first_name or u.username or '?')[0])
+            + ((u.last_name or '')[0:1] or '')
+        ).upper()
+
+        resultados.append({
+            'id': u.id,
+            'name': name,
+            'initials': initials or u.username[0].upper(),
+            'username': u.username,
+            'isTeacher': is_teacher,
+            'foto': foto,
+        })
+
+    return JsonResponse({'ok': True, 'utilizadores': resultados})
+
+
 def _user_payload(user: User) -> dict:
     name = user.get_display_name()
     initials = (
@@ -243,16 +299,19 @@ def _user_payload(user: User) -> dict:
     ).upper()
 
     bio = ''
+    foto = None
     if user.is_teacher:
         from apps.professores.models import Professor
         professor = Professor.objects.filter(user=user).first()
         if professor:
             bio = professor.bio or ''
+            foto = professor.foto.url if professor.foto else None
     else:
         from apps.alunos.models import Aluno
         aluno = Aluno.objects.filter(profile=user).first()
         if aluno:
             bio = aluno.bio or ''
+            foto = aluno.foto.url if aluno.foto else None
 
     return {
         'id': user.id,
@@ -260,6 +319,7 @@ def _user_payload(user: User) -> dict:
         'username': user.username,
         'email': user.email,
         'bio': bio,
+        'foto': foto,
         'initials': initials or user.username[0].upper(),
         'isTeacher': user.is_teacher if hasattr(user, 'is_teacher') else False,
         'isStudent': user.is_student if hasattr(user, 'is_student') else True,

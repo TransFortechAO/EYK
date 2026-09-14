@@ -204,7 +204,16 @@ export function CourseCard({ course }: { course: Course }) {
                 size={24}
                 className="text-[10px]"
               />
-              <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>
+              {course.teacherUserId ? (
+                <Link
+                  href={`/perfil/${course.teacherUserId}`}
+                  className="truncate text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                >
+                  {course.teacher}
+                </Link>
+              ) : (
+                <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>
+              )}
             </div>
             {course.publishedAt && (
               <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
@@ -270,8 +279,17 @@ export function VideoCard({ video }: { video: Video }) {
             {video.title}
           </h3>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{video.teacher}</span>
-            <span>{video.views.toLocaleString()} visualizações</span>
+            {video.teacherUserId ? (
+              <Link
+                href={`/perfil/${video.teacherUserId}`}
+                className="truncate hover:text-foreground hover:underline underline-offset-2 transition-colors"
+              >
+                {video.teacher}
+              </Link>
+            ) : (
+              <span className="truncate">{video.teacher}</span>
+            )}
+            <span className="shrink-0">{video.views.toLocaleString()} visualizações</span>
           </div>
           {video.publishedAt && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -314,10 +332,24 @@ export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: ()
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <UserAvatar name={post.author} initials={post.initials} userId={post.authorId ?? undefined} />
+              <UserAvatar
+                name={post.author}
+                initials={post.initials}
+                foto={post.authorFoto ?? undefined}
+                userId={post.authorId ?? undefined}
+              />
             </Avatar>
             <div>
-              <p className="font-medium text-sm">{post.author}</p>
+              {post.authorId ? (
+                <Link
+                  href={`/perfil/${post.authorId}`}
+                  className="font-medium text-sm hover:underline underline-offset-2 transition-colors"
+                >
+                  {post.author}
+                </Link>
+              ) : (
+                <p className="font-medium text-sm">{post.author}</p>
+              )}
               <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
             </div>
           </div>

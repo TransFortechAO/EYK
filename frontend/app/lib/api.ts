@@ -10,9 +10,9 @@ export const API_BASE_URL = (() => {
   // em vez de tentar sempre "localhost" (que, visto de outro dispositivo,
   // aponta para esse dispositivo, não para o servidor Django).
   if (typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}:8001`;
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
   }
-  return 'http://localhost:8001';
+  return 'http://localhost:8000';
 })();
 
 // Resolve um caminho de media relativo (ex: "/media/videos/x.mp4") devolvido
@@ -121,6 +121,7 @@ export type AuthUser = {
   username: string;
   email: string;
   bio?: string;
+  foto?: string | null;
   initials: string;
   isTeacher: boolean;
   isStudent: boolean;
@@ -144,6 +145,7 @@ export type Course = {
   category: string;
   teacher: string;
   teacherAvatar: string;
+  teacherFoto: string | null;
   teacherUserId: number | null;
   level: "Iniciante" | "Intermédio" | "Avançado";
   durationHours: number;
@@ -159,6 +161,7 @@ export type Video = {
   id: string;
   title: string;
   teacher: string;
+  teacherFoto: string | null;
   teacherUserId: number | null;
   duration: string;
   views: number;
@@ -173,6 +176,7 @@ export type VideoDetail = {
   description: string;
   teacher: string;
   teacherAvatar: string;
+  teacherFoto: string | null;
   professorId: number | null;
   teacherUserId: number | null;
   thumbnail: string;
@@ -181,6 +185,8 @@ export type VideoDetail = {
   views: number;
   likes: number;
   createdAt: string;
+  durationSeconds: number;
+  durationLabel: string;
 };
 
 export type VideoComment = {
@@ -188,6 +194,7 @@ export type VideoComment = {
   autorId: number;
   autorNome: string;
   autorInitials: string;
+  autorFoto: string | null;
   parentId: number | null;
   conteudo: string;
   criadoEm: string;
@@ -245,6 +252,7 @@ export type Post = {
   author: string;
   authorId: number | null;
   initials: string;
+  authorFoto: string | null;
   timeAgo: string;
   content: string;
   likes: number;
@@ -307,6 +315,15 @@ export type WalletEntry = {
 export type Category = {
   id: number | null;
   nome: string;
+};
+
+export type UtilizadorPesquisa = {
+  id: number;
+  name: string;
+  initials: string;
+  username: string;
+  isTeacher: boolean;
+  foto: string | null;
 };
 
 export type GamePanel = {
@@ -417,6 +434,16 @@ export type ProfessorCurso = {
   videos: ProfessorCursoVideo[];
 };
 
+export type CursoRecurso = {
+  id: number;
+  nome: string;
+  tipo: string;
+  arquivoUrl: string;
+  tamanhoBytes: number;
+  tamanhoMb: number;
+  criadoEm: string;
+};
+
 export type ProfessorCursoPayload = {
   titulo: string;
   descricao: string;
@@ -479,6 +506,7 @@ type RawCourse = {
   professor_nome?: string | null;
   professor?: RawProfessor | null;
   professor_user_id?: number | null;
+  professor_foto?: string | null;
   categoria_nome?: string | null;
   duracao?: number | string | null;
   duracao_total_segundos?: number | null;
@@ -495,6 +523,7 @@ type RawVideo = {
   titulo?: string | null;
   professor_nome?: string | null;
   professor_user_id?: number | null;
+  professor_foto?: string | null;
   duracao?: string | null;
   duracao_segundos?: number | null;
   total_visualizacoes?: number | string | null;
@@ -508,6 +537,7 @@ type RawVideoDetail = RawVideo & {
   arquivo?: string | null;
   url_externa?: string | null;
   total_likes?: number | string | null;
+  duracao_segundos?: number | string | null;
 };
 
 type RawVideoComment = {
@@ -515,6 +545,7 @@ type RawVideoComment = {
   autor?: number | null;
   autor_nome?: string | null;
   autor_initials?: string | null;
+  autor_foto?: string | null;
   parent?: number | null;
   conteudo?: string | null;
   criado_em?: string | null;
@@ -571,6 +602,7 @@ type RawPost = {
   autor?: number | null;
   autor_nome?: string | null;
   autor_initials?: string | null;
+  autor_foto?: string | null;
   time_ago?: string | null;
   conteudo?: string | null;
   likes?: number | string | null;
@@ -596,6 +628,16 @@ type RawBadge = {
   icon?: string;
   earned?: boolean;
   progress?: number | null;
+};
+
+type RawCursoRecurso = {
+  id?: number | string;
+  nome?: string | null;
+  tipo?: string | null;
+  arquivo_url?: string | null;
+  tamanho_bytes?: number | string | null;
+  tamanho_mb?: number | string | null;
+  criado_em?: string | null;
 };
 
 type RawWalletEntry = {
@@ -733,6 +775,7 @@ function normalizeCourse(raw: RawCourse): Course {
     category: raw?.categoria_nome || "Geral",
     teacher: profNome,
     teacherAvatar: initiais(profNome),
+    teacherFoto: mediaUrl(raw?.professor_foto) ?? null,
     teacherUserId: typeof raw?.professor_user_id === "number" ? raw.professor_user_id : null,
     level: "Iniciante",
     durationHours: Math.round((duracaoTotalSegundos / 3600) * 10) / 10,
@@ -751,6 +794,7 @@ function normalizeVideo(raw: RawVideo): Video {
     id: String(raw?.id ?? "v"),
     title: raw?.titulo || "Vídeo",
     teacher: profNome,
+    teacherFoto: mediaUrl(raw?.professor_foto) ?? null,
     teacherUserId: typeof raw?.professor_user_id === "number" ? raw.professor_user_id : null,
     duration: formatarDuracaoCurta(raw?.duracao_segundos),
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
@@ -762,12 +806,14 @@ function normalizeVideo(raw: RawVideo): Video {
 
 function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
   const profNome = raw?.professor_nome || "Professor";
+  const durationSeconds = Number(raw?.duracao_segundos ?? 0) || 0;
   return {
     id: String(raw?.id ?? "v"),
     title: raw?.titulo || "Vídeo",
     description: raw?.descricao || "",
     teacher: profNome,
     teacherAvatar: initiais(profNome),
+    teacherFoto: mediaUrl(raw?.professor_foto) ?? null,
     professorId: typeof raw?.professor === "number" ? raw.professor : null,
     teacherUserId: typeof raw?.professor_user_id === "number" ? raw.professor_user_id : null,
     thumbnail: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
@@ -776,6 +822,8 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     views: Number(raw?.total_visualizacoes ?? 0) || 0,
     likes: Number(raw?.total_likes ?? 0) || 0,
     createdAt: raw?.criado_em || "",
+    durationSeconds,
+    durationLabel: formatarDuracaoCurta(durationSeconds),
   };
 }
 
@@ -785,6 +833,7 @@ function normalizeVideoComment(raw: RawVideoComment): VideoComment {
     autorId: Number(raw?.autor ?? 0),
     autorNome: raw?.autor_nome || "Utilizador",
     autorInitials: raw?.autor_initials || "??",
+    autorFoto: mediaUrl(raw?.autor_foto) ?? null,
     parentId: typeof raw?.parent === "number" ? raw.parent : null,
     conteudo: raw?.conteudo || "",
     criadoEm: raw?.criado_em || "",
@@ -852,6 +901,7 @@ function normalizePost(raw: RawPost): Post {
     author: raw?.autor_nome || "Anónimo",
     authorId: typeof raw?.autor === "number" ? raw.autor : null,
     initials: raw?.autor_initials || "??",
+    authorFoto: mediaUrl(raw?.autor_foto) ?? null,
     timeAgo: raw?.time_ago || "há pouco",
     content: raw?.conteudo || "",
     likes: Number(raw?.likes ?? 0),
@@ -868,6 +918,18 @@ function normalizeNotif(raw: RawNotif): Notification {
     body: raw?.body || "",
     timeAgo: raw?.timeAgo || "",
     read: Boolean(raw?.read),
+  };
+}
+
+function normalizeCursoRecurso(raw: RawCursoRecurso): CursoRecurso {
+  return {
+    id: Number(raw?.id ?? 0),
+    nome: raw?.nome || "Recurso",
+    tipo: raw?.tipo || "pdf",
+    arquivoUrl: mediaUrl(raw?.arquivo_url) ?? "",
+    tamanhoBytes: Number(raw?.tamanho_bytes ?? 0) || 0,
+    tamanhoMb: Number(raw?.tamanho_mb ?? 0) || 0,
+    criadoEm: raw?.criado_em || "",
   };
 }
 
@@ -992,6 +1054,22 @@ export const api = {
       /* perfil não encontrado ou erro de rede */
     }
     return null;
+  },
+  pesquisarUtilizadores: async (q: string): Promise<UtilizadorPesquisa[]> => {
+    try {
+      const res = await fetchAPI<{ ok: boolean; utilizadores: UtilizadorPesquisa[] }>(
+        `/accounts/api/pesquisar-utilizadores/?q=${encodeURIComponent(q)}`,
+      );
+      if (res?.utilizadores && Array.isArray(res.utilizadores)) {
+        return res.utilizadores.map((u) => ({
+          ...u,
+          foto: mediaUrl(u.foto),
+        }));
+      }
+    } catch {
+      /* erro na pesquisa */
+    }
+    return [];
   },
 
   toggleSeguirProfessor: (professorId: number | string) =>
@@ -1327,6 +1405,32 @@ export const api = {
     return await fetchAPI<{ ok: boolean; concluido: boolean }>(`/api/cursos/${cursoId}/inscrever/`, {
       method: 'POST',
     });
+  },
+  listarRecursosCurso: async (cursoId: string | number): Promise<CursoRecurso[]> => {
+    try {
+      const res = await fetchAPI<RawCursoRecurso[]>(`/api/cursos/${cursoId}/recursos/`);
+      if (Array.isArray(res)) return res.map(normalizeCursoRecurso);
+    } catch {
+      /* falha ao listar — devolve vazio */
+    }
+    return [];
+  },
+  adicionarRecursoCurso: async (
+    cursoId: string | number,
+    payload: { nome: string; arquivo: File; tipo?: string },
+  ): Promise<CursoRecurso> => {
+    const formData = new FormData();
+    formData.append('nome', payload.nome);
+    formData.append('arquivo', payload.arquivo);
+    formData.append('tipo', payload.tipo || 'pdf');
+    const res = await fetchAPI<RawCursoRecurso>(`/api/cursos/${cursoId}/recursos/`, {
+      method: 'POST',
+      body: formData,
+    });
+    return normalizeCursoRecurso(res);
+  },
+  apagarRecursoCurso: async (cursoId: string | number, recursoId: number): Promise<void> => {
+    await fetchAPI(`/api/cursos/${cursoId}/recursos/${recursoId}/`, { method: 'DELETE' });
   },
   seguirProfessor: async (professorId: string | number) => {
     return await fetchAPI<{ seguindo: boolean; seguidores: number }>(

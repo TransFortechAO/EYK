@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { LogOut, User2 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth-gate";
-import { api, API_BASE_URL } from "@/lib/api";
+import { api, API_BASE_URL, mediaUrl } from "@/lib/api";
 
 /**
  * Ícone de perfil partilhado por toda a plataforma. Abre um menu cujo
@@ -62,6 +62,13 @@ export function ProfileMenu({ className }: { className?: string }) {
           aria-label="Menu do utilizador"
         >
           <Avatar className="h-9 w-9 border-2 border-primary/30">
+            {user?.foto ? (
+              <AvatarImage
+                src={mediaUrl(user.foto) ?? undefined}
+                alt={name}
+                className="object-cover"
+              />
+            ) : null}
             <AvatarFallback className="bg-gradient-gold text-primary-foreground font-semibold uppercase">
               {initials}
             </AvatarFallback>

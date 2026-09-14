@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -11,7 +12,9 @@ import {
   Lock,
   Maximize2,
   CheckCircle2,
+  Upload,
 } from "lucide-react";
+import { Toaster, toast } from 'sonner';
 import { CourseCard, SectionHeader, EmptyState, ShareButton } from "@/components/eyk";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
@@ -21,9 +24,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { api, type Course, type CourseDetail } from "@/lib/api";
+import { api, type Course, type CourseDetail, type CursoRecurso } from "@/lib/api";
 import { ModernVideoPlayer } from "@/components/ModernVideoPlayer";
 import { UserAvatar } from "@/components/UserAvatar";
+import { ListaRecursos } from "@/components/curso/ListaRecursos";
+import { UploadRecurso } from "@/components/curso/UploadRecurso";
 
 export default function CoursePlayerPage() {
   const params = useParams<{ id: string }>();
@@ -33,6 +38,8 @@ export default function CoursePlayerPage() {
   const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
   const [relacionados, setRelacionados] = useState<Course[]>([]);
   const [inscrevendo, setInscrevendo] = useState(false);
+  const [mostrarUploadRecurso, setMostrarUploadRecurso] = useState(false);
+  const [recursosKey, setRecursosKey] = useState(0);
   const playerWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -176,7 +183,16 @@ export default function CoursePlayerPage() {
               <UserAvatar name={curso.teacher} userId={curso.teacherUserId ?? undefined} />
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{curso.teacher}</p>
+              {curso.teacherUserId ? (
+                <Link
+                  href={`/perfil/${curso.teacherUserId}`}
+                  className="text-sm font-medium hover:underline underline-offset-2 transition-colors"
+                >
+                  {curso.teacher}
+                </Link>
+              ) : (
+                <p className="text-sm font-medium">{curso.teacher}</p>
+              )}
               <p className="text-xs text-muted-foreground">Professor EYK</p>
             </div>
           </div>
@@ -262,8 +278,57 @@ export default function CoursePlayerPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="recursos">
-              <EmptyState icon={BookOpen} title="Sem recursos adicionais" description="Este curso ainda não tem materiais para download." />
+            <TabsContent value="recursos" className="space-y-4">
+              {curso?.souOProfessor ? (
+                <>
+                  {mostrarUploadRecurso ? (
+                    <UploadRecurso
+                      cursoId={curso.id}
+                      onAdicionado={() => {
+                        setMostrarUploadRecurso(false);
+                        setRecursosKey((k) => k + 1);
+                      }}
+                      onCancelar={() => setMostrarUploadRecurso(false)}
+                    />
+                  ) : (
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setMostrarUploadRecurso(true)}
+                        className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Adicionar recurso PDF
+                      </Button>
+                    </div>
+                  )}
+                  <ListaRecursos
+                    key={recursosKey}
+                    cursoId={curso.id}
+                    podeEditar
+                  />
+                </>
+              ) : curso?.inscrito ? (
+                <ListaRecursos key={recursosKey} cursoId={curso.id} />
+              ) : (
+                <EmptyState
+                  icon={Lock}
+                  title="Recursos disponíveis após inscrição"
+                  description="Inscreve-te no curso para desbloqueares os materiais de apoio (PDFs, exercícios, etc.)."
+                  action={
+                    <Button
+                      onClick={() => void comecarCurso()}
+                      disabled={inscrevendo || curso.videos.length === 0}
+                      className="gap-2 bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
+                      size="sm"
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                      {inscrevendo ? "A inscrever…" : "Inscrever-me agora"}
+                    </Button>
+                  }
+                />
+              )}
             </TabsContent>
           </Tabs>
 

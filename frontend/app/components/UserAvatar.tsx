@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link'; // <-- import do Link
-import { API_BASE_URL } from '@/lib/api';
+import Link from 'next/link';
+import { mediaUrl, API_BASE_URL } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 interface UserAvatarProps {
   name?: string;
   initials?: string;
+  foto?: string | null;
   userId?: number | string;
   username?: string;
-  profileBasePath?: string; // ex: '/perfil'
+  profileBasePath?: string;
   size?: number;
   backgroundColor?: string;
   textColor?: string;
   className?: string;
   noLink?: boolean;
   endpoint?: string;
-  // Se quiser executar uma função ao clicar (ex: abrir modal)
   onClick?: () => void;
 }
 
@@ -24,11 +24,13 @@ interface UserData {
   name: string;
   initials: string;
   username: string;
+  foto?: string | null;
 }
 
 export function UserAvatar({
   name: propName,
   initials: propInitials,
+  foto: propFoto,
   userId: propUserId,
   username: propUsername,
   profileBasePath = '/perfil',
@@ -64,6 +66,7 @@ export function UserAvatar({
           name: userData.name || 'Usuário',
           initials: userData.initials || getInitialsFromName(userData.name),
           username: userData.username || '',
+          foto: userData.foto ?? null,
         });
       } catch (err) {
         if (cancelado) return;
@@ -89,18 +92,41 @@ export function UserAvatar({
     return `${first}${last}`;
   }
 
-  // --- Modo controlado (usa props) ---
-  if (isControlled) {
-    const displayName = propName || 'Usuário';
-    const displayInitials = propInitials || getInitialsFromName(displayName);
-    const linkId = propUserId || propUsername;
-    const href = linkId ? `${profileBasePath}/${linkId}` : '#';
+  function renderAvatar(
+    displayName: string,
+    displayInitials: string,
+    fotoUrl: string | null | undefined,
+  ) {
+    const fotoAbsoluta = fotoUrl ? mediaUrl(fotoUrl) : null;
+    if (fotoAbsoluta) {
+      return (
+        <div
+          className={cn(
+            'user-avatar inline-flex overflow-hidden rounded-full transition-all duration-200',
+            className,
+          )}
+          style={{
+            width: size,
+            height: size,
+            flexShrink: 0,
+            backgroundColor,
+          }}
+          title={displayName}
+        >
+          <img
+            src={fotoAbsoluta}
+            alt={displayName}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      );
+    }
 
-    const avatar = (
+    return (
       <div
         className={cn(
           'user-avatar inline-flex items-center justify-center rounded-full font-bold uppercase transition-all duration-200',
-          className
+          className,
         )}
         style={{
           width: size,
@@ -115,10 +141,11 @@ export function UserAvatar({
         {displayInitials}
       </div>
     );
+  }
 
-    if (noLink || !linkId) return avatar;
+  function renderInteractive(inner: React.ReactNode, linkId?: number | string) {
+    if (noLink || !linkId) return inner;
 
-    // Se houver onClick, usamos um botão/div com clique
     if (onClick) {
       return (
         <button
@@ -127,21 +154,29 @@ export function UserAvatar({
           className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105"
           style={{ width: size, height: size }}
         >
-          {avatar}
+          {inner}
         </button>
       );
     }
 
-    // Usamos Link do Next.js para navegação SPA
+    const href = `${profileBasePath}/${linkId}`;
     return (
       <Link
         href={href}
         className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105"
         style={{ width: size, height: size }}
       >
-        {avatar}
+        {inner}
       </Link>
     );
+  }
+
+  if (isControlled) {
+    const displayName = propName || 'Usuário';
+    const displayInitials = propInitials || getInitialsFromName(displayName);
+    const linkId = propUserId || propUsername;
+    const avatar = renderAvatar(displayName, displayInitials, propFoto);
+    return renderInteractive(avatar, linkId);
   }
 
   if (loading) {
@@ -165,53 +200,8 @@ export function UserAvatar({
     );
   }
 
-  const profileUrl = `${profileBasePath}/${user.id}`;
-
-  const avatar = (
-    <div
-      className={cn(
-        'user-avatar inline-flex items-center justify-center rounded-full font-bold uppercase transition-all duration-200',
-        className
-      )}
-      style={{
-        width: size,
-        height: size,
-        fontSize: size * 0.45,
-        backgroundColor,
-        color: textColor,
-        flexShrink: 0,
-      }}
-      title={user.name}
-    >
-      {user.initials}
-    </div>
-  );
-
-  if (noLink) return avatar;
-
-  if (onClick) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105"
-        style={{ width: size, height: size }}
-      >
-        {avatar}
-      </button>
-    );
-  }
-
-  return (
-    <Link
-      href={profileUrl}
-      className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105"
-      style={{ width: size, height: size }}
-    >
-      {avatar}
-    </Link>
-  );
+  const avatar = renderAvatar(user.name, user.initials, user.foto);
+  return renderInteractive(avatar, user.id);
 }
 
-// Alias para compatibilidade
 export const UserInitialsLink = UserAvatar;
