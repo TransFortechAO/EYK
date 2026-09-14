@@ -332,7 +332,7 @@ export default function AdminUtilizadoresPage() {
                       <td className="first:rounded-l-xl last:rounded-r-xl py-3 pr-4 bg-surface/40 group-hover:bg-surface/70 transition border-y border-y-transparent group-hover:border-y-border/50 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
-                            <UserAvatar name={u.username} initials={initialsOf(u.username)} userId={u.id} size={36} />
+                            <UserAvatar noLink name={u.username} initials={initialsOf(u.username)} userId={u.id} size={36} />
                           </Avatar>
                           <div>
                             <p className="font-medium leading-tight">{u.username}</p>

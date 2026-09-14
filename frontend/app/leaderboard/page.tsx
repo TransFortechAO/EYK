@@ -63,6 +63,7 @@ export default function LeaderboardPage() {
                   initials={row.initials}
                   userId={row.userId ?? undefined}
                   size={56}
+                  noLink
                   backgroundColor="transparent"
                   className={cn("text-white font-semibold bg-gradient-to-br", medal)}
                 />
@@ -104,6 +105,7 @@ export default function LeaderboardPage() {
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar className="h-9 w-9 shrink-0">
                   <UserAvatar
+                    noLink
                     name={row.name}
                     initials={row.initials}
                     userId={row.userId ?? undefined}

@@ -148,14 +148,24 @@ export function UserAvatar({
 
     if (onClick) {
       return (
-        <button
-          type="button"
-          onClick={onClick}
-          className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105"
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClick();
+          }}
+          className="block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-200 hover:scale-105 cursor-pointer"
           style={{ width: size, height: size }}
         >
+<<<<<<< HEAD
           {inner}
         </button>
+=======
+          {avatar}
+        </span>
+>>>>>>> a1112b78c8df4a1d2039389c8f4b0dfcaf602c99
       );
     }
 
