@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { Search, Users } from "lucide-react";
+import { Search } from "lucide-react";
 import { PageHeader, SectionHeader, CourseCard, VideoCard } from "@/components/eyk";
 import { api, type Course, type Video, type UtilizadorPesquisa } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";

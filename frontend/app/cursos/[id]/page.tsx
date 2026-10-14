@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowLeft,
-  BookOpen,
   Clock,
   Users,
   PlayCircle,
@@ -13,8 +13,8 @@ import {
   Maximize2,
   CheckCircle2,
   Upload,
+  Star,
 } from "lucide-react";
-import { Toaster, toast } from 'sonner';
 import { CourseCard, SectionHeader, EmptyState, ShareButton } from "@/components/eyk";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
@@ -24,11 +24,33 @@ import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { api, type Course, type CourseDetail, type CursoRecurso } from "@/lib/api";
+import { api, type Course, type CourseDetail, type CourseVideo } from "@/lib/api";
 import { ModernVideoPlayer } from "@/components/ModernVideoPlayer";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ListaRecursos } from "@/components/curso/ListaRecursos";
 import { UploadRecurso } from "@/components/curso/UploadRecurso";
+import { AvaliacoesCurso } from "@/components/curso/AvaliacoesCurso";
+import { BotaoCertificado } from "@/components/curso/BotaoCertificado";
+
+/** "Retomar onde ficaste": abre a aula mexida mais recentemente, se ainda
+ * estiver a meio e desbloqueada; senão a primeira aula por ver; senão a 1.ª. */
+function aulaInicial(curso: CourseDetail): number | null {
+  const videos = curso.videos;
+  if (videos.length === 0) return null;
+  const desbloqueadaIdx = (i: number) =>
+    curso.souOProfessor || i === 0 || (curso.inscrito && (videos[i - 1]?.watched ?? false));
+
+  let recente: CourseVideo | null = null;
+  for (let i = 0; i < videos.length; i++) {
+    const v = videos[i];
+    if (!v.positionUpdatedAt || !desbloqueadaIdx(i)) continue;
+    if (!recente || v.positionUpdatedAt > (recente.positionUpdatedAt ?? "")) recente = v;
+  }
+  if (recente && recente.positionSeconds > 0) return recente.id;
+
+  const porVer = videos.findIndex((v, i) => !v.watched && desbloqueadaIdx(i));
+  return videos[porVer >= 0 ? porVer : 0].id;
+}
 
 export default function CoursePlayerPage() {
   const params = useParams<{ id: string }>();
@@ -49,7 +71,7 @@ export default function CoursePlayerPage() {
       const dados = await api.getCurso(params.id);
       if (!alive) return;
       setCurso(dados);
-      setActiveVideoId(dados?.videos[0]?.id ?? null);
+      setActiveVideoId(dados ? aulaInicial(dados) : null);
       setLoading(false);
 
       if (dados) {
@@ -80,13 +102,45 @@ export default function CoursePlayerPage() {
     );
   }
 
-  const desbloqueada = (index: number) => index === 0 || curso.inscrito;
+  // O professor (a ver o seu próprio curso) vê sempre tudo desbloqueado.
+  // Para o aluno: a 1ª aula está sempre livre; as seguintes só desbloqueiam
+  // depois de a aula anterior ter sido assistida (não basta estar inscrito).
+  const desbloqueada = (index: number) => {
+    if (curso.souOProfessor) return true;
+    if (index === 0) return true;
+    if (!curso.inscrito) return false;
+    return curso.videos[index - 1]?.watched ?? false;
+  };
   const activeIndex = Math.max(curso.videos.findIndex((v) => v.id === activeVideoId), 0);
   const activeVideo = curso.videos[activeIndex] || null;
 
   const selecionarAula = (videoId: number, index: number) => {
-    if (!desbloqueada(index)) return;
+    if (!desbloqueada(index)) {
+      toast.info("Termina a aula anterior para desbloquear esta.");
+      return;
+    }
     setActiveVideoId(videoId);
+  };
+
+  // Chamado pelo player quando regista uma view (60s de reprodução contínua)
+  // — desbloqueia a aula seguinte de imediato, sem precisar de recarregar a página.
+  const marcarAulaComoAssistida = (videoId: number) => {
+    setCurso((prev) => {
+      if (!prev) return prev;
+      const videos = prev.videos.map((v) => (v.id === videoId ? { ...v, watched: true } : v));
+      // Última aula vista = curso concluído no servidor (ver `_verificar_curso_concluido`).
+      const concluiuAgora =
+        prev.inscrito && !prev.souOProfessor && !prev.certificadoDisponivel && videos.every((v) => v.watched);
+      if (concluiuAgora) {
+        toast.success("Parabéns, concluíste o curso! O teu certificado já está disponível.");
+      }
+      return {
+        ...prev,
+        videos,
+        certificadoDisponivel: prev.certificadoDisponivel || concluiuAgora,
+        progress: concluiuAgora ? 100 : prev.progress,
+      };
+    });
   };
 
   const comecarCurso = async () => {
@@ -122,6 +176,8 @@ export default function CoursePlayerPage() {
                   title={activeVideo.title}
                   thumbnail={curso.thumbnail}
                   videoId={activeVideo.id}
+                  onViewRegistered={() => marcarAulaComoAssistida(activeVideo.id)}
+                  recursos={[...curso.recursos, ...activeVideo.recursos]}
                 />
               ) : (
                 <div
@@ -171,6 +227,13 @@ export default function CoursePlayerPage() {
             <span className="inline-flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" /> {curso.students.toLocaleString()}
             </span>
+            {curso.rating !== null && (
+              <span className="inline-flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                <span className="font-medium text-foreground">{curso.rating.toFixed(1)}</span>
+                ({curso.ratingCount})
+              </span>
+            )}
           </div>
 
           <div className="flex items-start justify-between gap-3">
@@ -202,6 +265,7 @@ export default function CoursePlayerPage() {
               <TabsTrigger value="sobre">Sobre</TabsTrigger>
               <TabsTrigger value="aulas">Aulas</TabsTrigger>
               <TabsTrigger value="recursos">Recursos</TabsTrigger>
+              <TabsTrigger value="avaliacoes">Avaliações</TabsTrigger>
             </TabsList>
 
             <TabsContent value="sobre" className="space-y-4">
@@ -266,12 +330,18 @@ export default function CoursePlayerPage() {
                       >
                         {desbloqueado ? (ativo ? <PlayCircle className="h-3.5 w-3.5" /> : index + 1) : <Lock className="h-3 w-3" />}
                       </div>
-                      <div className="min-w-0">
-                        <p className={cn("text-sm font-medium", ativo && "text-primary")}>{v.title}</p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className={cn("text-sm font-medium", ativo && "text-primary")}>{v.title}</p>
+                          {v.watched && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" />}
+                        </div>
                         {v.description && (
                           <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{v.description}</p>
                         )}
                       </div>
+                      {v.durationLabel && (
+                        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{v.durationLabel}</span>
+                      )}
                     </button>
                   );
                 })
@@ -330,6 +400,14 @@ export default function CoursePlayerPage() {
                 />
               )}
             </TabsContent>
+            <TabsContent value="avaliacoes">
+              <AvaliacoesCurso
+                cursoId={curso.id}
+                onResumoAlterado={(resumo) =>
+                  setCurso((prev) => (prev ? { ...prev, rating: resumo.media, ratingCount: resumo.total } : prev))
+                }
+              />
+            </TabsContent>
           </Tabs>
 
           {activeVideo && (
@@ -358,7 +436,14 @@ export default function CoursePlayerPage() {
               </div>
               <Progress value={curso.progress ?? 0} className="h-1.5" />
 
-              {curso.inscrito ? (
+              {curso.certificadoDisponivel ? (
+                <>
+                  <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2.5 text-sm font-medium text-success">
+                    <CheckCircle2 className="h-4 w-4" /> Curso concluído
+                  </div>
+                  <BotaoCertificado cursoId={curso.id} />
+                </>
+              ) : curso.inscrito ? (
                 <div className="flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2.5 text-sm font-medium text-success">
                   <CheckCircle2 className="h-4 w-4" /> Já estás inscrito
                 </div>
@@ -407,6 +492,9 @@ export default function CoursePlayerPage() {
                       <span className="min-w-0 flex-1 truncate">
                         {index + 1}. {v.title}
                       </span>
+                      {v.durationLabel && (
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{v.durationLabel}</span>
+                      )}
                     </button>
                   );
                 })}

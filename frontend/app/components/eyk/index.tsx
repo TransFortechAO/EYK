@@ -9,11 +9,11 @@ import {
   Clock,
   PlayCircle,
   Hand,
-  MessageCircle,
   Share2,
   ExternalLink,
   Check,
   Link as LinkIcon,
+  Star,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +21,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { Course, Video, Post } from "@/lib/mock-data";
 import { UserAvatar } from "@/components/UserAvatar";
-import { api, formatarDataCurta } from "@/lib/api";
+import { api, formatarDataCurta, type Course, type Video, type Post } from "@/lib/api";
+import { PostComments } from "@/components/eyk/post-comments";
+
 
 
 /* ---------- Page header ---------- */
@@ -189,6 +190,12 @@ export function CourseCard({ course }: { course: Course }) {
               <PlayCircle className="h-3.5 w-3.5" />
               {course.lessons} aulas
             </span>
+            {course.rating !== null && course.rating !== undefined && (
+              <span className="ml-auto inline-flex items-center gap-1" title={`${course.ratingCount} avaliações`}>
+                <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                <span className="font-medium tabular-nums text-foreground">{course.rating.toFixed(1)}</span>
+              </span>
+            )}
           </div>
 
           <h3 className="font-serif text-lg font-semibold leading-snug text-foreground line-clamp-2">
@@ -367,11 +374,10 @@ export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: ()
             <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
             {likes}
           </Button>
-          <Button variant="ghost" size="sm" className="gap-2 text-xs">
-            <MessageCircle className="h-4 w-4" />
-            {post.comments}
-          </Button>
         </div>
+
+        {/* Comentários: mostra 2 de cada vez, com "Ver mais" */}
+        <PostComments postId={post.id} initialCount={post.comments} />
       </div>
     </Card>
   );

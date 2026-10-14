@@ -3,6 +3,8 @@ import io
 
 import qrcode
 from django.contrib.auth import update_session_auth_hash
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
@@ -12,6 +14,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.gamificacao.services import processar_atividade_diaria
 
+from .emails import enviar_email_verificacao
 from .models import User
 from .views import PRE_2FA_SESSION_KEY, _user_payload
 
@@ -101,6 +104,50 @@ def alterar_senha(request):
     update_session_auth_hash(request, user)  # mantém a sessão válida após trocar a senha
 
     return _json({'ok': True})
+
+
+# ── Segurança: alterar email ─────────────────────────────────────────────────
+
+@csrf_exempt
+@require_POST
+def alterar_email(request):
+    """Troca o email da conta — exige a palavra-passe atual, tal como a troca
+    de palavra-passe, porque o email é usado para recuperar o acesso à conta."""
+    if not request.user.is_authenticated:
+        return _json({'ok': False, 'error': 'Não autenticado.'}, 401)
+
+    import json
+    try:
+        body = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return _json({'ok': False, 'error': 'Pedido inválido.'}, 400)
+
+    senha_atual = body.get('senha_atual') or ''
+    novo_email = (body.get('novo_email') or '').strip().lower()
+
+    user = request.user
+    if not user.check_password(senha_atual):
+        return _json({'ok': False, 'error': 'Palavra-passe incorreta.', 'errors': {'senha_atual': 'Incorreta.'}}, 400)
+
+    try:
+        validate_email(novo_email)
+    except ValidationError:
+        return _json({'ok': False, 'error': 'Email inválido.', 'errors': {'novo_email': 'Inválido.'}}, 400)
+
+    if User.objects.filter(email__iexact=novo_email).exclude(id=user.id).exists():
+        return _json(
+            {'ok': False, 'error': 'Já existe uma conta com este email.', 'errors': {'novo_email': 'Já em uso.'}}, 400,
+        )
+
+    if novo_email == user.email.lower():
+        return _json({'ok': False, 'error': 'Esse já é o teu email atual.', 'errors': {'novo_email': 'Sem alterações.'}}, 400)
+
+    user.email = novo_email
+    user.email_verificado = False
+    user.save(update_fields=['email', 'email_verificado'])
+    enviar_email_verificacao(user)
+
+    return _json({'ok': True, 'user': _user_payload(user)})
 
 
 # ── Segurança: autenticação de dois fatores (2FA) ────────────────────────────

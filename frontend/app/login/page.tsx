@@ -6,7 +6,7 @@ import { Eye, EyeOff, LogIn, Hand, BookOpen, Users, Trophy, User, Lock, ArrowRig
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, API_BASE_URL } from "@/lib/api";
+import { api } from "@/lib/api";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
@@ -245,7 +245,7 @@ export default function LoginPage() {
           </p>
 
           {precisa2FA ? (
-            <form onSubmit={handleSubmit2FA} className="space-y-7" noValidate>
+            <form onSubmit={handleSubmit2FA} method="post" className="space-y-7" noValidate>
               <div className="space-y-3">
                 <Label className="text-white/85 text-sm">Código de verificação</Label>
                 <OtpInput value={codigo2FA} onChange={setCodigo2FA} disabled={isPending} />
@@ -291,10 +291,10 @@ export default function LoginPage() {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            <form onSubmit={handleSubmit} method="post" className="space-y-5" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-white/85 text-sm">
-                  Nome de utilizador
+                  Nome de utilizador ou email
                 </Label>
                 <div className="relative group">
                   <User
@@ -305,6 +305,7 @@ export default function LoginPage() {
                     id="username"
                     name="username"
                     type="text"
+                    placeholder="Nome de utilizador ou email"
                     autoComplete="username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -320,7 +321,7 @@ export default function LoginPage() {
                   <Label htmlFor="password" className="text-white/85 text-sm">
                     Palavra-passe
                   </Label>
-                  <Link href={API_BASE_URL + "/accounts/password_reset/"} className="text-xs font-medium hover:underline text-white/55">
+                  <Link href="/recuperar-senha" className="text-xs font-medium hover:underline text-white/55">
                     Esqueceste-te?
                   </Link>
                 </div>

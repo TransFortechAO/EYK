@@ -1,11 +1,10 @@
+import os
 from .base import *
 
-# SECURITY WARNING: don't run with debug turned on in production!
+# Apenas para desenvolvimento local/rede privada. Não usar estas permissões em produção.
 DEBUG = True
+ALLOWED_HOSTS = ['*']
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
-
-# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -13,26 +12,31 @@ DATABASES = {
     }
 }
 
-# CORS settings for development
+# CORS permissivo apenas no ambiente de desenvolvimento.
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
-# CSRF settings for development
+# O endereço IP tem de ser o do computador onde o Django está a correr.
+# Pode ser definido sem alterar o código: LAN_IP=192.168.1.50
+LAN_IP = os.getenv('LAN_IP', '192.168.1.122').strip()
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+if LAN_IP:
+    CSRF_TRUSTED_ORIGINS.extend([f'http://{LAN_IP}:3000', f'http://{LAN_IP}:8000'])
 
-# Email settings for development (console backend)
+for origem in os.getenv('CSRF_TRUSTED_ORIGINS_EXTRA', '').split(','):
+    origem = origem.strip().rstrip('/')
+    if origem and origem not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origem)
+
+# Email aparece na consola do terminal durante o desenvolvimento.
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# Static files in development
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
-
-# Disable some security settings for development
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False

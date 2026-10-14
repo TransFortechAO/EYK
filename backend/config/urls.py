@@ -1,5 +1,6 @@
+import re
+
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.shortcuts import redirect
@@ -26,4 +27,12 @@ urlpatterns = [
     re_path(r'^(?!admin|accounts|api|aluno|media|static|health).*$', lambda r: redirect_to_next(r, r.path.lstrip('/'))),
 ]
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    # Igual a `static(MEDIA_URL, ...)`, mas com suporte a pedidos Range (vídeos).
+    urlpatterns += [
+        re_path(
+            r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')),
+            views.media_com_range,
+            {'document_root': settings.MEDIA_ROOT},
+        ),
+    ]

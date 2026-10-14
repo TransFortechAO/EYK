@@ -35,7 +35,9 @@ class Video(models.Model):
     )
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
-    ativo = models.BooleanField(default=True)
+    # Índice de propósito: `ativo=True` (combinado com `curso__isnull`) é o
+    # filtro de TODAS as listagens públicas de vídeos — ver nota em Curso.ativo.
+    ativo = models.BooleanField(default=True, db_index=True)
     ordem = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -45,11 +47,41 @@ class Video(models.Model):
         return self.titulo
 
     def total_likes(self):
-        return self.reacoes.filter(tipo='like').count()
+        # Usa `.all()` (em vez de `.filter().count()`) de propósito: quando o
+        # vídeo vem de uma queryset com `prefetch_related('reacoes')` (ex: a
+        # listagem de cursos/vídeos), isto reaproveita a cache do prefetch em
+        # vez de disparar uma query SQL extra por vídeo (bug clássico de N+1).
+        return sum(1 for r in self.reacoes.all() if r.tipo == 'like')
 
     def total_visualizacoes(self):
-        from django.db.models import Sum
-        return self.visualizacoes.aggregate(total=Sum('count'))['total'] or 0
+        return sum(v.count for v in self.visualizacoes.all())
+
+
+class RecursoVideo(models.Model):
+    """Recurso (PDF) anexado a um vídeo avulso — equivalente a RecursoCurso,
+    mas para vídeos que não pertencem a nenhum curso. Qualquer utilizador
+    autenticado pode ver/descarregar; só o professor dono pode gerir."""
+    TIPO_PDF = 'pdf'
+    TIPO_CHOICES = [
+        (TIPO_PDF, 'PDF'),
+    ]
+
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='recursos')
+    nome = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default=TIPO_PDF)
+    arquivo = models.FileField(upload_to='videos/recursos/')
+    tamanho_bytes = models.PositiveIntegerField(default=0)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f'{self.nome} ({self.get_tipo_display()}) · {self.video}'
+
+    @property
+    def tamanho_mb(self) -> float:
+        return round(self.tamanho_bytes / (1024 * 1024), 2)
 
 
 class ReacaoVideo(models.Model):
@@ -72,6 +104,22 @@ class VisualizacaoVideo(models.Model):
 
     class Meta:
         unique_together = ('video', 'utilizador')
+
+
+class PosicaoVisualizacao(models.Model):
+    """Onde o utilizador parou num vídeo ("retomar onde ficaste"). Uma linha
+    por utilizador+vídeo, atualizada pelo player a cada poucos segundos de
+    reprodução — distinto de VisualizacaoVideo, que conta views (anti-fraude)."""
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='posicoes')
+    utilizador = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posicoes_video')
+    segundos = models.PositiveIntegerField(default=0)
+    atualizado_em = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        unique_together = ('video', 'utilizador')
+
+    def __str__(self):
+        return f'{self.utilizador} em {self.video} @ {self.segundos}s'
 
 
 class ComentarioVideo(models.Model):

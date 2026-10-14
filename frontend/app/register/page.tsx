@@ -206,7 +206,7 @@ function RegisterConteudo() {
             Preenche os dados abaixo para começares a tua jornada na EYK.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <form onSubmit={handleSubmit} method="post" className="space-y-5" noValidate>
             <div className="space-y-2">
               <Label htmlFor="username" className="text-white/85 text-sm">
                 Nome de utilizador

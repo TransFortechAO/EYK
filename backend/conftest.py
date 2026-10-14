@@ -1,6 +1,17 @@
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _limpar_cache():
+    # Os limites de frequência vivem na cache — sem isto, tentativas de um
+    # teste contavam para o seguinte.
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
+
+
 @pytest.fixture
 def aluno_user(db):
     from apps.accounts.models import User

@@ -1,6 +1,19 @@
-import os
-import cv2
+import logging
+
 from django.core.files.base import ContentFile
+
+logger = logging.getLogger(__name__)
+
+
+def _cv2():
+    """Importa o OpenCV só quando é preciso. Sem ele instalado o servidor
+    arranca na mesma — apenas deixa de calcular a duração e a capa automática."""
+    try:
+        import cv2
+        return cv2
+    except ImportError:
+        logger.warning('OpenCV (opencv-python-headless) não instalado: duração/capa automáticas desativadas.')
+        return None
 
 
 def calcular_duracao_segundos(video):
@@ -12,7 +25,8 @@ def calcular_duracao_segundos(video):
     sabê-la sem consultar a API do YouTube, e é preferível não mostrar nada
     a inventar um número.
     """
-    if not video.arquivo:
+    cv2 = _cv2()
+    if not video.arquivo or cv2 is None:
         return 0
     try:
         cap = cv2.VideoCapture(video.arquivo.path)
@@ -30,7 +44,8 @@ def extrair_thumbnail_video(video, tempo_segundos: int = 1) -> bool:
     """Extrai uma frame do vídeo (por defeito ao segundo 1) e guarda-a
     como `thumbnail` do modelo `Video`. Devolve `True` se foi bem-sucedido,
     `False` caso contrário (ou se já existia thumbnail)."""
-    if video.thumbnail or not video.arquivo:
+    cv2 = _cv2()
+    if video.thumbnail or not video.arquivo or cv2 is None:
         return False
 
     try:

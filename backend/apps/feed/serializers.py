@@ -1,7 +1,7 @@
 from django.utils.timesince import timesince
 from rest_framework import serializers
 
-from .models import Comentario, Post, ReacaoPost
+from .models import Comentario, Post, ReacaoComentario, ReacaoPost
 
 
 def _get_initials(nome):
@@ -79,12 +79,18 @@ class ComentarioSerializer(serializers.ModelSerializer):
     autor_initials = serializers.SerializerMethodField()
     autor_foto = serializers.SerializerMethodField()
     time_ago = serializers.SerializerMethodField()
+    total_likes = serializers.SerializerMethodField()
+    liked = serializers.SerializerMethodField()
+    pode_editar = serializers.SerializerMethodField()
+    pode_apagar = serializers.SerializerMethodField()
+    respostas = serializers.SerializerMethodField()
 
     class Meta:
         model = Comentario
         fields = [
-            'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto',
-            'conteudo', 'criado_em', 'time_ago'
+            'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto', 'parent',
+            'conteudo', 'criado_em', 'editado_em', 'time_ago',
+            'total_likes', 'liked', 'pode_editar', 'pode_apagar', 'respostas',
         ]
 
     def get_autor_nome(self, obj):
@@ -113,3 +119,32 @@ class ComentarioSerializer(serializers.ModelSerializer):
 
     def get_time_ago(self, obj):
         return _format_time_ago(obj.criado_em)
+
+    def get_total_likes(self, obj):
+        return obj.total_likes()
+
+    def get_liked(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return ReacaoComentario.objects.filter(comentario=obj, utilizador=request.user).exists()
+
+    def get_pode_editar(self, obj):
+        request = self.context.get('request')
+        return bool(request and request.user.is_authenticated and obj.autor_id == request.user.id)
+
+    def get_pode_apagar(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        if obj.autor_id == request.user.id:
+            return True
+        # O autor do post também pode moderar os comentários no seu post,
+        # tal como o professor pode apagar comentários no seu próprio vídeo.
+        return obj.post.autor_id == request.user.id
+
+    def get_respostas(self, obj):
+        if obj.parent_id is not None:
+            return []
+        respostas = obj.respostas.select_related('autor').order_by('criado_em')
+        return ComentarioSerializer(respostas, many=True, context=self.context).data

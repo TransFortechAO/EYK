@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   GraduationCap,
   UserCog,
+  BarChart3,
   LayoutDashboard,
   Video,
 } from "lucide-react";
@@ -53,6 +54,7 @@ const secondary = [
 ];
 
 const administracao = [
+  { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },
   { title: "Utilizadores", url: "/configuracoes/administracao/utilizadores", icon: UserCog },
 ];
@@ -64,8 +66,7 @@ const professorNav = [
 ];
 
 export function AppSidebar() {
-  const { state, isMobile, setOpenMobile } = useSidebar();
-  const collapsed = !isMobile && state === "collapsed";
+  const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const { user } = useAuth();
   const [logoutLoading, setLogoutLoading] = useState(false);

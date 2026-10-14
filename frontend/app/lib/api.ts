@@ -92,15 +92,19 @@ export async function fetchAPI<T>(
 
   if (!response.ok) {
     let msg = `${response.status} ${response.statusText}`;
+    let data: unknown = null;
     try {
-      const err = await response.json();
-      if (err?.error) msg = `${msg}: ${err.error}`;
+      data = await response.json();
+      const body = data as { error?: unknown; detail?: unknown } | null;
+      if (body?.error) msg = `${msg}: ${body.error}`;
+      else if (typeof body?.detail === 'string') msg = `${msg}: ${body.detail}`;
     } catch {
       /* body não é JSON */
     }
-    const err = new Error(msg) as Error & { status: number; response: Response };
+    const err = new Error(msg) as Error & { status: number; response: Response; data: unknown };
     err.status = response.status;
     err.response = response;
+    err.data = data;
     throw err;
   }
 
@@ -111,6 +115,17 @@ export async function fetchAPI<T>(
   } catch {
     return text as unknown as T;
   }
+}
+
+/**
+ * Mensagem de erro legível para mostrar ao utilizador: usa o `error`/`detail`
+ * devolvido pelo Django quando existe, sem o prefixo "403 Forbidden: ".
+ */
+export function mensagemDeErro(err: unknown, fallback: string): string {
+  const data = (err as { data?: { error?: unknown; detail?: unknown } } | null)?.data;
+  if (typeof data?.error === 'string' && data.error) return data.error;
+  if (typeof data?.detail === 'string' && data.detail) return data.detail;
+  return fallback;
 }
 
 // --- Tipos de UI (igual aos do mock-data.ts — compatibilidade total) ------------------
@@ -127,6 +142,7 @@ export type AuthUser = {
   isStudent: boolean;
   isStaff: boolean;
   perfilCompleto?: boolean;
+  emailVerificado?: boolean;
   temaPreferido?: 'auto' | 'claro' | 'escuro';
   notifEmailNovidades?: boolean;
   notifEmailComunidade?: boolean;
@@ -155,6 +171,12 @@ export type Course = {
   progress?: number;
   thumbnail: string;
   publishedAt: string | null;
+  recursos: CursoRecurso[];
+  /** Média das avaliações (1-5) ou null se ainda ninguém avaliou. */
+  rating: number | null;
+  ratingCount: number;
+  /** O aluno autenticado concluiu o curso e pode descarregar o certificado. */
+  certificadoDisponivel: boolean;
 };
 
 export type Video = {
@@ -187,6 +209,7 @@ export type VideoDetail = {
   createdAt: string;
   durationSeconds: number;
   durationLabel: string;
+  recursos: CursoRecurso[];
 };
 
 export type VideoComment = {
@@ -218,6 +241,13 @@ export type CourseVideo = {
   likes: number;
   durationSeconds: number;
   durationLabel: string;
+  /** Se o utilizador autenticado já viu esta aula — usado para desbloquear a próxima. */
+  watched: boolean;
+  /** Recurso(s) PDF anexado(s) a esta aula em concreto (distinto dos recursos do curso todo). */
+  recursos: CursoRecurso[];
+  /** Onde o utilizador parou nesta aula ("retomar onde ficaste"), em segundos. */
+  positionSeconds: number;
+  positionUpdatedAt: string | null;
 };
 
 export type PerfilPublico = {
@@ -262,10 +292,19 @@ export type Post = {
 
 export type Comentario = {
   id: number;
+  autorId: number;
   autor_nome: string;
   autor_initials: string;
+  autor_foto: string | null;
+  parentId: number | null;
   conteudo: string;
   time_ago: string;
+  editadoEm: string | null;
+  likes: number;
+  liked: boolean;
+  podeEditar: boolean;
+  podeApagar: boolean;
+  respostas: Comentario[];
 };
 
 export type Notification = {
@@ -414,6 +453,8 @@ export type ProfessorCursoVideo = {
   url_externa: string;
   thumbnail: string | null;
   ordem: number;
+  duracao_segundos: number;
+  recursos: ProfessorRecurso[];
 };
 
 export type ProfessorCurso = {
@@ -431,7 +472,9 @@ export type ProfessorCurso = {
   total_inscritos: number;
   total_visualizacoes: number;
   conclusao_media: number;
+  duracao_total_segundos: number;
   videos: ProfessorCursoVideo[];
+  recursos: ProfessorRecurso[];
 };
 
 export type CursoRecurso = {
@@ -444,12 +487,23 @@ export type CursoRecurso = {
   criadoEm: string;
 };
 
+// Vem direto do backend sem normalização (como o resto de ProfessorCurso/
+// ProfessorVideo) — por isso em snake_case, ao contrário de CursoRecurso.
+// `arquivo_url` é relativo: resolve com `mediaUrl()` ao usar.
+export type ProfessorRecurso = {
+  id: number;
+  nome: string;
+  tipo: string;
+  arquivo_url: string | null;
+  tamanho_bytes: number;
+  tamanho_mb: number;
+  criado_em: string;
+};
+
 export type ProfessorCursoPayload = {
   titulo: string;
   descricao: string;
   categoria_nome?: string;
-  preco?: number | string | null;
-  duracao?: string;
   ativo?: boolean;
   thumbnail?: File | null;
 };
@@ -468,6 +522,8 @@ export type ProfessorVideo = {
   total_likes: number;
   total_visualizacoes: number;
   total_comentarios: number;
+  duracao_segundos: number;
+  recursos: ProfessorRecurso[];
 };
 
 export type ProfessorVideoPayload = {
@@ -479,13 +535,108 @@ export type ProfessorVideoPayload = {
   thumbnail?: File | null;
 };
 
+export type AulaEngajamento = {
+  id: number;
+  titulo: string;
+  ordem: number;
+  duracaoSegundos: number;
+  totalVisualizacoes: number;
+  totalLikes: number;
+  totalComentarios: number;
+};
+
 export type CursoEngajamento = {
   curso: ProfessorCurso;
   totalInscritos: number;
   totalVisualizacoes: number;
   totalConcluidos: number;
   taxaConclusao: number;
+  totalAulas: number;
+  totalGostos: number;
+  totalComentarios: number;
+  visualizadoresUnicos: number;
+  mediaVisualizacoesPorAula: number;
+  mediaAvaliacoes: number | null;
+  totalAvaliacoes: number;
+  avaliacoesRecentes: { id: number; aluno: string; estrelas: number; comentario: string; atualizadoEm: string }[];
+  aulas: AulaEngajamento[];
   inscricoes: { id: number; aluno: string; inscritoEm: string; concluido: boolean }[];
+};
+
+export type AvaliacaoCurso = {
+  id: number;
+  estrelas: number;
+  comentario: string;
+  autorNome: string;
+  autorUserId: number | null;
+  autorFoto: string | null;
+  atualizadoEm: string;
+  tempo: string;
+  minha: boolean;
+};
+
+export type ResumoAvaliacoes = {
+  media: number | null;
+  total: number;
+  /** Nº de avaliações por nº de estrelas ("1".."5"). */
+  distribuicao: Record<string, number>;
+};
+
+export type AvaliacoesCurso = {
+  resumo: ResumoAvaliacoes;
+  podeAvaliar: boolean;
+  minha: AvaliacaoCurso | null;
+  avaliacoes: AvaliacaoCurso[];
+};
+
+export type CertificadoVerificado = {
+  valido: boolean;
+  codigo: string;
+  aluno: string;
+  curso: string;
+  cursoId: number;
+  professor: string;
+  concluidoEm: string | null;
+};
+
+export type SerieSemanal = { semana: string; n: number }[];
+
+export type MetricasPlataforma = {
+  geradoEm: string;
+  totais: {
+    utilizadores: number;
+    alunos: number;
+    professores: number;
+    cursos: number;
+    videos: number;
+    inscricoes: number;
+    conclusoes: number;
+    taxaConclusao: number;
+    avaliacoes: number;
+    mediaAvaliacoes: number | null;
+    emailsPorVerificar: number;
+  };
+  ativos: { hoje: number; semana: number; mes: number; retencao30d: number | null };
+  crescimento: { utilizadores: SerieSemanal; inscricoes: SerieSemanal; conclusoes: SerieSemanal };
+  coortes: { semana: string; novos: number; ativos7d: number; taxa: number | null }[];
+  topCursos: {
+    id: number;
+    titulo: string;
+    professor: string;
+    inscritos: number;
+    concluidos: number;
+    taxaConclusao: number;
+    mediaAvaliacoes: number | null;
+  }[];
+  topVideos: {
+    id: number;
+    titulo: string;
+    professor: string;
+    curso: string | null;
+    cursoId: number | null;
+    views: number;
+    espectadores: number;
+  }[];
 };
 
 export type VideoEngajamento = {
@@ -493,6 +644,11 @@ export type VideoEngajamento = {
   totalLikes: number;
   totalDislikes: number;
   totalVisualizacoes: number;
+  totalVisualizadoresUnicos: number;
+  totalComentarios: number;
+  taxaAprovacao: number | null;
+  cursoId: number | null;
+  outrasAulasDoCurso: AulaEngajamento[];
   reacoes: { id: number; utilizador: number; utilizador_nome: string; tipo: string }[];
 };
 
@@ -516,6 +672,10 @@ type RawCourse = {
   publicado_em?: string | null;
   criado_em?: string | null;
   videos?: RawCourseVideo[] | null;
+  recursos?: RawCursoRecurso[] | null;
+  media_avaliacoes?: number | null;
+  total_avaliacoes?: number | null;
+  certificado_disponivel?: boolean | null;
 };
 
 type RawVideo = {
@@ -538,6 +698,7 @@ type RawVideoDetail = RawVideo & {
   url_externa?: string | null;
   total_likes?: number | string | null;
   duracao_segundos?: number | string | null;
+  recursos?: RawCursoRecurso[] | null;
 };
 
 type RawVideoComment = {
@@ -568,6 +729,22 @@ type RawCourseVideo = {
   ordem?: number | null;
   duracao_segundos?: number | null;
   total_likes?: number | string | null;
+  assistido?: boolean | null;
+  recursos?: RawCursoRecurso[] | null;
+  posicao_segundos?: number | null;
+  posicao_atualizada_em?: string | null;
+};
+
+type RawAvaliacaoCurso = {
+  id?: number;
+  estrelas?: number;
+  comentario?: string | null;
+  autor_nome?: string | null;
+  autor_user_id?: number | null;
+  autor_foto?: string | null;
+  atualizado_em?: string | null;
+  tempo?: string | null;
+  minha?: boolean | null;
 };
 
 type RawPerfilPublico = {
@@ -640,6 +817,23 @@ type RawCursoRecurso = {
   criado_em?: string | null;
 };
 
+type RawComentario = {
+  id?: number | string;
+  autor?: number | null;
+  autor_nome?: string | null;
+  autor_initials?: string | null;
+  autor_foto?: string | null;
+  parent?: number | null;
+  conteudo?: string | null;
+  time_ago?: string | null;
+  editado_em?: string | null;
+  total_likes?: number | string | null;
+  liked?: boolean | null;
+  pode_editar?: boolean | null;
+  pode_apagar?: boolean | null;
+  respostas?: RawComentario[] | null;
+};
+
 type RawWalletEntry = {
   id?: string | number;
   label?: string | null;
@@ -691,6 +885,11 @@ export function tempoRelativo(iso?: string | null): string {
   if (!iso) return "";
   try {
     const diffMs = Date.now() - new Date(iso).getTime();
+    // `new Date(string_invalida)` não lança erro — dá "Invalid Date", e
+    // `.getTime()` disso é NaN. Sem este check, todas as comparações abaixo
+    // (NaN < x) são sempre falsas e cai-se no "return" final com NaN dentro
+    // da frase ("há NaN dias") — bug real, confirmado em teste.
+    if (Number.isNaN(diffMs)) return "";
     const diffMin = Math.floor(diffMs / 60000);
     if (diffMin < 1) return "agora mesmo";
     if (diffMin < 60) return `há ${diffMin} minuto${diffMin === 1 ? "" : "s"}`;
@@ -708,25 +907,41 @@ export function tempoRelativo(iso?: string | null): string {
 export function formatarDataCurta(iso?: string | null): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
+    const data = new Date(iso);
+    // Mesmo problema que tempoRelativo: uma data inválida não lança erro,
+    // e sem este check isto mostrava o texto literal "Invalid Date" na UI.
+    if (Number.isNaN(data.getTime())) return "";
+    return data.toLocaleDateString("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
   } catch {
     return "";
   }
 }
 
 // Formata segundos como "M:SS" (duração de uma aula/vídeo individual).
+//
+// Arredonda o TOTAL primeiro (não os minutos e segundos em separado): isso
+// evita produzir "1:60" quando os segundos restantes arredondam para 60 —
+// bug real, confirmado em teste, reprodutível mesmo com segundos inteiros
+// perto de uma fronteira de minuto.
 export function formatarDuracaoCurta(segundos?: number | null): string {
   if (!segundos || segundos <= 0) return "";
-  const min = Math.floor(segundos / 60);
-  const seg = Math.round(segundos % 60);
+  const total = Math.round(segundos);
+  const min = Math.floor(total / 60);
+  const seg = total % 60;
   return `${min}:${String(seg).padStart(2, "0")}`;
 }
 
 // Formata segundos como "1h 20min" / "45min" (duração total de um curso).
+//
+// Mesma correção que formatarDuracaoCurta: arredonda o total de minutos
+// primeiro. Sem isto, qualquer curso com duração entre 59m30s e 59m59s
+// (ou a mesma janela em qualquer fronteira de hora) mostrava "60min" em
+// vez de "1h" — bug real, confirmado em teste com segundos inteiros.
 export function formatarDuracaoLonga(segundos?: number | null): string {
   if (!segundos || segundos <= 0) return "";
-  const horas = Math.floor(segundos / 3600);
-  const min = Math.round((segundos % 3600) / 60);
+  const totalMin = Math.round(segundos / 60);
+  const horas = Math.floor(totalMin / 60);
+  const min = totalMin % 60;
   if (horas === 0) return `${min}min`;
   if (min === 0) return `${horas}h`;
   return `${horas}h ${min}min`;
@@ -736,8 +951,6 @@ function _appendCursoPayload(formData: FormData, payload: Partial<ProfessorCurso
   if (payload.titulo !== undefined) formData.append('titulo', payload.titulo);
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
   if (payload.categoria_nome !== undefined) formData.append('categoria_nome', payload.categoria_nome);
-  if (payload.preco !== undefined && payload.preco !== null) formData.append('preco', String(payload.preco));
-  if (payload.duracao !== undefined) formData.append('duracao', payload.duracao);
   if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
 }
 
@@ -763,6 +976,13 @@ import {
   mockVideos, mockPosts, mockNotifications,
   mockLeaderboard, mockBadges, mockWallet, courseCategories,
 } from "@/lib/mock-data";
+import { limparCacheApiOffline } from "@/lib/offline";
+
+// Os mocks de Video/Post (usados só como fallback antes de a BD ter dados)
+// não têm foto de professor/autor — completa com `null` para bater com os
+// tipos normalizados da API.
+const mockVideosComFoto: Video[] = mockVideos.map((v) => ({ ...v, teacherFoto: null }));
+const mockPostsComFoto: Post[] = mockPosts.map((p) => ({ ...p, authorFoto: null }));
 
 // --- Normalizadores API → UI ----------------------------------------------------------
 
@@ -785,6 +1005,10 @@ function normalizeCourse(raw: RawCourse): Course {
     progress: typeof raw?.progress === "number" ? raw.progress : undefined,
     thumbnail: coverOuThumbnail(raw?.id ?? "c", raw?.thumbnail),
     publishedAt: raw?.publicado_em || raw?.criado_em || null,
+    recursos: (raw?.recursos || []).map(normalizeCursoRecurso),
+    rating: typeof raw?.media_avaliacoes === "number" ? raw.media_avaliacoes : null,
+    ratingCount: Number(raw?.total_avaliacoes ?? 0) || 0,
+    certificadoDisponivel: Boolean(raw?.certificado_disponivel),
   };
 }
 
@@ -824,6 +1048,7 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     createdAt: raw?.criado_em || "",
     durationSeconds,
     durationLabel: formatarDuracaoCurta(durationSeconds),
+    recursos: (raw?.recursos || []).map(normalizeCursoRecurso),
   };
 }
 
@@ -860,6 +1085,24 @@ function normalizeCourseVideo(raw: RawCourseVideo): CourseVideo {
     likes: Number(raw?.total_likes ?? 0) || 0,
     durationSeconds,
     durationLabel: formatarDuracaoCurta(durationSeconds),
+    watched: Boolean(raw?.assistido),
+    recursos: (raw?.recursos || []).map(normalizeCursoRecurso),
+    positionSeconds: Number(raw?.posicao_segundos ?? 0) || 0,
+    positionUpdatedAt: raw?.posicao_atualizada_em || null,
+  };
+}
+
+function normalizeAvaliacao(raw: RawAvaliacaoCurso): AvaliacaoCurso {
+  return {
+    id: Number(raw?.id ?? 0),
+    estrelas: Number(raw?.estrelas ?? 0) || 0,
+    comentario: raw?.comentario || "",
+    autorNome: raw?.autor_nome || "Aluno",
+    autorUserId: typeof raw?.autor_user_id === "number" ? raw.autor_user_id : null,
+    autorFoto: mediaUrl(raw?.autor_foto),
+    atualizadoEm: raw?.atualizado_em || "",
+    tempo: raw?.tempo || "",
+    minha: Boolean(raw?.minha),
   };
 }
 
@@ -933,6 +1176,25 @@ function normalizeCursoRecurso(raw: RawCursoRecurso): CursoRecurso {
   };
 }
 
+function normalizeComentario(raw: RawComentario): Comentario {
+  return {
+    id: Number(raw?.id ?? 0),
+    autorId: Number(raw?.autor ?? 0),
+    autor_nome: raw?.autor_nome || "Utilizador",
+    autor_initials: raw?.autor_initials || "??",
+    autor_foto: mediaUrl(raw?.autor_foto),
+    parentId: typeof raw?.parent === "number" ? raw.parent : null,
+    conteudo: raw?.conteudo || "",
+    time_ago: raw?.time_ago || "há pouco",
+    editadoEm: raw?.editado_em || null,
+    likes: Number(raw?.total_likes ?? 0) || 0,
+    liked: Boolean(raw?.liked),
+    podeEditar: Boolean(raw?.pode_editar),
+    podeApagar: Boolean(raw?.pode_apagar),
+    respostas: (raw?.respostas || []).map(normalizeComentario),
+  };
+}
+
 // --- Funções específicas para recursos ------------------------------------------------
 
 export const api = {
@@ -970,6 +1232,7 @@ export const api = {
     return res;
   },
   logout: async () => {
+    limparCacheApiOffline();
     return await fetchAPI<{ ok: boolean }>('/accounts/auth/logout/', {
       method: 'POST',
     });
@@ -979,6 +1242,35 @@ export const api = {
       '/accounts/auth/me/',
     );
     return res;
+  },
+  pedirRecuperacaoSenha: async (email: string) => {
+    return await fetchAPI<{ ok: boolean }>('/accounts/auth/password-reset/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  validarLinkRecuperacao: async (uid: string, token: string) => {
+    return await fetchAPI<{ ok: boolean }>('/accounts/auth/password-reset/validar/', {
+      method: 'POST',
+      body: JSON.stringify({ uid, token }),
+    });
+  },
+  redefinirSenha: async (uid: string, token: string, password: string) => {
+    return await fetchAPI<{ ok: boolean }>('/accounts/auth/password-reset/confirmar/', {
+      method: 'POST',
+      body: JSON.stringify({ uid, token, password }),
+    });
+  },
+  verificarEmail: async (token: string) => {
+    return await fetchAPI<{ ok: boolean; authenticated: boolean }>('/accounts/auth/verificar-email/', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  },
+  reenviarVerificacaoEmail: async () => {
+    return await fetchAPI<{ ok: boolean; jaVerificado?: boolean }>('/accounts/auth/reenviar-verificacao/', {
+      method: 'POST',
+    });
   },
 
   // =========================================================================
@@ -1032,9 +1324,9 @@ export const api = {
     } catch {
       /* fallback */
     }
-    if (tab === "popular") return [...mockVideos].sort((a, b) => b.views - a.views);
-    if (tab === "short") return mockVideos.filter((v) => parseInt(v.duration.split(":")[0]) < 6);
-    return mockVideos;
+    if (tab === "popular") return [...mockVideosComFoto].sort((a, b) => b.views - a.views);
+    if (tab === "short") return mockVideosComFoto.filter((v) => parseInt(v.duration.split(":")[0]) < 6);
+    return mockVideosComFoto;
   },
   getVideo: async (id: number | string): Promise<VideoDetail | null> => {
     try {
@@ -1089,7 +1381,7 @@ export const api = {
     } catch {
       /* fallback */
     }
-    return mockPosts;
+    return mockPostsComFoto;
   },
   createPost: async (conteudo: string): Promise<Post> => {
     const res = await fetchAPI<RawPost>('/api/comunidade/posts/', {
@@ -1107,19 +1399,47 @@ export const api = {
   },
   getComentarios: async (postId: string | number): Promise<Comentario[]> => {
     try {
-      return await fetchAPI<Comentario[]>(`/api/comunidade/posts/${postId}/comentarios/`);
+      const res = await fetchAPI<RawComentario[]>(`/api/comunidade/posts/${postId}/comentarios/`);
+      return Array.isArray(res) ? res.map(normalizeComentario) : [];
     } catch {
       return [];
     }
   },
-  createComentario: async (postId: string | number, conteudo: string): Promise<Comentario> => {
-    return await fetchAPI<Comentario>(
+  createComentario: async (
+    postId: string | number,
+    conteudo: string,
+    parentId?: number,
+  ): Promise<Comentario> => {
+    const res = await fetchAPI<RawComentario>(
       `/api/comunidade/posts/${postId}/comentarios/`,
       {
         method: 'POST',
-        body: JSON.stringify({ conteudo }),
+        body: JSON.stringify(parentId ? { conteudo, parent: parentId } : { conteudo }),
       },
     );
+    return normalizeComentario(res);
+  },
+  editarComentario: async (
+    postId: string | number,
+    comentarioId: number,
+    conteudo: string,
+  ): Promise<Comentario> => {
+    const res = await fetchAPI<RawComentario>(`/api/comunidade/posts/${postId}/comentarios/${comentarioId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ conteudo }),
+    });
+    return normalizeComentario(res);
+  },
+  apagarComentario: async (postId: string | number, comentarioId: number): Promise<void> => {
+    await fetchAPI(`/api/comunidade/posts/${postId}/comentarios/${comentarioId}/`, { method: 'DELETE' });
+  },
+  reagirComentario: async (
+    postId: string | number,
+    comentarioId: number,
+  ): Promise<{ liked: boolean; totalLikes: number }> => {
+    return await fetchAPI(`/api/comunidade/posts/${postId}/comentarios/${comentarioId}/reagir/`, {
+      method: 'POST',
+    });
   },
 
   // =========================================================================
@@ -1234,6 +1554,11 @@ export const api = {
   //  ADMINISTRAÇÃO (exige user.is_staff)
   // =========================================================================
   admin: {
+    // ── Métricas ───────────────────────────────────────────────────────
+    getMetricas: async (): Promise<MetricasPlataforma> => {
+      return await fetchAPI<MetricasPlataforma & { ok: boolean }>('/accounts/api/admin/metricas/');
+    },
+
     // ── Professores ────────────────────────────────────────────────────
     getProfessores: async (): Promise<AdminProfessor[]> => {
       const res = await fetchAPI<{ ok: boolean; professores: AdminProfessor[] }>(
@@ -1335,6 +1660,15 @@ export const api = {
         body: JSON.stringify({ senha_atual: senhaAtual, nova_senha: novaSenha }),
       });
     },
+    alterarEmail: async (
+      senhaAtual: string,
+      novoEmail: string,
+    ): Promise<{ ok: boolean; error?: string; user?: AuthUser }> => {
+      return await fetchAPI('/accounts/api/seguranca/alterar-email/', {
+        method: 'POST',
+        body: JSON.stringify({ senha_atual: senhaAtual, novo_email: novoEmail }),
+      });
+    },
     status2FA: async (): Promise<{ ok: boolean; ativo: boolean }> => {
       return await fetchAPI('/accounts/api/seguranca/2fa/status/');
     },
@@ -1360,6 +1694,28 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ tipo }),
     });
+  },
+  /** Onde o utilizador parou neste vídeo (0 se nunca viu). Nunca lança erro. */
+  getPosicaoVideo: async (videoId: string | number): Promise<number> => {
+    try {
+      const res = await fetchAPI<{ segundos: number }>(`/api/videos/${videoId}/posicao/`);
+      return Number(res?.segundos ?? 0) || 0;
+    } catch {
+      return 0;
+    }
+  },
+  /** Guarda a posição de reprodução. `keepalive` deixa o pedido terminar
+   * mesmo que a página esteja a fechar (ex: o aluno sai a meio da aula). */
+  guardarPosicaoVideo: async (videoId: string | number, segundos: number, keepalive = false): Promise<void> => {
+    try {
+      await fetchAPI(`/api/videos/${videoId}/posicao/`, {
+        method: 'PUT',
+        body: JSON.stringify({ segundos: Math.floor(segundos) }),
+        keepalive,
+      });
+    } catch {
+      // guardar a posição não é crítico — nunca deve interromper a reprodução
+    }
   },
   registarViewVideo: async (
     videoId: string | number,
@@ -1399,6 +1755,44 @@ export const api = {
     },
     reagir: async (videoId: string | number, comentarioId: number): Promise<{ liked: boolean; totalLikes: number }> => {
       return await fetchAPI(`/api/videos/${videoId}/comentarios/${comentarioId}/reagir/`, { method: 'POST' });
+    },
+  },
+  certificadoUrl: (cursoId: string | number) => `${API_BASE_URL}/api/cursos/${cursoId}/certificado/`,
+  verificarCertificado: async (codigo: string): Promise<CertificadoVerificado | null> => {
+    try {
+      return await fetchAPI<CertificadoVerificado>(`/api/certificados/${encodeURIComponent(codigo)}/`);
+    } catch {
+      return null;
+    }
+  },
+  avaliacoes: {
+    listar: async (cursoId: string | number): Promise<AvaliacoesCurso> => {
+      const res = await fetchAPI<{
+        resumo: ResumoAvaliacoes;
+        podeAvaliar: boolean;
+        minha: RawAvaliacaoCurso | null;
+        avaliacoes: RawAvaliacaoCurso[];
+      }>(`/api/cursos/${cursoId}/avaliacoes/`);
+      return {
+        resumo: res.resumo,
+        podeAvaliar: Boolean(res.podeAvaliar),
+        minha: res.minha ? normalizeAvaliacao(res.minha) : null,
+        avaliacoes: (res.avaliacoes || []).map(normalizeAvaliacao),
+      };
+    },
+    avaliar: async (
+      cursoId: string | number,
+      estrelas: number,
+      comentario: string,
+    ): Promise<{ avaliacao: AvaliacaoCurso; resumo: ResumoAvaliacoes }> => {
+      const res = await fetchAPI<{ avaliacao: RawAvaliacaoCurso; resumo: ResumoAvaliacoes }>(
+        `/api/cursos/${cursoId}/avaliacoes/`,
+        { method: 'POST', body: JSON.stringify({ estrelas, comentario }) },
+      );
+      return { avaliacao: normalizeAvaliacao(res.avaliacao), resumo: res.resumo };
+    },
+    apagar: async (cursoId: string | number): Promise<{ resumo: ResumoAvaliacoes }> => {
+      return await fetchAPI(`/api/cursos/${cursoId}/avaliacoes/`, { method: 'DELETE' });
     },
   },
   inscreverCurso: async (cursoId: string | number) => {
@@ -1446,7 +1840,18 @@ export const api = {
     getPerfil: async (): Promise<ProfessorPerfil> => {
       return await fetchAPI('/api/professor/perfil/');
     },
-    atualizarPerfil: async (dados: Partial<Pick<ProfessorPerfil, 'nome_publico' | 'bio' | 'area'>>): Promise<ProfessorPerfil> => {
+    atualizarPerfil: async (
+      dados: Partial<Pick<ProfessorPerfil, 'nome_publico' | 'bio' | 'area'>>,
+      foto?: File | null,
+    ): Promise<ProfessorPerfil> => {
+      if (foto) {
+        const formData = new FormData();
+        Object.entries(dados).forEach(([k, v]) => {
+          if (v !== undefined) formData.append(k, String(v));
+        });
+        formData.append('foto', foto);
+        return await fetchAPI('/api/professor/perfil/', { method: 'PATCH', body: formData });
+      }
       return await fetchAPI('/api/professor/perfil/', {
         method: 'PATCH',
         body: JSON.stringify(dados),
@@ -1459,19 +1864,25 @@ export const api = {
     getCursos: async (): Promise<ProfessorCurso[]> => {
       return await fetchAPI('/api/professor/cursos/');
     },
-    criarCurso: async (payload: ProfessorCursoPayload, videos: File[]): Promise<ProfessorCurso> => {
+    criarCurso: async (
+      payload: ProfessorCursoPayload,
+      videos: File[],
+      recursos: File[] = [],
+    ): Promise<ProfessorCurso> => {
       const formData = new FormData();
       _appendCursoPayload(formData, payload);
       if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
       videos.forEach((v) => formData.append('videos', v));
+      recursos.forEach((r) => formData.append('recursos', r));
       return await fetchAPI('/api/professor/cursos/', { method: 'POST', body: formData });
     },
     atualizarCurso: async (
       id: number,
       payload: Partial<ProfessorCursoPayload>,
       novosVideos: File[] = [],
+      novosRecursos: File[] = [],
     ): Promise<ProfessorCurso> => {
-      if (novosVideos.length === 0 && !payload.thumbnail) {
+      if (novosVideos.length === 0 && novosRecursos.length === 0 && !payload.thumbnail) {
         return await fetchAPI(`/api/professor/cursos/${id}/`, {
           method: 'PATCH',
           body: JSON.stringify(payload),
@@ -1481,6 +1892,7 @@ export const api = {
       _appendCursoPayload(formData, payload);
       if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
       novosVideos.forEach((v) => formData.append('videos', v));
+      novosRecursos.forEach((r) => formData.append('recursos', r));
       return await fetchAPI(`/api/professor/cursos/${id}/`, { method: 'PATCH', body: formData });
     },
     apagarCurso: async (id: number): Promise<void> => {
@@ -1496,30 +1908,39 @@ export const api = {
     getVideos: async (): Promise<ProfessorVideo[]> => {
       return await fetchAPI('/api/professor/videos/');
     },
-    criarVideo: async (payload: ProfessorVideoPayload): Promise<ProfessorVideo> => {
+    criarVideo: async (payload: ProfessorVideoPayload, recursos: File[] = []): Promise<ProfessorVideo> => {
       const { arquivo, thumbnail, ...resto } = payload;
-      if (arquivo || thumbnail) {
+      if (arquivo || thumbnail || recursos.length > 0) {
         const formData = new FormData();
         _appendVideoPayload(formData, resto);
         if (arquivo) formData.append('arquivo', arquivo);
         if (thumbnail) formData.append('thumbnail', thumbnail);
+        recursos.forEach((r) => formData.append('recursos', r));
         return await fetchAPI('/api/professor/videos/', { method: 'POST', body: formData });
       }
       return await fetchAPI('/api/professor/videos/', { method: 'POST', body: JSON.stringify(resto) });
     },
-    atualizarVideo: async (id: number, payload: Partial<ProfessorVideoPayload>): Promise<ProfessorVideo> => {
+    atualizarVideo: async (
+      id: number,
+      payload: Partial<ProfessorVideoPayload>,
+      novosRecursos: File[] = [],
+    ): Promise<ProfessorVideo> => {
       const { arquivo, thumbnail, ...resto } = payload;
-      if (arquivo || thumbnail) {
+      if (arquivo || thumbnail || novosRecursos.length > 0) {
         const formData = new FormData();
         _appendVideoPayload(formData, resto);
         if (arquivo) formData.append('arquivo', arquivo);
         if (thumbnail) formData.append('thumbnail', thumbnail);
+        novosRecursos.forEach((r) => formData.append('recursos', r));
         return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: formData });
       }
       return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: JSON.stringify(resto) });
     },
     apagarVideo: async (id: number): Promise<void> => {
       await fetchAPI(`/api/professor/videos/${id}/`, { method: 'DELETE' });
+    },
+    apagarRecursoVideo: async (videoId: number, recursoId: number): Promise<void> => {
+      await fetchAPI(`/api/professor/videos/${videoId}/recursos/${recursoId}/`, { method: 'DELETE' });
     },
     getVideoEngajamento: async (id: number): Promise<VideoEngajamento> => {
       return await fetchAPI(`/api/professor/videos/${id}/engajamento/`);

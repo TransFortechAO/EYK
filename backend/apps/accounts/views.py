@@ -1,7 +1,11 @@
+import hashlib
 import json
+import time
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import csrf_exempt
@@ -10,10 +14,28 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.gamificacao.services import creditar_moedas, processar_atividade_diaria, verificar_badges
 
+from .emails import (
+    enviar_email_recuperacao,
+    enviar_email_verificacao,
+    utilizador_do_token_recuperacao,
+    utilizador_do_token_verificacao,
+)
 from .forms import UserRegisterForm
 from .models import User
+from .rate_limit import excedeu_limite, ip_do_pedido
 
 PRE_2FA_SESSION_KEY = 'pre_2fa_user_id'
+REENVIO_VERIFICACAO_SESSION_KEY = 'verificacao_email_enviada_em'
+REENVIO_VERIFICACAO_INTERVALO_SEGUNDOS = 60
+
+# Recuperação de palavra-passe: por IP (trava quem tenta muitos emails) e por
+# email (trava quem bombardeia a caixa de correio de alguém a partir de
+# vários IPs). O limite por email conta mesmo que a conta não exista, para a
+# resposta não revelar que emails estão registados.
+RESET_MAX_POR_IP = 5
+RESET_JANELA_IP_SEGUNDOS = 15 * 60
+RESET_MAX_POR_EMAIL = 3
+RESET_JANELA_EMAIL_SEGUNDOS = 60 * 60
 
 
 # ── Endpoints JSON para o frontend Next.js (Autenticação) ───────────────────
@@ -33,13 +55,23 @@ def auth_login_json(request):
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
 
-    username = (body.get('username') or '').strip()
+    identificador = (body.get('username') or '').strip()
     password = body.get('password') or ''
 
-    if not username or not password:
+    if not identificador or not password:
         return JsonResponse(
             {'ok': False, 'error': 'Credenciais em falta.'}, status=400,
         )
+
+    username = identificador
+    if '@' in identificador:
+        # Permite entrar com o email em vez do nome de utilizador. Só resolve
+        # quando o email identifica exatamente UM utilizador — com mais do
+        # que um (contas antigas sem unicidade garantida), cai para tentar
+        # autenticar o valor tal como foi escrito, que falha de forma segura.
+        candidatos = list(User.objects.filter(email__iexact=identificador)[:2])
+        if len(candidatos) == 1:
+            username = candidatos[0].username
 
     user = authenticate(request, username=username, password=password)
     if user is None:
@@ -98,6 +130,7 @@ def auth_register_json(request):
         return JsonResponse({'ok': False, 'error': primeiro_erro}, status=400)
 
     user = form.save()
+    enviar_email_verificacao(user)
 
     if ref and ref != username:
         referrer = User.objects.filter(username=ref).first()
@@ -117,6 +150,7 @@ def auth_register_json(request):
 
     login(request, user)
     processar_atividade_diaria(user)
+    request.session[REENVIO_VERIFICACAO_SESSION_KEY] = time.time()
 
     return JsonResponse({
         'ok': True,
@@ -135,6 +169,140 @@ def auth_logout_json(request):
     return response
 
 
+def _ler_json(request):
+    try:
+        return json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return None
+
+
+@csrf_exempt
+@require_POST
+def auth_password_reset(request):
+    """Pede um link de recuperação de palavra-passe para o email indicado.
+
+    Responde SEMPRE com sucesso (exista ou não a conta) para não revelar que
+    emails estão registados na plataforma.
+    """
+    body = _ler_json(request)
+    if body is None:
+        return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
+
+    email = (body.get('email') or '').strip()
+    if not email:
+        return JsonResponse({'ok': False, 'error': 'Indica o teu email.'}, status=400)
+
+    limite_ip = excedeu_limite(
+        f'reset-senha:ip:{ip_do_pedido(request)}', RESET_MAX_POR_IP, RESET_JANELA_IP_SEGUNDOS,
+    )
+    limite_email = excedeu_limite(
+        # Hash em vez do email em claro: sem dados pessoais nas chaves da cache.
+        f'reset-senha:email:{hashlib.sha256(email.lower().encode()).hexdigest()[:32]}',
+        RESET_MAX_POR_EMAIL,
+        RESET_JANELA_EMAIL_SEGUNDOS,
+    )
+    if limite_ip or limite_email:
+        return JsonResponse(
+            {'ok': False, 'error': 'Fizeste demasiados pedidos. Espera um pouco antes de tentar de novo.'},
+            status=429,
+        )
+
+    for user in User.objects.filter(email__iexact=email, is_active=True):
+        if user.has_usable_password():
+            enviar_email_recuperacao(user)
+
+    return JsonResponse({'ok': True})
+
+
+@csrf_exempt
+@require_POST
+def auth_password_reset_validar(request):
+    """Confirma se um link de recuperação (uid + token) ainda é válido, para o
+    frontend mostrar logo "link expirado" em vez do formulário."""
+    body = _ler_json(request)
+    if body is None:
+        return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
+
+    user = utilizador_do_token_recuperacao(body.get('uid') or '', body.get('token') or '')
+    if user is None:
+        return JsonResponse({'ok': False, 'error': 'Este link é inválido ou já expirou.'}, status=400)
+    return JsonResponse({'ok': True})
+
+
+@csrf_exempt
+@require_POST
+def auth_password_reset_confirmar(request):
+    """Define a nova palavra-passe a partir de um link de recuperação válido."""
+    body = _ler_json(request)
+    if body is None:
+        return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
+
+    user = utilizador_do_token_recuperacao(body.get('uid') or '', body.get('token') or '')
+    if user is None:
+        return JsonResponse({'ok': False, 'error': 'Este link é inválido ou já expirou.'}, status=400)
+
+    password = body.get('password') or ''
+    try:
+        validate_password(password, user)
+    except ValidationError as e:
+        return JsonResponse({'ok': False, 'error': e.messages[0]}, status=400)
+
+    user.set_password(password)
+    update_fields = ['password']
+    if not user.email_verificado:
+        # Abrir o link enviado para o email já prova que o endereço é dele.
+        user.email_verificado = True
+        update_fields.append('email_verificado')
+    user.save(update_fields=update_fields)
+    return JsonResponse({'ok': True})
+
+
+@csrf_exempt
+@require_POST
+def auth_verificar_email(request):
+    """Confirma o email a partir do token do link enviado no registo. Não
+    exige sessão — o link pode ser aberto noutro dispositivo."""
+    body = _ler_json(request)
+    if body is None:
+        return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
+
+    user = utilizador_do_token_verificacao(body.get('token') or '')
+    if user is None:
+        return JsonResponse({'ok': False, 'error': 'Este link é inválido ou já expirou.'}, status=400)
+
+    if not user.email_verificado:
+        user.email_verificado = True
+        user.save(update_fields=['email_verificado'])
+    return JsonResponse({'ok': True, 'authenticated': request.user.is_authenticated})
+
+
+@csrf_exempt
+@require_POST
+def auth_reenviar_verificacao(request):
+    """Reenvia o email de verificação ao utilizador autenticado (no máximo um
+    pedido por minuto por sessão, para não servir de canhão de spam)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'ok': False, 'error': 'Não autenticado.'}, status=401)
+
+    user = request.user
+    if user.email_verificado:
+        return JsonResponse({'ok': True, 'jaVerificado': True})
+    if not user.email:
+        return JsonResponse({'ok': False, 'error': 'A tua conta não tem email associado.'}, status=400)
+
+    ultimo = request.session.get(REENVIO_VERIFICACAO_SESSION_KEY) or 0
+    if time.time() - ultimo < REENVIO_VERIFICACAO_INTERVALO_SEGUNDOS:
+        return JsonResponse(
+            {'ok': False, 'error': 'Acabámos de enviar um email. Espera um minuto antes de pedir outro.'},
+            status=429,
+        )
+
+    if not enviar_email_verificacao(user):
+        return JsonResponse({'ok': False, 'error': 'Não foi possível enviar o email. Tenta mais tarde.'}, status=503)
+    request.session[REENVIO_VERIFICACAO_SESSION_KEY] = time.time()
+    return JsonResponse({'ok': True})
+
+
 @require_GET
 def auth_me(request):
     """Devolve os dados do utilizador autenticado (ou guest).
@@ -149,19 +317,24 @@ def auth_me(request):
             'user': None,
         })
 
+    # Bug corrigido: `User.eyk_coins`/`User.xp` nunca existiram no modelo —
+    # isto devolvia SEMPRE os valores de recurso (2380 moedas, streak 9),
+    # mesmo quando a Carteira/Ofensiva reais do utilizador tinham outro
+    # saldo. Os dados reais vivem em `user.carteira` e `user.ofensiva`
+    # (criadas via `get_or_create` pelos serviços de gamificação).
     try:
-        coins = request.user.eyk_coins
+        coins = request.user.carteira.saldo
     except Exception:
         coins = 0
 
     try:
-        streak = request.user.xp
+        streak = request.user.ofensiva.dias_atual
     except Exception:
         streak = 0
 
     payload = _user_payload(request.user)
-    payload.setdefault('coins', coins or 2380)
-    payload.setdefault('streak', streak or 9)
+    payload.setdefault('coins', coins)
+    payload.setdefault('streak', streak)
     return JsonResponse({
         'ok': True,
         'authenticated': True,
@@ -256,6 +429,10 @@ def pesquisar_utilizadores(request):
         )
         .filter(is_active=True)
         .exclude(id=request.user.id)
+        # Contas de administração nunca devem ser descobríveis por pesquisa
+        # pública — só aparecem no painel de administração (que já exige
+        # is_staff para aceder), nunca aqui.
+        .exclude(Q(is_staff=True) | Q(is_superuser=True))
     )[:20]
 
     resultados = []
@@ -325,6 +502,7 @@ def _user_payload(user: User) -> dict:
         'isStudent': user.is_student if hasattr(user, 'is_student') else True,
         'isStaff': bool(user.is_staff),
         'perfilCompleto': bool(user.perfil_completo),
+        'emailVerificado': bool(user.email_verificado),
         'temaPreferido': user.tema_preferido,
         'notifEmailNovidades': bool(user.notif_email_novidades),
         'notifEmailComunidade': bool(user.notif_email_comunidade),

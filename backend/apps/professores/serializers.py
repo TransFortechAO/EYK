@@ -3,7 +3,22 @@ from rest_framework import serializers
 
 from apps.cursos.models import Categoria, Curso
 
-from .models import Professor, ReacaoVideo, Video
+from .models import Professor, ReacaoVideo, RecursoVideo, Video
+
+
+class RecursoVideoSerializer(serializers.ModelSerializer):
+    arquivo_url = serializers.SerializerMethodField()
+    tamanho_mb = serializers.ReadOnlyField()
+
+    class Meta:
+        model = RecursoVideo
+        fields = ['id', 'nome', 'tipo', 'arquivo_url', 'tamanho_bytes', 'tamanho_mb', 'criado_em']
+        read_only_fields = ['id', 'tamanho_bytes', 'tamanho_mb', 'criado_em']
+
+    def get_arquivo_url(self, obj):
+        # Caminho relativo, igual a RecursoCursoSerializer — o frontend
+        # resolve para absoluto com `mediaUrl()`.
+        return obj.arquivo.url if obj.arquivo else None
 
 
 class ProfessorSerializer(serializers.ModelSerializer):
@@ -28,10 +43,15 @@ class ProfessorSerializer(serializers.ModelSerializer):
 
 
 class ProfessorCursoVideoSerializer(serializers.ModelSerializer):
+    recursos = serializers.SerializerMethodField()
+
     class Meta:
         model = Video
-        fields = ['id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem', 'duracao_segundos']
+        fields = ['id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem', 'duracao_segundos', 'recursos']
         read_only_fields = fields
+
+    def get_recursos(self, obj):
+        return RecursoVideoSerializer(obj.recursos.all(), many=True, context=self.context).data
 
 
 class ProfessorCursoSerializer(serializers.ModelSerializer):
@@ -42,17 +62,19 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
     conclusao_media = serializers.SerializerMethodField()
     duracao_total_segundos = serializers.SerializerMethodField()
     videos = ProfessorCursoVideoSerializer(many=True, read_only=True)
+    recursos = serializers.SerializerMethodField()
 
     class Meta:
         model = Curso
         fields = [
             'id', 'titulo', 'descricao', 'categoria', 'categoria_nome', 'preco',
             'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em',
-            'total_inscritos', 'total_visualizacoes', 'conclusao_media', 'duracao_total_segundos', 'videos',
+            'total_inscritos', 'total_visualizacoes', 'conclusao_media', 'duracao_total_segundos',
+            'videos', 'recursos',
         ]
         read_only_fields = [
             'id', 'criado_em', 'atualizado_em', 'total_inscritos', 'total_visualizacoes',
-            'conclusao_media', 'duracao_total_segundos', 'videos',
+            'conclusao_media', 'duracao_total_segundos', 'videos', 'recursos',
         ]
 
     def get_total_inscritos(self, obj):
@@ -66,6 +88,12 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
 
     def get_duracao_total_segundos(self, obj):
         return sum(v.duracao_segundos for v in obj.videos.all())
+
+    def get_recursos(self, obj):
+        # Import tardio: evita import circular (apps.cursos.serializers já
+        # importa deste módulo para o RecursoVideoSerializer do VideoSerializer).
+        from apps.cursos.serializers import RecursoCursoSerializer
+        return RecursoCursoSerializer(obj.recursos.all(), many=True, context=self.context).data
 
     def create(self, validated_data):
         categoria_nome = (validated_data.pop('categoria_nome', '') or '').strip()
@@ -90,17 +118,18 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
     total_likes = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
     total_comentarios = serializers.SerializerMethodField()
+    recursos = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail',
             'criado_em', 'atualizado_em', 'ativo', 'ordem', 'duracao_segundos',
-            'total_likes', 'total_visualizacoes', 'total_comentarios',
+            'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
         ]
         read_only_fields = [
             'id', 'criado_em', 'atualizado_em', 'duracao_segundos',
-            'total_likes', 'total_visualizacoes', 'total_comentarios',
+            'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
         ]
 
     def get_total_likes(self, obj):
@@ -110,7 +139,13 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
         return obj.total_visualizacoes()
 
     def get_total_comentarios(self, obj):
-        return obj.comentarios.count()
+        # `len(.all())` em vez de `.count()`: reaproveita o prefetch_related
+        # da listagem (apps.professores.api_views.professor_videos) e evita
+        # uma query extra por vídeo.
+        return len(obj.comentarios.all())
+
+    def get_recursos(self, obj):
+        return RecursoVideoSerializer(obj.recursos.all(), many=True, context=self.context).data
 
     def validate(self, attrs):
         arquivo = attrs.get('arquivo', getattr(self.instance, 'arquivo', None))

@@ -13,6 +13,15 @@ class UserRegisterForm(StyledFormMixin, UserCreationForm):
         model = User
         fields = ['username', 'email', 'password1', 'password2']
 
+    def clean_email(self):
+        # O login passou a aceitar o email (ver `auth_login_json`), que só é
+        # seguro se o email identificar sempre UM único utilizador — por
+        # isso a unicidade tem de ser garantida já aqui, no registo.
+        email = self.cleaned_data.get('email', '').strip()
+        if email and User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('Já existe uma conta com este email.')
+        return email
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.is_student = True

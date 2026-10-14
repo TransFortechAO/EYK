@@ -37,11 +37,29 @@ class ReacaoPost(models.Model):
 class Comentario(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comentarios')
     autor = models.ForeignKey(User, on_delete=models.CASCADE)
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='respostas',
+    )
     conteudo = models.TextField()
     criado_em = models.DateTimeField(auto_now_add=True)
+    editado_em = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['criado_em']
 
     def __str__(self):
         return f'Comentário de {self.autor.username}'
+
+    def total_likes(self):
+        return self.reacoes.count()
+
+
+class ReacaoComentario(models.Model):
+    comentario = models.ForeignKey(Comentario, on_delete=models.CASCADE, related_name='reacoes')
+    utilizador = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('comentario', 'utilizador')
+
+    def __str__(self):
+        return f'{self.utilizador} gosta do comentário {self.comentario_id}'

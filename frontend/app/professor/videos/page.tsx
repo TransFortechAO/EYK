@@ -17,9 +17,11 @@ import {
   ArrowDown,
   Upload,
   Film,
+  FileText,
   Image as ImageIcon,
   Search,
   PlayCircle,
+  Clock,
 } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -31,7 +33,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { api, tempoRelativo, type ProfessorVideo, type ProfessorVideoPayload } from "@/lib/api";
+import { useConfirm } from "@/components/confirm-dialog";
+import { api, tempoRelativo, formatarDuracaoCurta, type ProfessorVideo, type ProfessorVideoPayload } from "@/lib/api";
 
 type FiltroEstado = "todos" | "publicado" | "rascunho";
 
@@ -43,12 +46,15 @@ const EMPTY_FORM: ProfessorVideoPayload = {
 };
 
 export default function ProfessorVideosPage() {
+  const confirm = useConfirm();
   const [videos, setVideos] = useState<ProfessorVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<ProfessorVideo | null>(null);
   const [form, setForm] = useState<ProfessorVideoPayload>(EMPTY_FORM);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [recursosNovos, setRecursosNovos] = useState<File[]>([]);
+  const [apagandoRecursoId, setApagandoRecursoId] = useState<number | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [submetendo, setSubmetendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -56,6 +62,7 @@ export default function ProfessorVideosPage() {
   const [pesquisa, setPesquisa] = useState("");
   const [filtro, setFiltro] = useState<FiltroEstado>("todos");
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const recursosInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const carregar = async () => {
@@ -75,6 +82,7 @@ export default function ProfessorVideosPage() {
     setEditando(null);
     setForm(EMPTY_FORM);
     setVideoFile(null);
+    setRecursosNovos([]);
     setThumbnailPreview(null);
     setErro(null);
     setModalAberto(true);
@@ -89,9 +97,57 @@ export default function ProfessorVideosPage() {
       ativo: video.ativo,
     });
     setVideoFile(null);
+    setRecursosNovos([]);
     setThumbnailPreview(video.thumbnail || null);
     setErro(null);
     setModalAberto(true);
+  };
+
+  const RECURSO_TAMANHO_MAX_MB = 50;
+
+  const escolherRecursos = () => recursosInputRef.current?.click();
+
+  const onRecursosSelecionados = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const ficheiros = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (ficheiros.length === 0) return;
+    for (const f of ficheiros) {
+      if (!f.name.toLowerCase().endsWith(".pdf")) {
+        setErro("Os recursos têm de ser ficheiros PDF.");
+        return;
+      }
+      if (f.size > RECURSO_TAMANHO_MAX_MB * 1024 * 1024) {
+        setErro(`Cada recurso deve ter no máximo ${RECURSO_TAMANHO_MAX_MB}MB.`);
+        return;
+      }
+    }
+    setRecursosNovos((prev) => [...prev, ...ficheiros]);
+  };
+
+  const removerRecursoNovo = (index: number) => {
+    setRecursosNovos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const apagarRecursoExistente = async (recurso: { id: number }) => {
+    if (!editando) return;
+    const confirmado = await confirm({
+      title: "Remover recurso",
+      description: "O recurso será removido do vídeo. Esta ação não pode ser desfeita.",
+      confirmLabel: "Remover",
+      destructive: true,
+    });
+    if (!confirmado) return;
+    setApagandoRecursoId(recurso.id);
+    try {
+      await api.professor.apagarRecursoVideo(editando.id, recurso.id);
+      const videoAtualizado = { ...editando, recursos: editando.recursos.filter((r) => r.id !== recurso.id) };
+      setEditando(videoAtualizado);
+      setVideos((prev) => prev.map((v) => (v.id === videoAtualizado.id ? videoAtualizado : v)));
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao remover o recurso.");
+    } finally {
+      setApagandoRecursoId(null);
+    }
   };
 
   const escolherVideo = () => videoInputRef.current?.click();
@@ -135,9 +191,9 @@ export default function ProfessorVideosPage() {
     try {
       const payload: ProfessorVideoPayload = { ...form, arquivo: videoFile };
       if (editando) {
-        await api.professor.atualizarVideo(editando.id, payload);
+        await api.professor.atualizarVideo(editando.id, payload, recursosNovos);
       } else {
-        await api.professor.criarVideo(payload);
+        await api.professor.criarVideo(payload, recursosNovos);
       }
       setModalAberto(false);
       await carregar();
@@ -149,7 +205,13 @@ export default function ProfessorVideosPage() {
   };
 
   const apagar = async (video: ProfessorVideo) => {
-    if (!window.confirm(`Eliminar o vídeo "${video.titulo}"? Esta ação é irreversível.`)) return;
+    const confirmado = await confirm({
+      title: `Eliminar o vídeo "${video.titulo}"?`,
+      description: "Esta ação é irreversível.",
+      confirmLabel: "Eliminar",
+      destructive: true,
+    });
+    if (!confirmado) return;
     await api.professor.apagarVideo(video.id);
     await carregar();
   };
@@ -269,6 +331,11 @@ export default function ProfessorVideosPage() {
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                    {video.duracao_segundos > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" /> {formatarDuracaoCurta(video.duracao_segundos)}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1">
                       <Eye className="h-3.5 w-3.5" /> {video.total_visualizacoes}
                     </span>
@@ -309,7 +376,14 @@ export default function ProfessorVideosPage() {
       <Dialog open={modalAberto} onOpenChange={setModalAberto}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editando ? "Editar vídeo" : "Publicar vídeo"}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {editando ? "Editar vídeo" : "Publicar vídeo"}
+              {editando && editando.duracao_segundos > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" /> {formatarDuracaoCurta(editando.duracao_segundos)}
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
 
           <form id="form-video" onSubmit={submeter} className="flex-1 space-y-4 overflow-y-auto p-5">
@@ -402,7 +476,78 @@ export default function ProfessorVideosPage() {
                 ) : null}
               </div>
 
-              
+              <div className="space-y-2">
+                <Label>Recursos (PDF, opcional)</Label>
+                <input
+                  ref={recursosInputRef}
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  multiple
+                  onChange={onRecursosSelecionados}
+                  disabled={submetendo}
+                  className="sr-only"
+                />
+                <button
+                  type="button"
+                  onClick={escolherRecursos}
+                  disabled={submetendo}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
+                >
+                  <Upload className="h-4 w-4" />
+                  Adicionar recurso(s) em PDF
+                </button>
+
+                {editando && editando.recursos.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {editando.recursos.map((recurso) => (
+                      <li
+                        key={recurso.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-border/60 px-3 py-2 text-xs"
+                      >
+                        <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                          <FileText className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{recurso.nome}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void apagarRecursoExistente(recurso)}
+                          disabled={apagandoRecursoId === recurso.id}
+                          className="shrink-0 text-red-400 hover:text-red-300 disabled:opacity-50"
+                          aria-label={`Remover ${recurso.nome}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {recursosNovos.length > 0 && (
+                  <ul className="space-y-1.5">
+                    {recursosNovos.map((ficheiro, index) => (
+                      <li
+                        key={`${ficheiro.name}-${index}`}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs"
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                          <span className="truncate">{ficheiro.name}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removerRecursoNovo(index)}
+                          disabled={submetendo}
+                          className="shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                          aria-label={`Remover ${ficheiro.name}`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">Publicar vídeo</p>

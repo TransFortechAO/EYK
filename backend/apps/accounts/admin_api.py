@@ -1,12 +1,15 @@
 import json
+from datetime import timedelta
 from functools import wraps
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db.models import Q
+from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import TruncWeek
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -164,7 +167,7 @@ def api_listar_utilizadores(request):
     q = (request.GET.get('q') or '').strip()
     tipo = (request.GET.get('tipo') or '').strip()
 
-    qs = User.objects.all().order_by('-date_joined')
+    qs = User.objects.select_related('carteira').order_by('-date_joined')
 
     if q:
         qs = qs.filter(Q(username__icontains=q) | Q(email__icontains=q))
@@ -178,6 +181,13 @@ def api_listar_utilizadores(request):
 
     users = []
     for u in qs:
+        # `User` nunca teve um campo/propriedade `coins` — o saldo real vive
+        # na Carteira (apps.gamificacao). `getattr(u, 'coins', 0)` devolvia
+        # sempre 0 para todos os utilizadores nesta listagem.
+        try:
+            coins = u.carteira.saldo
+        except Exception:
+            coins = 0
         users.append({
             'id': u.id,
             'username': u.username,
@@ -189,7 +199,7 @@ def api_listar_utilizadores(request):
             'is_active': u.is_active,
             'perfil_completo': u.perfil_completo,
             'date_joined': u.date_joined.isoformat(),
-            'coins': getattr(u, 'coins', 0),
+            'coins': coins,
         })
 
     return _json_response({'ok': True, 'users': users})
@@ -238,4 +248,169 @@ def api_apagar_usuario(request, user_id):
     return _json_response({
         'ok': True,
         'message': f'Utilizador "{username}" apagado com sucesso.',
+    })
+
+
+# ─────────────────────────── Métricas da plataforma ─────────────────────────
+
+SEMANAS_CRESCIMENTO = 12
+SEMANAS_COORTES = 8
+
+
+def _inicio_semana(data):
+    """Segunda-feira (data local) da semana de `data`."""
+    return data - timedelta(days=data.weekday())
+
+
+def _serie_semanal(queryset, campo, semanas):
+    """Contagem por semana (TruncWeek) das últimas `semanas`, incluindo as
+    semanas sem registos (a 0), da mais antiga para a mais recente."""
+    hoje = timezone.localdate()
+    primeira = _inicio_semana(hoje) - timedelta(weeks=semanas - 1)
+    contagens = {
+        linha['semana'].date() if hasattr(linha['semana'], 'date') else linha['semana']: linha['n']
+        for linha in (
+            queryset.filter(**{f'{campo}__date__gte': primeira})
+            .annotate(semana=TruncWeek(campo))
+            .values('semana')
+            .annotate(n=Count('id'))
+        )
+    }
+    return [
+        {'semana': (primeira + timedelta(weeks=i)).isoformat(), 'n': contagens.get(primeira + timedelta(weeks=i), 0)}
+        for i in range(semanas)
+    ]
+
+
+def _ids_ativos_desde(desde):
+    """Utilizadores com atividade real desde `desde`: login, progresso num
+    vídeo (posição de reprodução) ou uma view registada."""
+    from apps.professores.models import PosicaoVisualizacao, VisualizacaoVideo
+
+    ids = set(User.objects.filter(last_login__gte=desde).values_list('id', flat=True))
+    ids.update(PosicaoVisualizacao.objects.filter(atualizado_em__gte=desde).values_list('utilizador_id', flat=True))
+    ids.update(
+        VisualizacaoVideo.objects.filter(ultima_visualizacao__gte=desde, utilizador__isnull=False)
+        .values_list('utilizador_id', flat=True)
+    )
+    return ids
+
+
+@_staff_and_json
+@require_GET
+def api_metricas(request):
+    """GET /accounts/api/admin/metricas/  →  visão agregada da plataforma:
+    totais, crescimento semanal, utilizadores ativos, retenção por coorte
+    e cursos/vídeos mais vistos."""
+    from apps.cursos.models import AvaliacaoCurso, Curso, Inscricao
+    from apps.professores.models import Video
+
+    agora = timezone.now()
+    ativos_7d = _ids_ativos_desde(agora - timedelta(days=7))
+    ativos_30d = _ids_ativos_desde(agora - timedelta(days=30))
+    ativos_hoje = _ids_ativos_desde(agora - timedelta(days=1))
+
+    utilizadores = User.objects.filter(is_staff=False, is_superuser=False)
+    total_utilizadores = utilizadores.count()
+    total_inscricoes = Inscricao.objects.count()
+    total_concluidas = Inscricao.objects.filter(concluido=True).count()
+    avaliacoes = AvaliacaoCurso.objects.aggregate(media=Avg('estrelas'), total=Count('id'))
+
+    # Retenção por coorte: dos utilizadores registados em cada semana, quantos
+    # tiveram atividade nos últimos 7 dias.
+    hoje = timezone.localdate()
+    semana_atual = _inicio_semana(hoje)
+    coortes = []
+    for i in range(SEMANAS_COORTES - 1, -1, -1):
+        inicio = semana_atual - timedelta(weeks=i)
+        fim = inicio + timedelta(weeks=1)
+        ids = set(
+            utilizadores.filter(date_joined__date__gte=inicio, date_joined__date__lt=fim)
+            .values_list('id', flat=True)
+        )
+        retidos = len(ids & ativos_7d)
+        coortes.append({
+            'semana': inicio.isoformat(),
+            'novos': len(ids),
+            'ativos7d': retidos,
+            'taxa': round(retidos / len(ids) * 100) if ids else None,
+        })
+
+    # Retenção a 30 dias: dos que se registaram há mais de 30 dias, quantos
+    # continuam ativos no último mês.
+    antigos = set(utilizadores.filter(date_joined__lt=agora - timedelta(days=30)).values_list('id', flat=True))
+    retencao_30d = round(len(antigos & ativos_30d) / len(antigos) * 100) if antigos else None
+
+    top_cursos = (
+        Curso.objects.filter(ativo=True)
+        .select_related('professor')
+        .annotate(
+            inscritos=Count('inscricoes', distinct=True),
+            concluidos=Count('inscricoes', filter=Q(inscricoes__concluido=True), distinct=True),
+            media_estrelas=Avg('avaliacoes__estrelas'),
+        )
+        .order_by('-inscritos', '-concluidos')[:10]
+    )
+    top_videos = (
+        Video.objects.filter(ativo=True)
+        .select_related('professor', 'curso')
+        .annotate(views=Sum('visualizacoes__count'), espectadores=Count('visualizacoes', distinct=True))
+        .filter(views__gt=0)
+        .order_by('-views')[:10]
+    )
+
+    return _json_response({
+        'ok': True,
+        'geradoEm': agora.isoformat(),
+        'totais': {
+            'utilizadores': total_utilizadores,
+            'alunos': utilizadores.filter(is_student=True).count(),
+            'professores': utilizadores.filter(is_teacher=True).count(),
+            'cursos': Curso.objects.filter(ativo=True).count(),
+            'videos': Video.objects.filter(ativo=True).count(),
+            'inscricoes': total_inscricoes,
+            'conclusoes': total_concluidas,
+            'taxaConclusao': round(total_concluidas / total_inscricoes * 100) if total_inscricoes else 0,
+            'avaliacoes': avaliacoes['total'],
+            'mediaAvaliacoes': round(avaliacoes['media'], 1) if avaliacoes['media'] is not None else None,
+            'emailsPorVerificar': utilizadores.filter(email_verificado=False).count(),
+        },
+        'ativos': {
+            'hoje': len(ativos_hoje),
+            'semana': len(ativos_7d),
+            'mes': len(ativos_30d),
+            'retencao30d': retencao_30d,
+        },
+        'crescimento': {
+            'utilizadores': _serie_semanal(utilizadores, 'date_joined', SEMANAS_CRESCIMENTO),
+            'inscricoes': _serie_semanal(Inscricao.objects.all(), 'inscrito_em', SEMANAS_CRESCIMENTO),
+            'conclusoes': _serie_semanal(
+                Inscricao.objects.filter(concluido=True), 'concluido_em', SEMANAS_CRESCIMENTO,
+            ),
+        },
+        'coortes': coortes,
+        'topCursos': [
+            {
+                'id': c.id,
+                'titulo': c.titulo,
+                'professor': c.professor.nome_publico,
+                'inscritos': c.inscritos,
+                'concluidos': c.concluidos,
+                'taxaConclusao': round(c.concluidos / c.inscritos * 100) if c.inscritos else 0,
+                'mediaAvaliacoes': round(c.media_estrelas, 1) if c.media_estrelas is not None else None,
+            }
+            for c in top_cursos
+        ],
+        'topVideos': [
+            {
+                'id': v.id,
+                'titulo': v.titulo,
+                'professor': v.professor.nome_publico,
+                'curso': v.curso.titulo if v.curso else None,
+                'cursoId': v.curso_id,
+                'views': v.views or 0,
+                'espectadores': v.espectadores,
+            }
+            for v in top_videos
+        ],
     })

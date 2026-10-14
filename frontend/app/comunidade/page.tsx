@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Users, Send } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader, SectionHeader, PostCard, EmptyState } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ function ComunidadeConteudo() {
   const [text, setText] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [reagindoIds, setReagindoIds] = useState<Set<string>>(new Set());
 
   const loadPosts = useCallback(async () => {
     const list = await api.getPosts();
@@ -56,11 +58,33 @@ function ComunidadeConteudo() {
   };
 
   const toggleLike = async (postId: string) => {
+    // Evita disparar dois pedidos para o mesmo post (ex: duplo clique antes
+    // do primeiro responder), que podia dar erro 500 por violar a restrição
+    // de reação única por utilizador.
+    if (reagindoIds.has(postId)) return;
+    setReagindoIds((prev) => new Set(prev).add(postId));
     try {
       const res = await api.reactPost(postId);
-      setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: res.liked, likes: res.likes } : p));
-    } catch {
-      /* ignora */
+
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                liked: res.liked,
+                likes: res.likes,
+              }
+            : post
+        )
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível reagir à publicação.");
+    } finally {
+      setReagindoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
     }
   };
 

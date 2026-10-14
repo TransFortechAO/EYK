@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { User, Bell, Shield, Palette, Save, ShieldCheck, ShieldOff, Trash2, Copy, Check } from "lucide-react";
+import { User, Bell, Shield, Palette, Save, ShieldCheck, ShieldOff, Trash2, Copy, Check, Camera } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth-gate";
 import { useTheme } from "@/components/theme-provider";
-import { api, API_BASE_URL } from "@/lib/api";
+import { useConfirm, useAlertDialog } from "@/components/confirm-dialog";
+import { api, API_BASE_URL, mediaUrl } from "@/lib/api";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -32,6 +34,8 @@ function SaveButton({ state, onClick, label = "Guardar alterações" }: { state:
 export default function ConfiguracoesPage() {
   const { user, refresh } = useAuth();
   const { theme, setTheme } = useTheme();
+  const confirm = useConfirm();
+  const alertDialog = useAlertDialog();
   const [tab, setTab] = useState("perfil");
 
   const isTeacher = Boolean(user?.isTeacher);
@@ -56,10 +60,35 @@ export default function ConfiguracoesPage() {
       }
       await refresh();
       setPerfilState("saved");
-    } catch {
+    } catch (err) {
       setPerfilState("error");
+      toast.error(err instanceof Error ? err.message : "Não foi possível guardar o perfil.");
     } finally {
       setTimeout(() => setPerfilState("idle"), 2500);
+    }
+  };
+
+  // ── Foto de perfil ───────────────────────────────────────────────────────
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
+
+  const onFotoSelecionada = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const ficheiro = e.target.files?.[0] || null;
+    e.target.value = "";
+    if (!ficheiro) return;
+    setEnviandoFoto(true);
+    try {
+      if (isTeacher) {
+        await api.professor.atualizarPerfil({ bio, nome_publico: nomePublico }, ficheiro);
+      } else {
+        await api.perfil.atualizarAluno(bio, ficheiro);
+      }
+      await refresh();
+      toast.success("Foto de perfil atualizada.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar a foto.");
+    } finally {
+      setEnviandoFoto(false);
     }
   };
 
@@ -84,8 +113,9 @@ export default function ConfiguracoesPage() {
         notif_email_gamificacao: overrides?.gamificacao ?? notifGamificacao,
       });
       setNotifState("saved");
-    } catch {
+    } catch (err) {
       setNotifState("error");
+      toast.error(err instanceof Error ? err.message : "Não foi possível guardar as notificações.");
     } finally {
       setTimeout(() => setNotifState("idle"), 2000);
     }
@@ -98,6 +128,38 @@ export default function ConfiguracoesPage() {
       await api.preferencias.atualizar({ tema_preferido: escuro ? "escuro" : "claro" });
     } catch {
       /* a UI já mudou localmente; falha silenciosa na persistência */
+    }
+  };
+
+  // ── Segurança: email ──────────────────────────────────────────────────────
+  const [senhaParaEmail, setSenhaParaEmail] = useState("");
+  const [novoEmail, setNovoEmail] = useState("");
+  const [emailErro, setEmailErro] = useState<string | null>(null);
+  const [emailState, setEmailState] = useState<SaveState>("idle");
+
+  const alterarEmail = async () => {
+    setEmailErro(null);
+    if (!novoEmail.trim()) {
+      setEmailErro("Indica o novo email.");
+      return;
+    }
+    setEmailState("saving");
+    try {
+      const res = await api.seguranca.alterarEmail(senhaParaEmail, novoEmail.trim());
+      if (!res.ok) {
+        setEmailErro(res.error || "Não foi possível alterar o email.");
+        setEmailState("error");
+        return;
+      }
+      await refresh();
+      setSenhaParaEmail("");
+      setNovoEmail("");
+      setEmailState("saved");
+    } catch (err) {
+      setEmailErro(err instanceof Error ? err.message : "Erro ao alterar o email.");
+      setEmailState("error");
+    } finally {
+      setTimeout(() => setEmailState("idle"), 2500);
     }
   };
 
@@ -185,7 +247,13 @@ export default function ConfiguracoesPage() {
   };
 
   const desativar2FA = async () => {
-    if (!window.confirm("Desativar a autenticação de dois fatores? A tua conta ficará menos protegida.")) return;
+    const confirmado = await confirm({
+      title: "Desativar autenticação de dois fatores?",
+      description: "A tua conta ficará menos protegida.",
+      confirmLabel: "Desativar",
+      destructive: true,
+    });
+    if (!confirmado) return;
     setLoading2FA(true);
     try {
       await api.seguranca.desativar2FA();
@@ -199,10 +267,14 @@ export default function ConfiguracoesPage() {
   // ── Zona de perigo: apagar conta ─────────────────────────────────────────
   const [apagando, setApagando] = useState(false);
   const apagarConta = async () => {
-    const confirmacao = window.prompt(
-      'Esta ação é irreversível e apaga permanentemente a tua conta. Escreve "APAGAR" para confirmar.',
-    );
-    if (confirmacao !== "APAGAR") return;
+    const confirmado = await confirm({
+      title: "Apagar a tua conta",
+      description: "Esta ação é irreversível e apaga permanentemente a tua conta.",
+      confirmLabel: "Apagar conta",
+      destructive: true,
+      requireText: "APAGAR",
+    });
+    if (!confirmado) return;
     setApagando(true);
     try {
       if (isTeacher) {
@@ -213,7 +285,10 @@ export default function ConfiguracoesPage() {
       window.location.assign(API_BASE_URL + "/");
     } catch {
       setApagando(false);
-      window.alert("Não foi possível apagar a conta. Tenta novamente.");
+      await alertDialog({
+        title: "Não foi possível apagar a conta",
+        description: "Tenta novamente.",
+      });
     }
   };
 
@@ -248,11 +323,34 @@ export default function ConfiguracoesPage() {
           <TabsContent value="perfil" className="space-y-5">
             <Card className="p-6 shadow-soft">
               <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-                <Avatar className="h-24 w-24 shadow-md">
-                  <AvatarFallback className="text-3xl bg-gradient-gold text-primary-foreground font-serif font-bold">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative shrink-0">
+                  <Avatar className="h-24 w-24 shadow-md">
+                    {user?.foto && (
+                      <AvatarImage src={mediaUrl(user.foto) ?? undefined} alt={name} className="object-cover" />
+                    )}
+                    <AvatarFallback className="text-3xl bg-gradient-gold text-primary-foreground font-serif font-bold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <input
+                    ref={fotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => void onFotoSelecionada(e)}
+                    disabled={enviandoFoto}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fotoInputRef.current?.click()}
+                    disabled={enviandoFoto}
+                    aria-label="Alterar foto de perfil"
+                    title="Alterar foto de perfil"
+                    className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow-sm transition hover:bg-surface disabled:opacity-50"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                </div>
                 <div className="flex-1 space-y-2">
                   <p className="font-serif text-2xl font-semibold">{name}</p>
                   {!isTeacher && (
@@ -315,6 +413,31 @@ export default function ConfiguracoesPage() {
 
           {/* ═══════════════ SEGURANÇA ═══════════════ */}
           <TabsContent value="seguranca" className="space-y-5">
+            <Card className="p-6 shadow-soft grid gap-5 sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <p className="text-sm font-medium">Alterar email</p>
+                <p className="text-xs text-muted-foreground">Email atual: {email || "—"}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email-senha">Palavra-passe atual</Label>
+                <PasswordInput id="email-senha" value={senhaParaEmail} onChange={(e) => setSenhaParaEmail(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="novo-email">Novo email</Label>
+                <Input
+                  id="novo-email"
+                  type="email"
+                  value={novoEmail}
+                  onChange={(e) => setNovoEmail(e.target.value)}
+                  placeholder="novo@email.com"
+                />
+              </div>
+              {emailErro && <p className="sm:col-span-2 text-sm text-red-400">{emailErro}</p>}
+              <div className="sm:col-span-2 flex justify-end">
+                <SaveButton state={emailState} onClick={() => void alterarEmail()} label="Alterar email" />
+              </div>
+            </Card>
+
             <Card className="p-6 shadow-soft grid gap-5 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="senha-atual">Palavra-passe atual</Label>

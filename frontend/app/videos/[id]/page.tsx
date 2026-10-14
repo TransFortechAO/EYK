@@ -180,6 +180,7 @@ export default function VideoPlayerPage() {
                 hasPrevious={watchHistory.length > 0}
                 onNext={goToNextVideo}
                 onPrevious={goToPreviousVideo}
+                recursos={video.recursos}
               />
             </div>
           </Card>

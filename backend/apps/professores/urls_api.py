@@ -15,4 +15,5 @@ urlpatterns = [
     path('videos/reordenar/', api_views.professor_videos_reordenar, name='api-professor-videos-reordenar'),
     path('videos/<int:video_id>/', api_views.professor_video_detail, name='api-professor-video-detail'),
     path('videos/<int:video_id>/engajamento/', api_views.professor_video_engajamento, name='api-professor-video-engajamento'),
+    path('videos/<int:video_id>/recursos/<int:recurso_id>/', api_views.professor_video_recurso_delete, name='api-professor-video-recurso-delete'),
 ]

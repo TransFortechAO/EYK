@@ -14,9 +14,35 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Repeat,
+  MoreVertical,
+  Gauge,
+  PictureInPicture2,
+  Check,
+  FileText,
+  Download,
+  HardDriveDownload,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { api, mediaUrl, type CursoRecurso } from "@/lib/api";
+import {
+  guardarAutomaticamenteSeElegivel,
+  guardarVideoOffline,
+  offlineSuportado,
+  removerVideoOffline,
+  videoEstaOffline,
+} from "@/lib/offline";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const VELOCIDADES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 interface VideoSource {
   fileUrl?: string | null;
@@ -58,9 +84,20 @@ interface ModernVideoPlayerProps extends VideoSource {
    * CONTÍNUA (pausar ou trocar de vídeo reinicia a contagem — regra
    * anti-fraude do modelo de coins). Só funciona para ficheiro próprio —
    * embeds/links externos não expõem o estado de reprodução.
+   *
+   * Também liga o "retomar onde ficaste": a posição é guardada no servidor
+   * enquanto o vídeo toca e reposta ao voltar a abri-lo.
    */
   videoId?: string | number;
+  /** Chamado quando uma "view" é mesmo registada (ver `videoId`) — por
+   * exemplo, para desbloquear a aula seguinte de um curso sem recarregar a página. */
+  onViewRegistered?: () => void;
+  /** Recursos (PDFs) do vídeo/curso — aparecem no menu de opções do player,
+   * com download direto. Qualquer utilizador autenticado pode descarregar. */
+  recursos?: CursoRecurso[];
 }
+
+const EMPTY_RECURSOS: CursoRecurso[] = [];
 
 export function ModernVideoPlayer({
   fileUrl,
@@ -76,6 +113,8 @@ export function ModernVideoPlayer({
   onNext,
   onPrevious,
   videoId,
+  onViewRegistered,
+  recursos = EMPTY_RECURSOS,
 }: ModernVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,6 +130,10 @@ export function ModernVideoPlayer({
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [isPiP, setIsPiP] = useState(false);
+  const pipDisponivel =
+    typeof document !== "undefined" && document.pictureInPictureEnabled;
 
   // --- Contagem regressiva antes de avançar automaticamente para o próximo vídeo ---
   const NEXT_COUNTDOWN_SECONDS = 5;
@@ -139,10 +182,143 @@ export function ModernVideoPlayer({
       if (segundosContinuosRef.current >= 60) {
         viewRegistadaRef.current = true;
         pararContagemView();
-        void api.registarViewVideo(videoId);
+        void api.registarViewVideo(videoId).then((res) => {
+          if (res?.novaView) onViewRegistered?.();
+        });
+        // Vídeo "já visto": guarda-o para ver sem internet (se for pequeno o
+        // suficiente e o utilizador não estiver em poupança de dados).
+        if (fileUrl) {
+          void guardarAutomaticamenteSeElegivel(fileUrl, title || "Vídeo").then((guardado) => {
+            if (guardado) setEstadoOffline("sim");
+          });
+        }
       }
     }, 1000);
-  }, [videoId, pararContagemView]);
+  }, [videoId, pararContagemView, onViewRegistered, fileUrl, title]);
+
+  // --- Retomar onde ficaste ---
+  // Só se aplica ao vídeo das props (com `videoId`) — no modo não controlado,
+  // os vídeos da fila de sugestões não têm id e não guardam posição.
+  const retomaAtiva = !!videoId && !!current.fileUrl && current.fileUrl === fileUrl;
+  const posicaoPendenteRef = useRef<number | null>(null);
+  const tempoAtualRef = useRef(0);
+  const ultimaPosicaoGuardadaRef = useRef(0);
+  // Só guarda depois de o utilizador ter mesmo reproduzido — abrir e fechar a
+  // aula sem dar play não pode apagar a posição guardada (escrevendo 0).
+  const reproduziuRef = useRef(false);
+  const [retomadoEm, setRetomadoEm] = useState<number | null>(null);
+
+  const aplicarPosicaoPendente = useCallback(() => {
+    const video = videoRef.current;
+    const segundos = posicaoPendenteRef.current;
+    if (!video || segundos === null || video.readyState < 1) return;
+    posicaoPendenteRef.current = null;
+    const d = video.duration;
+    if (segundos < 5 || (Number.isFinite(d) && segundos >= d - 10)) return;
+    video.currentTime = segundos;
+    setCurrentTime(segundos);
+    tempoAtualRef.current = segundos;
+    ultimaPosicaoGuardadaRef.current = segundos;
+    setRetomadoEm(segundos);
+  }, []);
+
+  const guardarPosicao = useCallback(
+    (keepalive = false) => {
+      if (!retomaAtiva || !videoId || !reproduziuRef.current) return;
+      ultimaPosicaoGuardadaRef.current = tempoAtualRef.current;
+      void api.guardarPosicaoVideo(videoId, tempoAtualRef.current, keepalive);
+    },
+    [retomaAtiva, videoId],
+  );
+
+  useEffect(() => {
+    posicaoPendenteRef.current = null;
+    reproduziuRef.current = false;
+    tempoAtualRef.current = 0;
+    ultimaPosicaoGuardadaRef.current = 0;
+    setRetomadoEm(null);
+    if (!retomaAtiva || !videoId) return;
+
+    let vivo = true;
+    void api.getPosicaoVideo(videoId).then((segundos) => {
+      // Se entretanto o utilizador já avançou por conta própria, não salta.
+      if (!vivo || (reproduziuRef.current && tempoAtualRef.current > 5)) return;
+      posicaoPendenteRef.current = segundos;
+      aplicarPosicaoPendente();
+    });
+
+    const id = videoId;
+    return () => {
+      vivo = false;
+      // Ao trocar de aula ou sair da página, guarda onde ficou (keepalive: o
+      // pedido termina mesmo que a página esteja a fechar).
+      if (reproduziuRef.current) void api.guardarPosicaoVideo(id, tempoAtualRef.current, true);
+    };
+  }, [videoId, fileUrl, retomaAtiva, aplicarPosicaoPendente]);
+
+  // Fechar o separador / mudar de app no telemóvel: guarda já a posição.
+  useEffect(() => {
+    const aoEsconder = () => {
+      if (document.visibilityState === "hidden") guardarPosicao(true);
+    };
+    document.addEventListener("visibilitychange", aoEsconder);
+    window.addEventListener("pagehide", aoEsconder);
+    return () => {
+      document.removeEventListener("visibilitychange", aoEsconder);
+      window.removeEventListener("pagehide", aoEsconder);
+    };
+  }, [guardarPosicao]);
+
+  useEffect(() => {
+    if (retomadoEm === null) return;
+    const t = setTimeout(() => setRetomadoEm(null), 6000);
+    return () => clearTimeout(t);
+  }, [retomadoEm]);
+
+  const recomecarDoInicio = () => {
+    if (videoRef.current) videoRef.current.currentTime = 0;
+    setCurrentTime(0);
+    tempoAtualRef.current = 0;
+    setRetomadoEm(null);
+  };
+
+  // --- Ver offline (PWA) ---
+  const [estadoOffline, setEstadoOffline] = useState<"indisponivel" | "nao" | "a-guardar" | "sim">("indisponivel");
+
+  useEffect(() => {
+    const url = current.fileUrl;
+    if (!url || !offlineSuportado()) {
+      setEstadoOffline("indisponivel");
+      return;
+    }
+    let vivo = true;
+    void videoEstaOffline(url).then((guardado) => {
+      if (vivo) setEstadoOffline(guardado ? "sim" : "nao");
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [current.fileUrl]);
+
+  const alternarOffline = async () => {
+    const url = current.fileUrl;
+    if (!url) return;
+    if (estadoOffline === "sim") {
+      await removerVideoOffline(url);
+      setEstadoOffline("nao");
+      toast.success("Vídeo removido deste dispositivo.");
+      return;
+    }
+    setEstadoOffline("a-guardar");
+    try {
+      const bytes = await guardarVideoOffline(url, current.title || "Vídeo");
+      setEstadoOffline("sim");
+      toast.success(`Vídeo guardado para ver offline (${(bytes / (1024 * 1024)).toFixed(0)} MB).`);
+    } catch {
+      setEstadoOffline("nao");
+      toast.error("Não foi possível guardar o vídeo. Verifica a ligação e o espaço disponível.");
+    }
+  };
 
   // Mantém a fila de sugestões atualizada quando o pai enviar uma nova lista.
   // Só é relevante no modo NÃO controlado — no modo controlado a fila nem chega a ser usada.
@@ -229,12 +405,49 @@ export function ModernVideoPlayer({
     setDuration(0);
     setIsPlaying(false);
     setIsLoading(true);
+    setPlaybackRate(1);
     cancelNextCountdown();
     if (videoRef.current) {
+      videoRef.current.playbackRate = 1;
       videoRef.current.load();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.fileUrl, current.externalUrl]);
+
+  const alterarVelocidade = useCallback((rate: number) => {
+    setPlaybackRate(rate);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+    }
+  }, []);
+
+  const togglePiP = useCallback(async () => {
+    if (!videoRef.current) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await videoRef.current.requestPictureInPicture();
+      }
+    } catch {
+      // Picture-in-picture indisponível neste browser/vídeo — ignora.
+    }
+  }, []);
+
+  // Sincroniza o estado de PiP com eventos nativos do <video> (ex: o utilizador
+  // sai do ecrã flutuante a partir dos controlos do próprio sistema operativo).
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const onEnter = () => setIsPiP(true);
+    const onLeave = () => setIsPiP(false);
+    el.addEventListener("enterpictureinpicture", onEnter);
+    el.addEventListener("leavepictureinpicture", onLeave);
+    return () => {
+      el.removeEventListener("enterpictureinpicture", onEnter);
+      el.removeEventListener("leavepictureinpicture", onLeave);
+    };
+  }, []);
 
   // Garante que o intervalo é limpo se o componente for desmontado a meio da contagem.
   useEffect(() => {
@@ -314,20 +527,54 @@ export function ModernVideoPlayer({
   // --- Event listeners do vídeo ---
   const onPlay = () => {
     setIsPlaying(true);
+    reproduziuRef.current = true;
     aoIniciarReproducaoParaView();
   };
   const onPause = () => {
     setIsPlaying(false);
     pararContagemView();
+    guardarPosicao();
   };
   const onTimeUpdate = () => {
-    if (!videoRef.current || isDragging) return;
-    setCurrentTime(videoRef.current.currentTime);
+    if (!videoRef.current) return;
+    const t = videoRef.current.currentTime;
+    tempoAtualRef.current = t;
+    // Guarda a posição a cada ~15s de reprodução (ou depois de um salto).
+    if (reproduziuRef.current && !videoRef.current.paused && Math.abs(t - ultimaPosicaoGuardadaRef.current) >= 15) {
+      guardarPosicao();
+    }
+    if (isDragging) return;
+    setCurrentTime(t);
   };
   const onLoadedMetadata = () => {
-    if (!videoRef.current) return;
-    setDuration(videoRef.current.duration);
+    const video = videoRef.current;
+    if (!video) return;
+    const d = video.duration;
+    if (Number.isFinite(d) && d > 0) {
+      setDuration(d);
+      aplicarPosicaoPendente();
+    } else if (d === Infinity) {
+      // Bug conhecido do browser: alguns ficheiros (ex: gravados em streaming,
+      // sem caixa de duração no cabeçalho) só reportam a duração real depois
+      // de uma procura. Força-a sem o utilizador ver o salto — é esta a causa
+      // mais comum de "não aparece a duração do vídeo".
+      const onSeeked = () => {
+        if (Number.isFinite(video.duration) && video.duration > 0) setDuration(video.duration);
+        video.currentTime = 0;
+        video.removeEventListener("seeked", onSeeked);
+        aplicarPosicaoPendente();
+      };
+      video.addEventListener("seeked", onSeeked);
+      video.currentTime = 1e101;
+    }
     setIsLoading(false);
+  };
+  // Em alguns browsers/ficheiros a duração só fica disponível mais tarde —
+  // `durationchange` dispara sempre que isso acontece, mesmo depois do 'loadedmetadata'.
+  const onDurationChange = () => {
+    if (!videoRef.current) return;
+    const d = videoRef.current.duration;
+    if (Number.isFinite(d) && d > 0) setDuration(d);
   };
   const onWaiting = () => setIsLoading(true);
   const onCanPlay = () => {
@@ -339,6 +586,9 @@ export function ModernVideoPlayer({
   const onEnded = () => {
     setIsPlaying(false);
     pararContagemView();
+    // Terminou: o servidor guarda 0, para a próxima vez começar do início.
+    if (videoRef.current) tempoAtualRef.current = videoRef.current.duration || tempoAtualRef.current;
+    guardarPosicao();
     // Com loop ativo, o próprio atributo `loop` do <video> trata da repetição
     // e este evento nem chega a disparar na maioria dos browsers — mas mantemos
     // esta verificação por segurança.
@@ -398,7 +648,13 @@ export function ModernVideoPlayer({
     const isTypingOrExcludedTarget = (target: EventTarget | null) => {
       if (!(target instanceof HTMLElement)) return false;
       const tag = target.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (tag === "INPUT") {
+        // O slider de volume também é um <input>, mas não é "escrita" — ficar
+        // com foco nele (depois de arrastar) não deve desligar os atalhos do
+        // player (bug persistente: espaço/setas/F deixavam de responder).
+        return (target as HTMLInputElement).type !== "range";
+      }
+      if (tag === "TEXTAREA" || tag === "SELECT") return true;
       if (target.isContentEditable) return true;
       if (target.closest('[contenteditable="true"]')) return true;
       if (target.closest("[data-video-shortcuts-disabled]")) return true;
@@ -568,12 +824,12 @@ export function ModernVideoPlayer({
         onPause={onPause}
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
+        onDurationChange={onDurationChange}
         onWaiting={onWaiting}
         onCanPlay={onCanPlay}
         onEnded={onEnded}
         onError={onError}
         controlsList="nodownload noremoteplayback"
-        disablePictureInPicture
         playsInline
         preload="metadata"
         loop={isLooping}
@@ -583,6 +839,20 @@ export function ModernVideoPlayer({
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <LoaderCircle className="h-14 w-14 animate-spin text-white/80" />
+        </div>
+      )}
+
+      {/* Aviso "a retomar de mm:ss" ao reabrir um vídeo a meio */}
+      {retomadoEm !== null && nextCountdown === null && (
+        <div className="absolute left-1/2 top-12 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full bg-black/75 px-4 py-2 text-xs text-white shadow-lg backdrop-blur animate-in fade-in slide-in-from-top-1">
+          <span>A retomar de {formatTime(retomadoEm)}</span>
+          <button
+            type="button"
+            onClick={recomecarDoInicio}
+            className="font-semibold text-[#e2b45c] hover:underline underline-offset-2"
+          >
+            Recomeçar
+          </button>
         </div>
       )}
 
@@ -794,6 +1064,84 @@ export function ModernVideoPlayer({
               >
                 <Repeat className="h-4 w-4" />
               </button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="p-1.5 rounded-full hover:bg-white/20 transition text-white"
+                    aria-label="Mais opções"
+                    title="Mais opções"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                    <Gauge className="h-3.5 w-3.5" /> Velocidade
+                  </DropdownMenuLabel>
+                  {VELOCIDADES.map((rate) => (
+                    <DropdownMenuItem
+                      key={rate}
+                      onSelect={() => alterarVelocidade(rate)}
+                      className="justify-between"
+                    >
+                      {rate === 1 ? "Normal" : `${rate}x`}
+                      {playbackRate === rate && <Check className="h-3.5 w-3.5" />}
+                    </DropdownMenuItem>
+                  ))}
+                  {pipDisponivel && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => void togglePiP()} className="gap-2">
+                        <PictureInPicture2 className="h-3.5 w-3.5" />
+                        {isPiP ? "Sair do ecrã flutuante" : "Ecrã flutuante (PiP)"}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {estadoOffline !== "indisponivel" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() => void alternarOffline()}
+                        disabled={estadoOffline === "a-guardar"}
+                        className="gap-2"
+                      >
+                        {estadoOffline === "sim" ? (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <HardDriveDownload className="h-3.5 w-3.5" />
+                        )}
+                        {estadoOffline === "sim"
+                          ? "Remover do modo offline"
+                          : estadoOffline === "a-guardar"
+                            ? "A guardar para offline…"
+                            : "Guardar para ver offline"}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {recursos.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="flex items-center gap-2 text-xs">
+                        <FileText className="h-3.5 w-3.5" /> Recursos
+                      </DropdownMenuLabel>
+                      {recursos.map((recurso) => (
+                        <DropdownMenuItem key={recurso.id} asChild className="gap-2">
+                          <a
+                            href={mediaUrl(recurso.arquivoUrl) ?? undefined}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                          >
+                            <Download className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{recurso.nome}</span>
+                          </a>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <button
                 onClick={toggleFullscreen}

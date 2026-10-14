@@ -174,14 +174,20 @@ export function RelatedVideos({
             className="group flex items-start gap-3 p-2 rounded-xl transition-all duration-200 hover:bg-muted/50 hover:scale-[1.02]"
           >
             <div
-              className="h-16 w-28 shrink-0 rounded-lg bg-cover bg-center shadow-sm transition-transform duration-200 group-hover:shadow-md"
+              className="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-cover bg-center shadow-sm transition-transform duration-200 group-hover:shadow-md"
               style={{
                 background: video.thumbnail
                   ? video.thumbnail
                   : 'linear-gradient(135deg, #4A90D9, #6C5B7B)'
               }}
               aria-hidden
-            />
+            >
+              {video.duration && (
+                <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-[10px] text-white">
+                  {video.duration}
+                </span>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-medium leading-snug group-hover:text-primary transition-colors">
                 {video.title}

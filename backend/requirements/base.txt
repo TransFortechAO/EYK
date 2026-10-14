@@ -35,6 +35,8 @@ jedi==0.20.0
 kombu==5.6.2
 matplotlib-inline==0.2.2
 oauthlib==3.3.1
+numpy==2.5.3
+opencv-python-headless==5.0.0.93
 packaging==26.2
 parso==0.8.7
 pexpect==4.9.0
@@ -55,6 +57,7 @@ python-dotenv==1.0.0
 pytz==2026.3.post1
 qrcode==8.2
 redis==5.1.0
+reportlab==5.0.1
 requests-oauthlib==2.0.0
 requests==2.34.2
 rsa==4.9.1

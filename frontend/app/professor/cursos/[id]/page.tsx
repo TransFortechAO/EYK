@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Users, Eye, GraduationCap, TrendingUp } from "lucide-react";
+import { ArrowLeft, Users, Eye, GraduationCap, TrendingUp, Heart, MessageCircle, BarChart3, Star } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { api, type CursoEngajamento } from "@/lib/api";
+import { api, formatarDuracaoCurta, tempoRelativo, type CursoEngajamento } from "@/lib/api";
+import { Estrelas } from "@/components/curso/AvaliacoesCurso";
 
 export default function CursoEngajamentoPage() {
   const params = useParams<{ id: string }>();
@@ -86,7 +87,121 @@ export default function CursoEngajamentoPage() {
             </div>
           </div>
         </Card>
+        <Card className="p-5 shadow-soft">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-rose-500/15 text-rose-300">
+              <Heart className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Gostos (todas as aulas)</p>
+              <p className="text-2xl font-serif font-semibold">{dados.totalGostos}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-5 shadow-soft">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-500/15 text-indigo-300">
+              <MessageCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Comentários (todas as aulas)</p>
+              <p className="text-2xl font-serif font-semibold">{dados.totalComentarios}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-5 shadow-soft">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 text-sky-300">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Visualizadores únicos</p>
+              <p className="text-2xl font-serif font-semibold">{dados.visualizadoresUnicos}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-5 shadow-soft">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Média de views / aula</p>
+              <p className="text-2xl font-serif font-semibold">{dados.mediaVisualizacoesPorAula}</p>
+            </div>
+          </div>
+        </Card>
       </div>
+
+      <Card className="p-5 shadow-soft">
+        <p className="font-serif text-lg font-semibold mb-4">Engajamento por aula</p>
+        {dados.aulas.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">Este curso ainda não tem aulas.</p>
+        ) : (
+          <div className="-mx-5 overflow-x-auto px-5">
+            <table className="min-w-full border-separate border-spacing-y-2">
+              <thead>
+                <tr className="text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="text-left font-medium py-2 pr-4">Aula</th>
+                  <th className="text-left font-medium py-2 pr-4">Duração</th>
+                  <th className="text-left font-medium py-2 pr-4">Visualizações</th>
+                  <th className="text-left font-medium py-2 pr-4">Gostos</th>
+                  <th className="text-left font-medium py-2">Comentários</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dados.aulas.map((aula, index) => (
+                  <tr key={aula.id}>
+                    <td className="py-2 pr-4 bg-surface/40 rounded-l-xl">
+                      {index + 1}. {aula.titulo}
+                    </td>
+                    <td className="py-2 pr-4 bg-surface/40 text-muted-foreground tabular-nums">
+                      {formatarDuracaoCurta(aula.duracaoSegundos) || "—"}
+                    </td>
+                    <td className="py-2 pr-4 bg-surface/40 tabular-nums">{aula.totalVisualizacoes}</td>
+                    <td className="py-2 pr-4 bg-surface/40 tabular-nums">{aula.totalLikes}</td>
+                    <td className="py-2 bg-surface/40 rounded-r-xl tabular-nums">{aula.totalComentarios}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 shadow-soft">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="font-serif text-lg font-semibold">Avaliações dos alunos</p>
+          {dados.mediaAvaliacoes !== null && (
+            <div className="flex items-center gap-2 text-sm">
+              <Estrelas valor={dados.mediaAvaliacoes} />
+              <span className="font-semibold tabular-nums">{dados.mediaAvaliacoes.toFixed(1)}</span>
+              <span className="text-muted-foreground">
+                ({dados.totalAvaliacoes} avaliaç{dados.totalAvaliacoes === 1 ? "ão" : "ões"})
+              </span>
+            </div>
+          )}
+        </div>
+        {dados.avaliacoesRecentes.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            <Star className="mx-auto mb-2 h-5 w-5 text-muted-foreground/50" />
+            Ainda nenhum aluno avaliou este curso.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {dados.avaliacoesRecentes.map((a) => (
+              <li key={a.id} className="rounded-xl bg-surface/40 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <span className="font-medium">{a.aluno}</span>
+                  <Estrelas valor={a.estrelas} tamanho="h-3.5 w-3.5" />
+                  <span className="text-xs text-muted-foreground">{tempoRelativo(a.atualizadoEm)}</span>
+                </div>
+                {a.comentario && <p className="mt-1 text-sm text-muted-foreground whitespace-pre-line">{a.comentario}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <Card className="p-5 shadow-soft">
         <p className="font-serif text-lg font-semibold mb-4">Alunos inscritos</p>

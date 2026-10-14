@@ -14,6 +14,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     morada = models.CharField(max_length=200, null=True, blank=True)
     perfil_completo = models.BooleanField(default=False)
+    email_verificado = models.BooleanField(default=False)
     convidado_por = models.ForeignKey(
         'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='convidados',
         help_text='Utilizador cujo link de convite foi usado para criar esta conta.',
