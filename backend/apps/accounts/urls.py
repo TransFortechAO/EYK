@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_api, api_perfil, views
+from . import admin_api, api_perfil, perfis, views
 
 app_name = 'accounts'
 
@@ -16,7 +16,8 @@ urlpatterns = [
     path('auth/verificar-email/', views.auth_verificar_email, name='auth-verificar-email'),
     path('auth/reenviar-verificacao/', views.auth_reenviar_verificacao, name='auth-reenviar-verificacao'),
     path('api/pesquisar-utilizadores/', views.pesquisar_utilizadores, name='pesquisar-utilizadores'),
-    path('api/perfil/<int:user_id>/', views.perfil_publico, name='perfil-publico'),
+    path('api/perfil/<int:user_id>/', perfis.perfil_publico, name='perfil-publico'),
+    path('api/meu-perfil/', perfis.meu_perfil, name='meu-perfil'),
     path('auth/verificar-2fa/', api_perfil.auth_verificar_2fa_json, name='auth-verificar-2fa-json'),
 
     # ══════════════ JSON: onboarding, preferências, segurança (usado pelo Next.js) ═════
@@ -28,6 +29,11 @@ urlpatterns = [
     path('api/seguranca/2fa/iniciar/', api_perfil.api_2fa_iniciar, name='api-2fa-iniciar'),
     path('api/seguranca/2fa/confirmar/', api_perfil.api_2fa_confirmar, name='api-2fa-confirmar'),
     path('api/seguranca/2fa/desativar/', api_perfil.api_2fa_desativar, name='api-2fa-desativar-json'),
+    path('api/seguranca/2fa/novos-codigos/', api_perfil.api_2fa_novos_codigos, name='api-2fa-novos-codigos'),
+    path('api/seguranca/sessoes/', api_perfil.api_sessoes, name='api-sessoes'),
+    path('api/seguranca/sessoes/terminar-outras/', api_perfil.api_sessoes_terminar_outras, name='api-sessoes-terminar-outras'),
+    path('api/seguranca/sessoes/<int:sessao_id>/terminar/', api_perfil.api_sessao_terminar, name='api-sessao-terminar'),
+    path('api/exportar-dados/', api_perfil.api_exportar_dados, name='api-exportar-dados'),
 
     # ══════════════ JSON Admin API (usado pelo frontend Next.js) ══════════════
     path('api/admin/metricas/', admin_api.api_metricas, name='api-admin-metricas'),

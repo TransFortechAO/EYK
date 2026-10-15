@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { aplicarPreferenciasGuardadas } from "@/lib/preferencias-visuais";
 
 export type Theme = "light" | "dark";
 
@@ -28,6 +29,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const initial: Theme = stored === "dark" || stored === "light" ? stored : "light";
     setThemeState(initial);
     applyTheme(initial);
+    // Tamanho do texto / alto contraste / animações (ver PreferenciasSync).
+    aplicarPreferenciasGuardadas();
   }, []);
 
   const setTheme = (t: Theme) => {

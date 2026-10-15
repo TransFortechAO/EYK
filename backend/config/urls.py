@@ -27,8 +27,9 @@ urlpatterns = [
     re_path(r'^(?!admin|accounts|api|aluno|media|static|health).*$', lambda r: redirect_to_next(r, r.path.lstrip('/'))),
 ]
 
-if settings.DEBUG:
+if settings.DEBUG or getattr(settings, 'SERVIR_MEDIA', False):
     # Igual a `static(MEDIA_URL, ...)`, mas com suporte a pedidos Range (vídeos).
+    # Em produção só quando a media está num disco (no Render, sem bucket S3).
     urlpatterns += [
         re_path(
             r'^%s(?P<path>.*)$' % re.escape(settings.MEDIA_URL.lstrip('/')),

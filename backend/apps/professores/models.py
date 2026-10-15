@@ -39,6 +39,11 @@ class Video(models.Model):
     # filtro de TODAS as listagens públicas de vídeos — ver nota em Curso.ativo.
     ativo = models.BooleanField(default=True, db_index=True)
     ordem = models.PositiveIntegerField(default=0)
+    # Ocultado pela moderação — distinto de `ativo`, que o professor controla
+    # (o professor não consegue voltar a mostrar um vídeo oculto).
+    oculto = models.BooleanField(default=False, db_index=True)
+    # Legendas em WebVTT (os .srt são convertidos no upload).
+    legenda = models.FileField(upload_to='videos/legendas/', null=True, blank=True)
 
     class Meta:
         ordering = ['ordem', '-criado_em']
@@ -131,6 +136,7 @@ class ComentarioVideo(models.Model):
     conteudo = models.TextField()
     criado_em = models.DateTimeField(auto_now_add=True)
     editado_em = models.DateTimeField(null=True, blank=True)
+    oculto = models.BooleanField(default=False, db_index=True)  # ver feed.Post.oculto
 
     class Meta:
         ordering = ['criado_em']

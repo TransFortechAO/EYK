@@ -1,5 +1,7 @@
 // Configuração da API para integração com o backend Django
 export const API_BASE_URL = (() => {
+  // "/" (produção no Render) → caminhos relativos: o Next.js reencaminha
+  // /api, /accounts, /media… para o Django (ver next.config.ts).
   const env = process.env.NEXT_PUBLIC_API_URL;
   if (env) return env.replace(/\/$/, '');
 
@@ -147,12 +149,34 @@ export type AuthUser = {
   notifEmailNovidades?: boolean;
   notifEmailComunidade?: boolean;
   notifEmailGamificacao?: boolean;
+  preferencias?: PreferenciasUtilizador;
+  privacidade?: PrivacidadeUtilizador;
   coins?: number;
   streak?: number;
   level?: number;
   levelProgress?: number;
   nextLevelCoins?: number;
   streakRecord?: number;
+};
+
+export type TamanhoTexto = 'normal' | 'grande' | 'muito_grande';
+
+export type PreferenciasUtilizador = {
+  velocidadeReproducao: number;
+  autoplayProximaAula: boolean;
+  retomarPosicao: boolean;
+  legendasAtivas: boolean;
+  tamanhoTexto: TamanhoTexto;
+  reduzirAnimacoes: boolean;
+  altoContraste: boolean;
+};
+
+export type PrivacidadeUtilizador = {
+  perfilVisibilidade: 'todos' | 'cursos';
+  aparecerRanking: boolean;
+  mostrarCursos: boolean;
+  mostrarConquistas: boolean;
+  mostrarPublicacoes: boolean;
 };
 
 export type Course = {
@@ -210,6 +234,7 @@ export type VideoDetail = {
   durationSeconds: number;
   durationLabel: string;
   recursos: CursoRecurso[];
+  temLegenda: boolean;
 };
 
 export type VideoComment = {
@@ -227,6 +252,8 @@ export type VideoComment = {
   liked: boolean;
   podeEditar: boolean;
   podeApagar: boolean;
+  /** Ocultado pela moderação (só o próprio autor o continua a ver). */
+  oculto: boolean;
   respostas: VideoComment[];
 };
 
@@ -248,6 +275,7 @@ export type CourseVideo = {
   /** Onde o utilizador parou nesta aula ("retomar onde ficaste"), em segundos. */
   positionSeconds: number;
   positionUpdatedAt: string | null;
+  temLegenda: boolean;
 };
 
 export type PerfilPublico = {
@@ -257,17 +285,189 @@ export type PerfilPublico = {
   isTeacher: boolean;
   membroDesde: string | null;
   souEu: boolean;
-  bio: string;
   foto: string | null;
+  /** O dono só mostra o perfil a quem partilha cursos com ele (ou bloqueou-te). */
+  privado: boolean;
+  /** Tu bloqueaste este utilizador. */
+  bloqueado: boolean;
   nomePublico: string | null;
+  bio: string;
   area: string | null;
   seguidores: number | null;
   aSeguir: boolean;
   professorId: number | null;
   totalCursos: number | null;
   totalVideos: number | null;
+  cursos: { id: number; titulo: string; thumbnail: string | null; alunos: number; media: number | null }[];
+  videos: { id: number; titulo: string; thumbnail: string | null; views: number; duracaoSegundos: number }[];
   cursosConcluidos: number | null;
+  listaCursosConcluidos: { cursoId: number; titulo: string; concluidoEm: string | null; certificado: string | null }[] | null;
+  conquistas: { id: string; nome: string; descricao: string; icone: string }[] | null;
+  nivel: number | null;
+  publicacoes: PublicacaoPerfil[] | null;
 };
+
+export type PublicacaoPerfil = {
+  id: number;
+  conteudo: string;
+  tempo: string;
+  criadoEm: string;
+  gostos: number;
+  comentarios: number;
+  oculto: boolean;
+};
+
+export type MeuPerfil = {
+  perfil: PerfilPublico;
+  conta: { username: string; email: string; emailVerificado: boolean; membroDesde: string | null };
+  estatisticas: {
+    moedas: number;
+    xp: number;
+    nivel: number;
+    ofensiva: number;
+    cursosInscritos: number;
+    cursosConcluidos: number;
+    publicacoes: number;
+    comentarios: number;
+  };
+  certificados: { cursoId: number; curso: string; professor: string; concluidoEm: string | null; codigo: string }[];
+  emCurso: { cursoId: number; curso: string; inscritoEm: string }[];
+  publicacoes: PublicacaoPerfil[];
+  avaliacoes: { cursoId: number; curso: string; estrelas: number; comentario: string; oculto: boolean; tempo: string }[];
+};
+
+export type SessaoAtiva = {
+  id: number;
+  dispositivo: string;
+  ip: string | null;
+  criadaEm: string;
+  ultimaAtividade: string;
+  atual: boolean;
+};
+
+export type UtilizadorResumo = { id: number; nome: string; username: string; foto: string | null };
+
+// =================== Moderação ===============================================
+
+export type TipoConteudoDenuncia =
+  | 'post' | 'comentario' | 'comentario_video' | 'video' | 'curso' | 'avaliacao' | 'utilizador';
+
+export type MotivoDenuncia = { id: string; label: string };
+
+export type HistoricoModeracao = UtilizadorResumo & {
+  avisos: number;
+  suspensoes: number;
+  denunciasRecebidas: number;
+  banido: boolean;
+  suspensoAte: string | null;
+};
+
+export type ItemFilaModeracao = {
+  chave: string;
+  tipo: TipoConteudoDenuncia;
+  tipoLabel: string;
+  objetoId: number;
+  existe: boolean;
+  oculto: boolean;
+  ocultavel: boolean;
+  apagavel: boolean;
+  conteudo: string;
+  link: string | null;
+  total: number;
+  gravidade: number;
+  motivos: { id: string; label: string; total: number }[];
+  primeira: string;
+  ultima: string;
+  descricoes: { motivo: string; descricao: string; denunciante: string; criadaEm: string }[];
+  autor: HistoricoModeracao | null;
+};
+
+export type DecisaoConteudo = 'manter' | 'ocultar' | 'restaurar' | 'apagar';
+export type Sancao = 'aviso' | 'suspensao' | 'banimento';
+
+export type AcaoModeracaoRegisto = {
+  id: number;
+  tipo: string;
+  tipoLabel: string;
+  moderador: string;
+  automatica: boolean;
+  alvo: UtilizadorResumo | null;
+  motivo: string;
+  conteudoTipo: string | null;
+  conteudo: string;
+  duracaoDias: number | null;
+  revertida: boolean;
+  criadaEm: string;
+};
+
+export type AcaoPublica = {
+  tipo: string;
+  tipoLabel: string;
+  motivo: string;
+  criadaEm: string;
+  duracaoDias: number | null;
+  conteudo: string;
+};
+
+export type ContestacaoAdmin = {
+  id: number;
+  utilizador: UtilizadorResumo;
+  texto: string;
+  estado: 'pendente' | 'aceite' | 'recusada';
+  resposta: string;
+  criadaEm: string;
+  acao: AcaoPublica;
+};
+
+export type PalavraProibida = { id: number; termo: string; acao: 'bloquear' | 'sinalizar'; acaoLabel: string };
+
+// =================== Plataforma ==============================================
+
+export type ConfigPublica = {
+  aviso: { ativo: boolean; tipo: 'info' | 'aviso' | 'manutencao'; mensagem: string; versao: string };
+  limites: { videoMb: number; pdfMb: number };
+};
+
+export type ConfigAdmin = {
+  limite_video_mb: number;
+  limite_pdf_mb: number;
+  denuncias_para_ocultar: number;
+  avisos_para_suspender: number;
+  dias_suspensao_automatica: number;
+  dias_conta_nova: number;
+  aviso_ativo: boolean;
+  aviso_tipo: 'info' | 'aviso' | 'manutencao';
+  aviso_mensagem: string;
+  lembrete_ofensiva_ativo: boolean;
+  /** "HH:MM", hora de Luanda. */
+  lembrete_ofensiva_hora: string;
+  lembrete_ofensiva_ultimo_envio: string | null;
+  lembrete_ofensiva_ultimo_total: number;
+  /** `imediato`: sem Celery (desenvolvimento) — as tarefas correm no próprio
+   * pedido e não há agendador. `ativo`: o beat deu sinal nos últimos 15 min. */
+  agendador: { modo: 'imediato' | 'celery'; ultimoCiclo: string | null; ativo: boolean };
+  atualizado_em: string | null;
+  atualizado_por: string | null;
+};
+
+export type Anuncio = {
+  id: number;
+  titulo: string;
+  mensagem: string;
+  link: string;
+  enviarEmail: boolean;
+  estado: 'agendado' | 'pendente' | 'a_enviar' | 'enviado' | 'falhou';
+  estadoLabel: string;
+  agendadoPara: string | null;
+  autor: string | null;
+  totalDestinatarios: number;
+  totalEmails: number;
+  criadoEm: string;
+  enviadoEm: string | null;
+};
+
+export type CategoriaAdmin = { id: number; nome: string; totalCursos: number };
+
 
 export type CourseDetail = Course & {
   description: string;
@@ -288,6 +488,7 @@ export type Post = {
   likes: number;
   comments: number;
   liked?: boolean;
+  oculto?: boolean;
 };
 
 export type Comentario = {
@@ -304,6 +505,7 @@ export type Comentario = {
   liked: boolean;
   podeEditar: boolean;
   podeApagar: boolean;
+  oculto: boolean;
   respostas: Comentario[];
 };
 
@@ -314,6 +516,8 @@ export type Notification = {
   body: string;
   timeAgo: string;
   read?: boolean;
+  /** Página a abrir ao clicar (ex: "/comunidade?post=3"). */
+  link?: string | null;
 };
 
 export type LeaderRow = {
@@ -411,6 +615,9 @@ export type AdminUser = {
   perfil_completo: boolean;
   date_joined: string;
   coins: number;
+  banido: boolean;
+  suspenso_ate: string | null;
+  motivo_sancao: string;
 };
 
 export type AdminUserTipoFiltro = "" | "aluno" | "professor" | "staff";
@@ -455,6 +662,8 @@ export type ProfessorCursoVideo = {
   ordem: number;
   duracao_segundos: number;
   recursos: ProfessorRecurso[];
+  oculto: boolean;
+  tem_legenda: boolean;
 };
 
 export type ProfessorCurso = {
@@ -475,6 +684,7 @@ export type ProfessorCurso = {
   duracao_total_segundos: number;
   videos: ProfessorCursoVideo[];
   recursos: ProfessorRecurso[];
+  oculto: boolean;
 };
 
 export type CursoRecurso = {
@@ -524,6 +734,8 @@ export type ProfessorVideo = {
   total_comentarios: number;
   duracao_segundos: number;
   recursos: ProfessorRecurso[];
+  oculto: boolean;
+  tem_legenda: boolean;
 };
 
 export type ProfessorVideoPayload = {
@@ -573,6 +785,7 @@ export type AvaliacaoCurso = {
   atualizadoEm: string;
   tempo: string;
   minha: boolean;
+  oculto: boolean;
 };
 
 export type ResumoAvaliacoes = {
@@ -699,6 +912,7 @@ type RawVideoDetail = RawVideo & {
   total_likes?: number | string | null;
   duracao_segundos?: number | string | null;
   recursos?: RawCursoRecurso[] | null;
+  tem_legenda?: boolean | null;
 };
 
 type RawVideoComment = {
@@ -716,6 +930,7 @@ type RawVideoComment = {
   liked?: boolean | null;
   pode_editar?: boolean | null;
   pode_apagar?: boolean | null;
+  oculto?: boolean | null;
   respostas?: RawVideoComment[] | null;
 };
 
@@ -733,6 +948,7 @@ type RawCourseVideo = {
   recursos?: RawCursoRecurso[] | null;
   posicao_segundos?: number | null;
   posicao_atualizada_em?: string | null;
+  tem_legenda?: boolean | null;
 };
 
 type RawAvaliacaoCurso = {
@@ -745,26 +961,10 @@ type RawAvaliacaoCurso = {
   atualizado_em?: string | null;
   tempo?: string | null;
   minha?: boolean | null;
+  oculto?: boolean | null;
 };
 
-type RawPerfilPublico = {
-  id?: number;
-  name?: string | null;
-  initials?: string | null;
-  isTeacher?: boolean | null;
-  membroDesde?: string | null;
-  souEu?: boolean | null;
-  bio?: string | null;
-  foto?: string | null;
-  nomePublico?: string | null;
-  area?: string | null;
-  seguidores?: number | null;
-  aSeguir?: boolean | null;
-  professorId?: number | null;
-  totalCursos?: number | null;
-  totalVideos?: number | null;
-  cursosConcluidos?: number | null;
-};
+type RawPerfilPublico = Partial<PerfilPublico>;
 
 type RawCourseDetail = RawCourse & {
   descricao?: string | null;
@@ -785,6 +985,7 @@ type RawPost = {
   likes?: number | string | null;
   comentarios?: number | string | null;
   liked?: boolean | null;
+  oculto?: boolean | null;
 };
 
 type RawNotifType = Notification["type"] | (string & {});
@@ -796,6 +997,7 @@ type RawNotif = {
   body?: string | null;
   timeAgo?: string | null;
   read?: boolean | null;
+  link?: string | null;
 };
 
 type RawBadge = {
@@ -831,6 +1033,7 @@ type RawComentario = {
   liked?: boolean | null;
   pode_editar?: boolean | null;
   pode_apagar?: boolean | null;
+  oculto?: boolean | null;
   respostas?: RawComentario[] | null;
 };
 
@@ -1049,6 +1252,7 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     durationSeconds,
     durationLabel: formatarDuracaoCurta(durationSeconds),
     recursos: (raw?.recursos || []).map(normalizeCursoRecurso),
+    temLegenda: Boolean(raw?.tem_legenda),
   };
 }
 
@@ -1068,6 +1272,7 @@ function normalizeVideoComment(raw: RawVideoComment): VideoComment {
     liked: Boolean(raw?.liked),
     podeEditar: Boolean(raw?.pode_editar),
     podeApagar: Boolean(raw?.pode_apagar),
+    oculto: Boolean(raw?.oculto),
     respostas: (raw?.respostas || []).map(normalizeVideoComment),
   };
 }
@@ -1089,6 +1294,7 @@ function normalizeCourseVideo(raw: RawCourseVideo): CourseVideo {
     recursos: (raw?.recursos || []).map(normalizeCursoRecurso),
     positionSeconds: Number(raw?.posicao_segundos ?? 0) || 0,
     positionUpdatedAt: raw?.posicao_atualizada_em || null,
+    temLegenda: Boolean(raw?.tem_legenda),
   };
 }
 
@@ -1103,10 +1309,12 @@ function normalizeAvaliacao(raw: RawAvaliacaoCurso): AvaliacaoCurso {
     atualizadoEm: raw?.atualizado_em || "",
     tempo: raw?.tempo || "",
     minha: Boolean(raw?.minha),
+    oculto: Boolean(raw?.oculto),
   };
 }
 
 function normalizePerfilPublico(raw: RawPerfilPublico): PerfilPublico {
+  const num = (v: unknown) => (typeof v === "number" ? v : null);
   return {
     id: Number(raw?.id ?? 0),
     name: raw?.name || "Utilizador",
@@ -1114,16 +1322,24 @@ function normalizePerfilPublico(raw: RawPerfilPublico): PerfilPublico {
     isTeacher: Boolean(raw?.isTeacher),
     membroDesde: raw?.membroDesde || null,
     souEu: Boolean(raw?.souEu),
-    bio: raw?.bio || "",
     foto: mediaUrl(raw?.foto),
+    privado: Boolean(raw?.privado),
+    bloqueado: Boolean(raw?.bloqueado),
     nomePublico: raw?.nomePublico || null,
+    bio: raw?.bio || "",
     area: raw?.area || null,
-    seguidores: typeof raw?.seguidores === "number" ? raw.seguidores : null,
+    seguidores: num(raw?.seguidores),
     aSeguir: Boolean(raw?.aSeguir),
-    professorId: typeof raw?.professorId === "number" ? raw.professorId : null,
-    totalCursos: typeof raw?.totalCursos === "number" ? raw.totalCursos : null,
-    totalVideos: typeof raw?.totalVideos === "number" ? raw.totalVideos : null,
-    cursosConcluidos: typeof raw?.cursosConcluidos === "number" ? raw.cursosConcluidos : null,
+    professorId: num(raw?.professorId),
+    totalCursos: num(raw?.totalCursos),
+    totalVideos: num(raw?.totalVideos),
+    cursos: (raw?.cursos || []).map((c) => ({ ...c, thumbnail: mediaUrl(c.thumbnail) })),
+    videos: (raw?.videos || []).map((v) => ({ ...v, thumbnail: mediaUrl(v.thumbnail) })),
+    cursosConcluidos: num(raw?.cursosConcluidos),
+    listaCursosConcluidos: raw?.listaCursosConcluidos ?? null,
+    conquistas: raw?.conquistas ?? null,
+    nivel: num(raw?.nivel),
+    publicacoes: raw?.publicacoes ?? null,
   };
 }
 
@@ -1150,6 +1366,7 @@ function normalizePost(raw: RawPost): Post {
     likes: Number(raw?.likes ?? 0),
     comments: Number(raw?.comentarios ?? 0),
     liked: Boolean(raw?.liked),
+    oculto: Boolean(raw?.oculto),
   };
 }
 
@@ -1161,6 +1378,7 @@ function normalizeNotif(raw: RawNotif): Notification {
     body: raw?.body || "",
     timeAgo: raw?.timeAgo || "",
     read: Boolean(raw?.read),
+    link: raw?.link || null,
   };
 }
 
@@ -1191,6 +1409,7 @@ function normalizeComentario(raw: RawComentario): Comentario {
     liked: Boolean(raw?.liked),
     podeEditar: Boolean(raw?.pode_editar),
     podeApagar: Boolean(raw?.pode_apagar),
+    oculto: Boolean(raw?.oculto),
     respostas: (raw?.respostas || []).map(normalizeComentario),
   };
 }
@@ -1338,9 +1557,11 @@ export const api = {
     return null;
   },
 
-  getPerfilPublico: async (userId: number | string): Promise<PerfilPublico | null> => {
+  getPerfilPublico: async (userId: number | string, comoVisitante = false): Promise<PerfilPublico | null> => {
     try {
-      const res = await fetchAPI<{ ok: boolean; perfil: RawPerfilPublico }>(`/accounts/api/perfil/${userId}/`);
+      const res = await fetchAPI<{ ok: boolean; perfil: RawPerfilPublico }>(
+        `/accounts/api/perfil/${userId}/${comoVisitante ? '?como_visitante=1' : ''}`,
+      );
       if (res?.perfil) return normalizePerfilPublico(res.perfil);
     } catch {
       /* perfil não encontrado ou erro de rede */
@@ -1553,7 +1774,140 @@ export const api = {
   // =========================================================================
   //  ADMINISTRAÇÃO (exige user.is_staff)
   // =========================================================================
+  moderacao: {
+    motivos: async (): Promise<MotivoDenuncia[]> => {
+      const res = await fetchAPI<{ motivos: MotivoDenuncia[] }>('/api/moderacao/denuncias/');
+      return res?.motivos ?? [];
+    },
+    denunciar: async (
+      tipo: TipoConteudoDenuncia,
+      id: number | string,
+      motivo: string,
+      descricao: string,
+    ): Promise<{ ok: boolean; jaDenunciado: boolean }> => {
+      return await fetchAPI('/api/moderacao/denuncias/', {
+        method: 'POST',
+        body: JSON.stringify({ tipo, id: Number(id), motivo, descricao }),
+      });
+    },
+    alternarBloqueio: async (userId: number): Promise<{ bloqueado: boolean }> => {
+      return await fetchAPI(`/api/moderacao/bloquear/${userId}/`, { method: 'POST' });
+    },
+    bloqueados: async (): Promise<(UtilizadorResumo & { bloqueadoEm: string })[]> => {
+      return await fetchAPI('/api/moderacao/bloqueados/');
+    },
+    verContestacao: async (token: string) => {
+      return await fetchAPI<{
+        acao: AcaoPublica;
+        contestavel: boolean;
+        contestacao: { estado: string; resposta: string; criadaEm: string } | null;
+      }>(`/api/moderacao/contestar/?token=${encodeURIComponent(token)}`);
+    },
+    contestar: async (token: string, texto: string): Promise<{ ok: boolean }> => {
+      return await fetchAPI('/api/moderacao/contestar/', { method: 'POST', body: JSON.stringify({ token, texto }) });
+    },
+  },
+
+  plataforma: {
+    /** Aviso do topo + limites de upload. Nunca lança erro. */
+    config: async (): Promise<ConfigPublica | null> => {
+      try {
+        return await fetchAPI<ConfigPublica>('/api/plataforma/config/');
+      } catch {
+        return null;
+      }
+    },
+  },
+
   admin: {
+    // ── Moderação ──────────────────────────────────────────────────────
+    filaModeracao: async (estado: 'pendente' | 'resolvida' | 'rejeitada' = 'pendente') => {
+      return await fetchAPI<{ itens: ItemFilaModeracao[]; contadores: { pendentes: number; contestacoes: number } }>(
+        `/api/moderacao/admin/fila/?estado=${estado}`,
+      );
+    },
+    resolverDenuncias: async (payload: {
+      tipo: TipoConteudoDenuncia;
+      objetoId: number;
+      conteudo: DecisaoConteudo;
+      sancao: Sancao | null;
+      motivo: string;
+      dias?: number;
+    }): Promise<{ ok: boolean; denunciasResolvidas: number; rejeitadas: boolean }> => {
+      return await fetchAPI('/api/moderacao/admin/resolver/', { method: 'POST', body: JSON.stringify(payload) });
+    },
+    sancionar: async (
+      userId: number,
+      sancao: Sancao | 'levantar',
+      motivo: string,
+      dias?: number,
+    ): Promise<{ ok: boolean; utilizador: HistoricoModeracao }> => {
+      return await fetchAPI(`/api/moderacao/admin/utilizadores/${userId}/sancao/`, {
+        method: 'POST',
+        body: JSON.stringify({ sancao, motivo, dias }),
+      });
+    },
+    registoModeracao: async (): Promise<AcaoModeracaoRegisto[]> => {
+      return await fetchAPI('/api/moderacao/admin/registo/');
+    },
+    contestacoes: async (estado: 'pendente' | 'aceite' | 'recusada' = 'pendente'): Promise<ContestacaoAdmin[]> => {
+      return await fetchAPI(`/api/moderacao/admin/contestacoes/?estado=${estado}`);
+    },
+    responderContestacao: async (id: number, aceitar: boolean, resposta: string): Promise<{ ok: boolean }> => {
+      return await fetchAPI(`/api/moderacao/admin/contestacoes/${id}/responder/`, {
+        method: 'POST',
+        body: JSON.stringify({ aceitar, resposta }),
+      });
+    },
+    palavras: async (): Promise<PalavraProibida[]> => {
+      return await fetchAPI('/api/moderacao/admin/palavras/');
+    },
+    adicionarPalavra: async (termo: string, acao: 'bloquear' | 'sinalizar'): Promise<PalavraProibida[]> => {
+      return await fetchAPI('/api/moderacao/admin/palavras/', { method: 'POST', body: JSON.stringify({ termo, acao }) });
+    },
+    apagarPalavra: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/moderacao/admin/palavras/${id}/`, { method: 'DELETE' });
+    },
+
+    // ── Plataforma ─────────────────────────────────────────────────────
+    getConfig: async (): Promise<ConfigAdmin> => {
+      return await fetchAPI('/api/plataforma/admin/config/');
+    },
+    atualizarConfig: async (dados: Partial<ConfigAdmin>): Promise<ConfigAdmin> => {
+      return await fetchAPI('/api/plataforma/admin/config/', { method: 'PATCH', body: JSON.stringify(dados) });
+    },
+    anuncios: async (): Promise<Anuncio[]> => {
+      return await fetchAPI('/api/plataforma/admin/anuncios/');
+    },
+    enviarAnuncio: async (dados: {
+      titulo: string;
+      mensagem: string;
+      link?: string;
+      enviar_email: boolean;
+      /** ISO 8601 com fuso; sem isto, sai já. */
+      agendado_para?: string;
+    }): Promise<Anuncio> => {
+      return await fetchAPI('/api/plataforma/admin/anuncios/', { method: 'POST', body: JSON.stringify(dados) });
+    },
+    cancelarAnuncio: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/plataforma/admin/anuncios/${id}/`, { method: 'DELETE' });
+    },
+    enviarLembreteOfensiva: async (): Promise<ConfigAdmin> => {
+      return await fetchAPI('/api/plataforma/admin/lembrete-ofensiva/enviar/', { method: 'POST' });
+    },
+    categorias: async (): Promise<CategoriaAdmin[]> => {
+      return await fetchAPI('/api/plataforma/admin/categorias/');
+    },
+    criarCategoria: async (nome: string): Promise<CategoriaAdmin[]> => {
+      return await fetchAPI('/api/plataforma/admin/categorias/', { method: 'POST', body: JSON.stringify({ nome }) });
+    },
+    renomearCategoria: async (id: number, nome: string): Promise<CategoriaAdmin[]> => {
+      return await fetchAPI(`/api/plataforma/admin/categorias/${id}/`, { method: 'PATCH', body: JSON.stringify({ nome }) });
+    },
+    apagarCategoria: async (id: number): Promise<CategoriaAdmin[]> => {
+      return await fetchAPI(`/api/plataforma/admin/categorias/${id}/`, { method: 'DELETE' });
+    },
+
     // ── Métricas ───────────────────────────────────────────────────────
     getMetricas: async (): Promise<MetricasPlataforma> => {
       return await fetchAPI<MetricasPlataforma & { ok: boolean }>('/accounts/api/admin/metricas/');
@@ -1628,6 +1982,10 @@ export const api = {
         body: JSON.stringify({ bio }),
       });
     },
+    meu: async (): Promise<MeuPerfil> => {
+      const res = await fetchAPI<MeuPerfil & { ok: boolean; perfil: RawPerfilPublico }>('/accounts/api/meu-perfil/');
+      return { ...res, perfil: normalizePerfilPublico(res.perfil) };
+    },
     completar: async (): Promise<{ ok: boolean; user: AuthUser }> => {
       return await fetchAPI('/accounts/api/perfil/completar/', { method: 'POST' });
     },
@@ -1645,6 +2003,18 @@ export const api = {
       notif_email_novidades?: boolean;
       notif_email_comunidade?: boolean;
       notif_email_gamificacao?: boolean;
+      velocidade_reproducao?: number;
+      autoplay_proxima_aula?: boolean;
+      retomar_posicao?: boolean;
+      legendas_ativas?: boolean;
+      tamanho_texto?: TamanhoTexto;
+      reduzir_animacoes?: boolean;
+      alto_contraste?: boolean;
+      perfil_visibilidade?: 'todos' | 'cursos';
+      aparecer_ranking?: boolean;
+      mostrar_cursos_perfil?: boolean;
+      mostrar_conquistas_perfil?: boolean;
+      mostrar_publicacoes_perfil?: boolean;
     }): Promise<{ ok: boolean; user: AuthUser }> => {
       return await fetchAPI('/accounts/api/preferencias/', {
         method: 'POST',
@@ -1669,7 +2039,24 @@ export const api = {
         body: JSON.stringify({ senha_atual: senhaAtual, novo_email: novoEmail }),
       });
     },
-    status2FA: async (): Promise<{ ok: boolean; ativo: boolean }> => {
+    novosCodigos2FA: async (senhaAtual: string): Promise<{ ok: boolean; codigosBackup: string[] }> => {
+      return await fetchAPI('/accounts/api/seguranca/2fa/novos-codigos/', {
+        method: 'POST',
+        body: JSON.stringify({ senha_atual: senhaAtual }),
+      });
+    },
+    sessoes: async (): Promise<SessaoAtiva[]> => {
+      const res = await fetchAPI<{ ok: boolean; sessoes: SessaoAtiva[] }>('/accounts/api/seguranca/sessoes/');
+      return res?.sessoes ?? [];
+    },
+    terminarSessao: async (id: number): Promise<void> => {
+      await fetchAPI(`/accounts/api/seguranca/sessoes/${id}/terminar/`, { method: 'POST' });
+    },
+    terminarOutrasSessoes: async (): Promise<{ ok: boolean; terminadas: number }> => {
+      return await fetchAPI('/accounts/api/seguranca/sessoes/terminar-outras/', { method: 'POST' });
+    },
+    exportarDadosUrl: () => `${API_BASE_URL}/accounts/api/exportar-dados/`,
+    status2FA: async (): Promise<{ ok: boolean; ativo: boolean; codigosRestantes?: number }> => {
       return await fetchAPI('/accounts/api/seguranca/2fa/status/');
     },
     iniciar2FA: async (): Promise<{ ok: boolean; qrBase64: string; secret: string; error?: string }> => {
@@ -1756,6 +2143,17 @@ export const api = {
     reagir: async (videoId: string | number, comentarioId: number): Promise<{ liked: boolean; totalLikes: number }> => {
       return await fetchAPI(`/api/videos/${videoId}/comentarios/${comentarioId}/reagir/`, { method: 'POST' });
     },
+  },
+  /** WebVTT do vídeo, como blob URL local (o <track> não aceita outra
+   * origem sem CORS no próprio <video>). Devolve null se falhar. */
+  carregarLegenda: async (videoId: string | number): Promise<string | null> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/videos/${videoId}/legenda/`, { credentials: 'include' });
+      if (!res.ok) return null;
+      return URL.createObjectURL(new Blob([await res.text()], { type: 'text/vtt' }));
+    } catch {
+      return null;
+    }
   },
   certificadoUrl: (cursoId: string | number) => `${API_BASE_URL}/api/cursos/${cursoId}/certificado/`,
   verificarCertificado: async (codigo: string): Promise<CertificadoVerificado | null> => {
@@ -1944,6 +2342,14 @@ export const api = {
     },
     getVideoEngajamento: async (id: number): Promise<VideoEngajamento> => {
       return await fetchAPI(`/api/professor/videos/${id}/engajamento/`);
+    },
+    carregarLegenda: async (videoId: number, ficheiro: File): Promise<{ ok: boolean; tem_legenda: boolean }> => {
+      const formData = new FormData();
+      formData.append('legenda', ficheiro);
+      return await fetchAPI(`/api/professor/videos/${videoId}/legenda/`, { method: 'POST', body: formData });
+    },
+    removerLegenda: async (videoId: number): Promise<{ ok: boolean; tem_legenda: boolean }> => {
+      return await fetchAPI(`/api/professor/videos/${videoId}/legenda/`, { method: 'DELETE' });
     },
     reordenarVideos: async (ordem: number[]): Promise<{ ok: boolean }> => {
       return await fetchAPI('/api/professor/videos/reordenar/', {

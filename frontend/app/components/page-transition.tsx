@@ -1,6 +1,7 @@
 "use client"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { useReduzirAnimacoes } from "@/lib/preferencias-visuais";
 
 export function PageTransition({
   routeKey,
@@ -9,7 +10,8 @@ export function PageTransition({
   routeKey: string;
   children: ReactNode;
 }) {
-  const reduce = useReducedMotion();
+  // Sistema operativo OU Configurações → Aparência → Reduzir animações.
+  const reduce = useReduzirAnimacoes();
 
   if (reduce) return <div>{children}</div>;
 

@@ -31,7 +31,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto',
             'conteudo', 'imagem', 'criado_em', 'time_ago',
-            'likes', 'comentarios', 'liked'
+            'likes', 'comentarios', 'liked', 'oculto',
         ]
 
     def get_autor_nome(self, obj):
@@ -65,7 +65,7 @@ class PostSerializer(serializers.ModelSerializer):
         return obj.total_likes()
 
     def get_comentarios(self, obj):
-        return obj.total_comentarios()
+        return obj.comentarios.filter(oculto=False).count()
 
     def get_liked(self, obj):
         request = self.context.get('request')
@@ -90,7 +90,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto', 'parent',
             'conteudo', 'criado_em', 'editado_em', 'time_ago',
-            'total_likes', 'liked', 'pode_editar', 'pode_apagar', 'respostas',
+            'total_likes', 'liked', 'pode_editar', 'pode_apagar', 'respostas', 'oculto',
         ]
 
     def get_autor_nome(self, obj):
@@ -137,7 +137,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
-        if obj.autor_id == request.user.id:
+        if obj.autor_id == request.user.id or request.user.is_staff:
             return True
         # O autor do post também pode moderar os comentários no seu post,
         # tal como o professor pode apagar comentários no seu próprio vídeo.
@@ -147,4 +147,11 @@ class ComentarioSerializer(serializers.ModelSerializer):
         if obj.parent_id is not None:
             return []
         respostas = obj.respostas.select_related('autor').order_by('criado_em')
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            from django.db.models import Q
+            respostas = respostas.filter(Q(oculto=False) | Q(autor=request.user))
+        ocultos = self.context.get('ocultos') or set()
+        if ocultos:
+            respostas = respostas.exclude(autor_id__in=ocultos)
         return ComentarioSerializer(respostas, many=True, context=self.context).data

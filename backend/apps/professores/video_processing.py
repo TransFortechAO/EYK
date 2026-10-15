@@ -1,4 +1,8 @@
 import logging
+import os
+import shutil
+import tempfile
+from contextlib import contextmanager
 
 from django.core.files.base import ContentFile
 
@@ -16,11 +20,31 @@ def _cv2():
         return None
 
 
+@contextmanager
+def _caminho_local(ficheiro):
+    """Caminho no disco para o OpenCV ler. Com a media num bucket S3 (produção)
+    não há caminho: copia o vídeo para um ficheiro temporário."""
+    try:
+        caminho = ficheiro.path
+    except NotImplementedError:
+        caminho = None
+    if caminho:
+        yield caminho
+        return
+    sufixo = os.path.splitext(ficheiro.name)[1]
+    with tempfile.NamedTemporaryFile(suffix=sufixo) as tmp:
+        with ficheiro.open('rb') as origem:
+            shutil.copyfileobj(origem, tmp, length=4 * 1024 * 1024)
+        tmp.flush()
+        yield tmp.name
+
+
 def calcular_duracao_segundos(video):
     """Lê a duração real do ficheiro de vídeo já gravado em disco.
 
     Precisa de correr depois de o ficheiro ser guardado — o OpenCV lê pelo
-    caminho no disco, não consegue abrir o upload ainda em memória. Vídeos
+    caminho no disco (ou uma cópia temporária, se a media estiver num bucket),
+    não consegue abrir o upload ainda em memória. Vídeos
     sem ficheiro próprio (só link externo) ficam com duração 0: não há como
     sabê-la sem consultar a API do YouTube, e é preferível não mostrar nada
     a inventar um número.
@@ -29,12 +53,13 @@ def calcular_duracao_segundos(video):
     if not video.arquivo or cv2 is None:
         return 0
     try:
-        cap = cv2.VideoCapture(video.arquivo.path)
-        if not cap.isOpened():
-            return 0
-        fps = cap.get(cv2.CAP_PROP_FPS) or 0
-        total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
-        cap.release()
+        with _caminho_local(video.arquivo) as caminho:
+            cap = cv2.VideoCapture(caminho)
+            if not cap.isOpened():
+                return 0
+            fps = cap.get(cv2.CAP_PROP_FPS) or 0
+            total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+            cap.release()
         return int(total_frames / fps) if fps > 0 else 0
     except Exception:
         return 0
@@ -49,24 +74,25 @@ def extrair_thumbnail_video(video, tempo_segundos: int = 1) -> bool:
         return False
 
     try:
-        cap = cv2.VideoCapture(video.arquivo.path)
-        if not cap.isOpened():
-            return False
+        with _caminho_local(video.arquivo) as caminho:
+            cap = cv2.VideoCapture(caminho)
+            if not cap.isOpened():
+                return False
 
-        fps = cap.get(cv2.CAP_PROP_FPS) or 0
-        total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
+            fps = cap.get(cv2.CAP_PROP_FPS) or 0
+            total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0
 
-        if fps <= 0 or total_frames <= 0:
+            if fps <= 0 or total_frames <= 0:
+                cap.release()
+                return False
+
+            target_frame = int(tempo_segundos * fps)
+            if target_frame >= total_frames:
+                target_frame = max(0, int(total_frames * 0.1))
+
+            cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
+            ret, frame = cap.read()
             cap.release()
-            return False
-
-        target_frame = int(tempo_segundos * fps)
-        if target_frame >= total_frames:
-            target_frame = max(0, int(total_frames * 0.1))
-
-        cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
-        ret, frame = cap.read()
-        cap.release()
 
         if not ret or frame is None:
             return False

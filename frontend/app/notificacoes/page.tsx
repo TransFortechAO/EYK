@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Bell, Coins, BookOpen, Users, Settings, CheckCheck } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -76,7 +77,20 @@ export default function NotificacoesPage() {
                     )}
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{n.timeAgo}</p>
+                  <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{n.timeAgo}</span>
+                    {n.link && (
+                      <Link
+                        href={n.link}
+                        onClick={() => {
+                          if (!n.read) void api.marcarNotificacaoLida(n.id);
+                        }}
+                        className="font-medium text-primary hover:underline underline-offset-2"
+                      >
+                        Abrir
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             );

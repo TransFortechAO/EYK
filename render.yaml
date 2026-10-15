@@ -1,0 +1,146 @@
+# Blueprint do Render — cria toda a infraestrutura da EYK de uma vez:
+#   Dashboard do Render → New → Blueprint → escolher este repositório.
+# Guia passo a passo: docs/DEPLOY_RENDER.md
+#
+#   browser ──► eyk-web (Next.js) ──/api, /accounts, /media…──► eyk-api (Django)
+#                                                                  │
+#               eyk-worker (Celery worker + beat) ◄── eyk-redis ◄──┘
+#                         └──────────── eyk-db (PostgreSQL) ───────┘
+#
+# Tudo em Frankfurt (a região do Render mais próxima de Angola). Os serviços
+# falam entre si pela rede privada do Render, que só existe dentro da mesma
+# região.
+
+envVarGroups:
+  - name: eyk-comum
+    envVars:
+      - key: DJANGO_ENV
+        value: prod
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      # URL público do frontend, sem barra final. Usado nos links dos emails,
+      # no CORS/CSRF e no ALLOWED_HOSTS. Se mudar (domínio próprio), atualizar.
+      - key: NEXT_PUBLIC_URL
+        sync: false
+      # Email (SMTP). Ex. Gmail: smtp.gmail.com / 587 / palavra-passe de app.
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+
+databases:
+  - name: eyk-db
+    plan: basic-256mb
+    region: frankfurt
+    databaseName: eyk
+    user: eyk
+    postgresMajorVersion: "16"
+    ipAllowList: []          # só acessível pela rede privada do Render
+
+services:
+  # Redis: fila do Celery + cache partilhada (limites de frequência).
+  # volatile-lru: com a memória cheia só apaga chaves com prazo (as da cache),
+  # nunca as tarefas na fila.
+  - type: keyvalue
+    name: eyk-redis
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: volatile-lru
+    ipAllowList: []
+
+  # API Django
+  - type: web
+    name: eyk-api
+    runtime: python
+    plan: starter
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements/prod.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate --noinput
+    # gthread: um vídeo a ser servido ou um upload lento não bloqueia o worker.
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-2} --worker-class gthread --threads 8 --timeout 600
+    healthCheckPath: /health/
+    # Vídeos, fotos e PDFs. Para muitos alunos em simultâneo, trocar por um
+    # bucket (Cloudflare R2/S3): ver "Media num bucket" em docs/DEPLOY_RENDER.md.
+    disk:
+      name: eyk-media
+      mountPath: /var/data
+      sizeGB: 20
+    envVars:
+      - fromGroup: eyk-comum
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eyk-db
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: keyvalue
+          name: eyk-redis
+          property: connectionString
+      - key: CACHE_URL
+        fromService:
+          type: keyvalue
+          name: eyk-redis
+          property: connectionString
+      - key: MEDIA_ROOT
+        value: /var/data/media
+      # O IP real do aluno vem em X-Forwarded-For (limites de frequência, sessões).
+      - key: CONFIAR_X_FORWARDED_FOR
+        value: "True"
+      - key: WEB_CONCURRENCY
+        value: "2"
+
+  # Celery: tarefas em segundo plano (anúncios) + agendador (beat, -B) que
+  # envia o lembrete de ofensiva e os anúncios agendados à hora definida em
+  # Administração → Plataforma. Uma só instância (o beat não pode duplicar).
+  - type: worker
+    name: eyk-worker
+    runtime: python
+    plan: starter
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements/prod.txt
+    startCommand: celery -A config worker -B -l info --concurrency 2 -s /tmp/celerybeat-schedule
+    envVars:
+      - fromGroup: eyk-comum
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eyk-db
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: keyvalue
+          name: eyk-redis
+          property: connectionString
+      - key: CACHE_URL
+        fromService:
+          type: keyvalue
+          name: eyk-redis
+          property: connectionString
+
+  # Frontend Next.js
+  - type: web
+    name: eyk-web
+    runtime: node
+    plan: starter
+    region: frankfurt
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      # "/" = a API está no mesmo domínio (o Next reencaminha para o eyk-api).
+      - key: NEXT_PUBLIC_API_URL
+        value: /
+      - key: API_INTERNO
+        fromService:
+          type: web
+          name: eyk-api
+          property: hostport
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'apps.cursos',
     'apps.feed',
     'apps.gamificacao',
+    'apps.moderacao',
+    'apps.plataforma',
     'rest_framework',
     'corsheaders',
     'django_otp',
@@ -42,6 +44,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django_otp.middleware.OTPMiddleware',
+    'apps.accounts.sessoes.ContaMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -120,9 +123,33 @@ CSRF_TRUSTED_ORIGINS = _split_origins(
 # usado pelos limites de frequência (apps/accounts/rate_limit.py).
 CONFIAR_X_FORWARDED_FOR = os.getenv('CONFIAR_X_FORWARDED_FOR', 'False').lower() in ('1', 'true', 'sim', 'yes')
 
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+# Celery (tarefas em segundo plano: anúncios, lembrete de ofensiva…).
+# Sem CELERY_BROKER_URL (desenvolvimento sem Redis), as tarefas correm logo
+# no próprio pedido e o agendador (beat) não existe.
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', '').strip() or 'memory://'
+CELERY_TASK_ALWAYS_EAGER = CELERY_BROKER_URL == 'memory://'
+CELERY_TASK_EAGER_PROPAGATES = False
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+# Uma tarefa que o worker não chegou a terminar (reinício/deploy) volta à fila.
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Agendador (Celery beat). O horário de cada envio é editado pelos admins
+# em Administração → Plataforma — aqui só fica o "relógio" que o verifica.
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    'agendador-plataforma': {
+        'task': 'apps.plataforma.tasks.ciclo_agendador',
+        'schedule': crontab(minute='*/5'),
+    },
+    'resetar-ofensivas-quebradas': {
+        'task': 'apps.gamificacao.tasks.resetar_ofensivas_quebradas',
+        'schedule': crontab(hour=0, minute=5),
+    },
+}

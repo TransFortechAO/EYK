@@ -12,6 +12,8 @@ TIPO_MAP_FRONTEND = {
     'lancamento': 'course',
     'novidade': 'community',
     'saque': 'system',
+    'comunidade': 'community',
+    'moderacao': 'system',
 }
 
 TIPO_TITLE = {
@@ -19,6 +21,8 @@ TIPO_TITLE = {
     'conquista': 'Conquista',
     'saque': 'Saque',
     'lancamento': 'Novo Lançamento',
+    'comunidade': 'Comunidade',
+    'moderacao': 'Moderação',
 }
 
 
@@ -55,6 +59,7 @@ def _build_notificacao_dict(n: Notificacao) -> dict:
         'body': body,
         'timeAgo': _time_ago(n.criado_em),
         'read': n.lida,
+        'link': n.link or None,
     }
 
 

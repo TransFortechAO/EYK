@@ -40,8 +40,8 @@ const rodapeLinks = {
     { label: "Comunidade", href: "/login" },
   ],
   Legal: [
-    { label: "Privacidade", href: "#" },
-    { label: "Termos de uso", href: "#" },
+    { label: "Privacidade", href: "/privacidade" },
+    { label: "Termos de uso", href: "/termos" },
   ],
   Ensinar: [
     { label: "Quero ser professor", href: "https://forms.gle/qfs6zo8QLHfRsnKX9", external: true },

@@ -1,4 +1,5 @@
 from django.contrib.auth import logout
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
@@ -6,7 +7,10 @@ from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
+from apps.accounts.notificacoes import notificar
 from apps.cursos.models import Curso, EngajamentoCurso, Inscricao, RecursoCurso
+from apps.moderacao.filtro import ConteudoRecusado, verificar_publicacao
+from apps.plataforma.servicos import configuracao, limite_pdf_bytes, limite_video_bytes
 
 from .models import Professor, ReacaoVideo, RecursoVideo, Seguidor, Video
 from .serializers import (
@@ -17,7 +21,7 @@ from .serializers import (
 )
 from .video_processing import atualizar_duracao
 
-TAMANHO_MAX_RECURSO_BYTES = 50 * 1024 * 1024  # 50MB, igual ao limite validado no frontend
+TAMANHO_MAX_LEGENDA_BYTES = 1024 * 1024  # 1MB — uma legenda de 2h tem ~150KB
 
 
 def _get_professor(request):
@@ -33,9 +37,25 @@ def _validar_arquivo_pdf(arquivo):
     e_pdf = arquivo.content_type == 'application/pdf' or arquivo.name.lower().endswith('.pdf')
     if not e_pdf:
         return 'Apenas são aceites ficheiros PDF.'
-    if arquivo.size > TAMANHO_MAX_RECURSO_BYTES:
-        return 'O ficheiro deve ter no máximo 50MB.'
+    if arquivo.size > limite_pdf_bytes():
+        return f'O ficheiro deve ter no máximo {configuracao().limite_pdf_mb}MB.'
     return None
+
+
+def _validar_tamanho_video(arquivo):
+    """Lança ValueError se o vídeo ultrapassar o limite definido pelos administradores."""
+    if arquivo is not None and arquivo.size > limite_video_bytes():
+        raise ValueError(f'Cada vídeo pode ter no máximo {configuracao().limite_video_mb}MB.')
+
+
+def _notificar_seguidores(professor, mensagem: str, link: str):
+    """Lançamento (curso/vídeo novo) → quem segue o professor. O email
+    respeita o interruptor "Novidades da plataforma"."""
+    for seguidor in professor.seguidores.select_related('utilizador'):
+        notificar(
+            seguidor.utilizador, 'lancamento', mensagem, link=link,
+            categoria_email='novidades', assunto_email=f'Novidade de {professor.nome_publico}',
+        )
 
 
 def _criar_recursos(model_cls, fk_campo, fk_valor, arquivos):
@@ -68,6 +88,12 @@ def professor_perfil(request):
         return _professor_required_response()
 
     if request.method == 'PATCH':
+        try:
+            verificar_publicacao(
+                request.user, f"{request.data.get('bio', '')} {request.data.get('nome_publico', '')}", 'bio',
+            )
+        except ConteudoRecusado as erro:
+            return Response({'detail': erro.mensagem}, status=erro.status)
         serializer = ProfessorSerializer(professor, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -93,6 +119,8 @@ def professor_apagar_conta(request):
 # ── CURSOS ───────────────────────────────────────────────────────────────────
 
 def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
+    for arquivo in arquivos:
+        _validar_tamanho_video(arquivo)
     for indice, arquivo in enumerate(arquivos):
         video = Video.objects.create(
             professor=professor,
@@ -131,6 +159,8 @@ def professor_cursos(request):
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
 
         curso.refresh_from_db()
+        if curso.ativo:
+            _notificar_seguidores(professor, f'{professor.nome_publico} publicou um curso novo: "{curso.titulo}"', f'/cursos/{curso.id}')
         return Response(
             ProfessorCursoSerializer(curso, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
@@ -295,12 +325,15 @@ def professor_videos(request):
         serializer = ProfessorVideoSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         try:
+            _validar_tamanho_video(request.FILES.get('arquivo'))
             with transaction.atomic():
                 video = serializer.save(professor=professor)
                 _criar_recursos(RecursoVideo, 'video', video, request.FILES.getlist('recursos'))
         except ValueError as erro:
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
         atualizar_duracao(video)
+        if video.ativo:
+            _notificar_seguidores(professor, f'{professor.nome_publico} publicou um vídeo novo: "{video.titulo}"', f'/videos/{video.id}')
         return Response(
             ProfessorVideoSerializer(video, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
@@ -331,6 +364,7 @@ def professor_video_detail(request, video_id):
         serializer = ProfessorVideoSerializer(video, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         try:
+            _validar_tamanho_video(request.FILES.get('arquivo'))
             with transaction.atomic():
                 video = serializer.save()
                 novos_recursos = request.FILES.getlist('recursos')
@@ -430,6 +464,58 @@ def professor_videos_reordenar(request):
             video.save(update_fields=['ordem'])
 
     return Response({'ok': True})
+
+
+def _srt_para_vtt(texto: str) -> str:
+    """Converte SubRip (.srt) em WebVTT: cabeçalho + vírgula → ponto nos tempos."""
+    import re
+    texto = texto.replace('\r\n', '\n').replace('\r', '\n').strip()
+    texto = re.sub(r'(\d{2}:\d{2}:\d{2}),(\d{3})', r'\1.\2', texto)
+    return 'WEBVTT\n\n' + texto + '\n'
+
+
+@api_view(['POST', 'DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def professor_video_legenda(request, video_id):
+    """Carrega (POST multipart `legenda`: .vtt ou .srt) ou remove (DELETE) as
+    legendas de um vídeo do professor — avulso ou aula de um curso."""
+    professor = _get_professor(request)
+    if not professor:
+        return _professor_required_response()
+    video = get_object_or_404(Video, id=video_id, professor=professor)
+
+    if request.method == 'DELETE':
+        if video.legenda:
+            video.legenda.delete(save=False)
+        video.legenda = None
+        video.save(update_fields=['legenda'])
+        return Response({'ok': True, 'tem_legenda': False})
+
+    arquivo = request.FILES.get('legenda')
+    if not arquivo:
+        return Response({'detail': 'Envia um ficheiro de legendas (.vtt ou .srt).'}, status=status.HTTP_400_BAD_REQUEST)
+    nome = arquivo.name.lower()
+    if not (nome.endswith('.vtt') or nome.endswith('.srt')):
+        return Response({'detail': 'Só são aceites legendas .vtt ou .srt.'}, status=status.HTTP_400_BAD_REQUEST)
+    if arquivo.size > TAMANHO_MAX_LEGENDA_BYTES:
+        return Response({'detail': 'O ficheiro de legendas deve ter no máximo 1MB.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    bruto = arquivo.read()
+    try:
+        texto = bruto.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        texto = bruto.decode('latin-1')  # .srt antigos gravados em Windows-1252/ISO-8859-1
+    if nome.endswith('.srt'):
+        texto = _srt_para_vtt(texto)
+    elif not texto.lstrip().startswith('WEBVTT'):
+        return Response({'detail': 'O ficheiro .vtt tem de começar por "WEBVTT".'}, status=status.HTTP_400_BAD_REQUEST)
+    if '-->' not in texto:
+        return Response({'detail': 'O ficheiro não tem legendas com tempos (00:00:01.000 --> …).'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if video.legenda:
+        video.legenda.delete(save=False)
+    video.legenda.save(f'video-{video.id}.vtt', ContentFile(texto.encode('utf-8')), save=True)
+    return Response({'ok': True, 'tem_legenda': True})
 
 
 # ── SEGUIR ───────────────────────────────────────────────────────────────────

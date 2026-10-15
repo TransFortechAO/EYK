@@ -20,6 +20,7 @@ import {
   GraduationCap,
   Briefcase,
   ChevronDown,
+  Gavel,
 } from "lucide-react";
 import {
   api,
@@ -34,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/components/auth-gate";
+import { DialogoDecisao, type Decisao } from "@/components/moderacao/dialogo-decisao";
 
 type Toast = { tipo: "sucesso" | "erro" | "aviso"; msg: string };
 
@@ -99,6 +101,7 @@ export default function AdminUtilizadoresPage() {
   const [apagar, setApagar] = useState<AdminUser | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [operando, setOperando] = useState<number | null>(null);
+  const [aModerar, setAModerar] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     if (authUser && !authUser.isStaff) router.replace("/inicio");
@@ -162,6 +165,31 @@ export default function AdminUtilizadoresPage() {
     } finally {
       setOperando(null);
       setMenuAberto(null);
+    }
+  };
+
+  const aplicarSancao = async (u: AdminUser, d: Decisao): Promise<boolean> => {
+    if (!d.sancao) return false;
+    try {
+      const res = await api.admin.sancionar(u.id, d.sancao, d.motivo, d.dias);
+      const h = res.utilizador;
+      setUsers((lista) =>
+        lista.map((x) =>
+          x.id === u.id ? { ...x, banido: h.banido, suspenso_ate: h.suspensoAte, motivo_sancao: d.motivo } : x,
+        ),
+      );
+      const mensagens = {
+        aviso: "Aviso enviado.",
+        suspensao: `Conta suspensa durante ${d.dias} dia(s).`,
+        banimento: "Conta banida.",
+        levantar: "Sanção levantada.",
+      } as const;
+      setToast({ tipo: "sucesso", msg: mensagens[d.sancao] });
+      return true;
+    } catch (err) {
+      const msg = (err as { data?: { detail?: string } })?.data?.detail;
+      setToast({ tipo: "erro", msg: msg || "Não foi possível aplicar a sanção." });
+      return false;
     }
   };
 
@@ -375,7 +403,15 @@ export default function AdminUtilizadoresPage() {
                         <span className="text-sm text-muted-foreground">{fmtDate(u.date_joined)}</span>
                       </td>
                       <td className="py-3 pr-4 bg-surface/40 group-hover:bg-surface/70 transition border-y border-y-transparent group-hover:border-y-border/50 whitespace-nowrap">
-                        {u.is_active ? (
+                        {u.banido ? (
+                          <Badge className="bg-red-500/15 text-red-300 border-red-500/30" title={u.motivo_sancao}>
+                            Banido
+                          </Badge>
+                        ) : u.suspenso_ate ? (
+                          <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30" title={u.motivo_sancao}>
+                            Suspenso até {fmtDate(u.suspenso_ate)}
+                          </Badge>
+                        ) : u.is_active ? (
                           <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20">
                             Ativo
                           </Badge>
@@ -437,6 +473,15 @@ export default function AdminUtilizadoresPage() {
                                 </button>
                                 <button
                                   onClick={() => {
+                                    setAModerar(u);
+                                    setMenuAberto(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left hover:bg-accent hover:text-accent-foreground transition"
+                                >
+                                  <Gavel className="h-4 w-4 text-amber-300" /> Avisar, suspender ou banir…
+                                </button>
+                                <button
+                                  onClick={() => {
                                     setApagar(u);
                                     setMenuAberto(null);
                                   }}
@@ -457,6 +502,17 @@ export default function AdminUtilizadoresPage() {
           </div>
         )}
       </Card>
+
+      {aModerar && (
+        <DialogoDecisao
+          open
+          onOpenChange={(aberto) => !aberto && setAModerar(null)}
+          titulo={`Moderar ${aModerar.username}`}
+          descricao="O utilizador recebe o motivo por email, com um link para contestar."
+          sancionado={aModerar.banido || Boolean(aModerar.suspenso_ate)}
+          onConfirmar={(d) => aplicarSancao(aModerar, d)}
+        />
+      )}
 
       {/* ===== Modal confirmar apagar ===== */}
       {apagar && (

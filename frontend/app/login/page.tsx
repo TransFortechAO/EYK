@@ -14,6 +14,38 @@ const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
 const EYK_BG = "#0a0a0a";
 const OTP_LENGTH = 6;
 
+type Sancao = { mensagem: string; motivo: string; token: string | null };
+
+/** Resposta 403 do login para contas suspensas/banidas (ver
+ * `resposta_conta_sancionada` no backend). */
+function sancaoDoErro(err: unknown): Sancao | null {
+  const data = (err as { data?: { codigo?: string; error?: string; motivo?: string; tokenContestacao?: string | null } })?.data;
+  if (data?.codigo !== "conta_suspensa" && data?.codigo !== "conta_banida") return null;
+  return { mensagem: data.error || "A tua conta está suspensa.", motivo: data.motivo || "", token: data.tokenContestacao ?? null };
+}
+
+function AvisoSancao({ sancao }: { sancao: Sancao }) {
+  return (
+    <div
+      role="alert"
+      className="space-y-2 rounded-xl border px-4 py-3 text-sm animate-in fade-in slide-in-from-top-1 duration-300"
+      style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.25)", color: "#fecaca" }}
+    >
+      <p className="font-semibold">{sancao.mensagem}</p>
+      {sancao.motivo && <p className="text-white/70">Motivo: {sancao.motivo}</p>}
+      {sancao.token && (
+        <Link
+          href={`/contestar?token=${encodeURIComponent(sancao.token)}`}
+          className="inline-block font-semibold underline underline-offset-2"
+          style={{ color: EYK_GOLD_LIGHT }}
+        >
+          Achas que foi um engano? Contestar a decisão
+        </Link>
+      )}
+    </div>
+  );
+}
+
 function OtpInput({
   value,
   onChange,
@@ -78,10 +110,12 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [precisa2FA, setPrecisa2FA] = useState(false);
   const [codigo2FA, setCodigo2FA] = useState("");
+  const [sancao, setSancao] = useState<Sancao | null>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSancao(null);
     if (!username.trim() || !password.trim()) {
       setErrorMsg("Preenche todos os campos.");
       return;
@@ -99,6 +133,11 @@ export default function LoginPage() {
         }
         window.location.assign("/inicio");
       } catch (err) {
+        const sancaoConta = sancaoDoErro(err);
+        if (sancaoConta) {
+          setSancao(sancaoConta);
+          return;
+        }
         const status = (err as { status?: number })?.status;
         const msg = err instanceof Error ? err.message : "Erro ao iniciar sessão.";
         if (status === 401 || msg.includes("401") || msg.toLowerCase().includes("credencial")) {
@@ -126,6 +165,11 @@ export default function LoginPage() {
         }
         window.location.assign("/inicio");
       } catch (err) {
+        const sancaoConta = sancaoDoErro(err);
+        if (sancaoConta) {
+          setSancao(sancaoConta);
+          return;
+        }
         setErrorMsg(err instanceof Error ? err.message : "Erro ao verificar o código.");
       }
     });
@@ -251,6 +295,7 @@ export default function LoginPage() {
                 <OtpInput value={codigo2FA} onChange={setCodigo2FA} disabled={isPending} />
               </div>
 
+              {sancao && <AvisoSancao sancao={sancao} />}
               {errorMsg && (
                 <div
                   role="alert"
@@ -352,6 +397,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {sancao && <AvisoSancao sancao={sancao} />}
               {errorMsg && (
                 <div
                   role="alert"

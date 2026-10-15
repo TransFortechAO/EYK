@@ -6,6 +6,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
+from apps.moderacao.filtro import ConteudoRecusado, verificar_publicacao
+
 from .models import Aluno
 
 
@@ -52,6 +54,11 @@ def aluno_perfil_atualizar(request):
             return _json({'ok': False, 'error': 'Pedido inválido.'}, 400)
         if 'bio' in body:
             aluno.bio = body.get('bio') or ''
+
+    try:
+        verificar_publicacao(request.user, aluno.bio, 'bio')
+    except ConteudoRecusado as erro:
+        return _json({'ok': False, 'error': erro.mensagem}, erro.status)
 
     aluno.save()
     return _json({'ok': True, **_payload(aluno)})

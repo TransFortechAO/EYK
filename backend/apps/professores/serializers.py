@@ -44,11 +44,18 @@ class ProfessorSerializer(serializers.ModelSerializer):
 
 class ProfessorCursoVideoSerializer(serializers.ModelSerializer):
     recursos = serializers.SerializerMethodField()
+    tem_legenda = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
-        fields = ['id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem', 'duracao_segundos', 'recursos']
+        fields = [
+            'id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem', 'duracao_segundos', 'recursos',
+            'oculto', 'tem_legenda',
+        ]
         read_only_fields = fields
+
+    def get_tem_legenda(self, obj):
+        return bool(obj.legenda)
 
     def get_recursos(self, obj):
         return RecursoVideoSerializer(obj.recursos.all(), many=True, context=self.context).data
@@ -70,11 +77,11 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'descricao', 'categoria', 'categoria_nome', 'preco',
             'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em',
             'total_inscritos', 'total_visualizacoes', 'conclusao_media', 'duracao_total_segundos',
-            'videos', 'recursos',
+            'videos', 'recursos', 'oculto',
         ]
         read_only_fields = [
             'id', 'criado_em', 'atualizado_em', 'total_inscritos', 'total_visualizacoes',
-            'conclusao_media', 'duracao_total_segundos', 'videos', 'recursos',
+            'conclusao_media', 'duracao_total_segundos', 'videos', 'recursos', 'oculto',
         ]
 
     def get_total_inscritos(self, obj):
@@ -119,6 +126,7 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
     total_visualizacoes = serializers.SerializerMethodField()
     total_comentarios = serializers.SerializerMethodField()
     recursos = serializers.SerializerMethodField()
+    tem_legenda = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
@@ -126,11 +134,16 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail',
             'criado_em', 'atualizado_em', 'ativo', 'ordem', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
+            'oculto', 'tem_legenda',
         ]
         read_only_fields = [
             'id', 'criado_em', 'atualizado_em', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
+            'oculto', 'tem_legenda',
         ]
+
+    def get_tem_legenda(self, obj):
+        return bool(obj.legenda)
 
     def get_total_likes(self, obj):
         return obj.total_likes()

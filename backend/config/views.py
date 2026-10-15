@@ -28,8 +28,8 @@ def media_com_range(request, path, document_root):
     """Serve ficheiros de media em desenvolvimento COM suporte a pedidos
     `Range` — o `django.views.static.serve` responde sempre com o ficheiro
     inteiro (200), e sem 206 o browser não consegue avançar/recuar num vídeo
-    nem retomar a reprodução a meio. Em produção, o servidor web (nginx…) é
-    que serve /media/ e já suporta Range."""
+    nem retomar a reprodução a meio. Usado também em produção quando a media
+    está num disco (Render) em vez de um bucket S3 (`SERVIR_MEDIA`)."""
     response = serve(request, path, document_root=document_root)
     rango = _RANGE_RE.fullmatch(request.headers.get('Range', '').strip())
     if not rango or response.status_code != 200 or not isinstance(response, FileResponse):

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, createContext, useContext } from "react";
 import { api, type AuthUser } from "@/lib/api";
+import { aplicarPreferenciasVisuais } from "@/lib/preferencias-visuais";
 
 type AuthState = {
   loading: boolean;
@@ -38,6 +39,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }));
       if (!authenticated) {
         window.location.assign("/login");
+      } else if (res.user?.preferencias) {
+        // As preferências guardadas na conta mandam (podem ter sido mudadas
+        // noutro dispositivo) — e ficam em cache para as páginas públicas.
+        aplicarPreferenciasVisuais(res.user.preferencias);
       }
     } catch {
       setState((prev) => ({ ...prev, loading: false, authenticated: false, user: null }));

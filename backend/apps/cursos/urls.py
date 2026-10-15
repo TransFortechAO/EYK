@@ -10,6 +10,7 @@ from .views import (
     video_react,
     video_registar_view,
     video_posicao,
+    video_legenda,
     video_comentarios,
     video_comentario_detail,
     video_comentario_reagir,
@@ -51,6 +52,7 @@ urlpatterns = [
     path('videos/<int:pk>/reagir/', video_react, name='video-react'),
     path('videos/<int:pk>/registar-view/', video_registar_view, name='video-registar-view'),
     path('videos/<int:pk>/posicao/', video_posicao, name='video-posicao'),
+    path('videos/<int:pk>/legenda/', video_legenda, name='video-legenda'),
     path('videos/<int:pk>/comentarios/', video_comentarios, name='video-comentario-list'),
     path('videos/<int:pk>/comentarios/<int:comentario_id>/', video_comentario_detail, name='video-comentario-detail'),
     path('videos/<int:pk>/comentarios/<int:comentario_id>/reagir/', video_comentario_reagir, name='video-comentario-reagir'),
@@ -62,6 +64,8 @@ urlpatterns = [
     path('certificados/<uuid:codigo>/', certificado_verificar, name='certificado-verificar'),
 
     path('professor/', include('apps.professores.urls_api')),
+    path('moderacao/', include('apps.moderacao.urls')),
+    path('plataforma/', include('apps.plataforma.urls')),
     path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),

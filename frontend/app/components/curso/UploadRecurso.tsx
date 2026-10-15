@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useLimitesUpload } from '@/hooks/useLimitesUpload';
 import { toast } from 'sonner';
 import { Upload, X } from 'lucide-react';
 import { api, type CursoRecurso } from '@/lib/api';
@@ -13,9 +14,9 @@ interface UploadRecursoProps {
   onCancelar?: () => void;
 }
 
-const TAMANHO_MAX_MB = 50;
 
 export function UploadRecurso({ cursoId, onAdicionado, onCancelar }: UploadRecursoProps) {
+  const TAMANHO_MAX_MB = useLimitesUpload().pdfMb;
   const [nome, setNome] = useState('');
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

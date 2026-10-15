@@ -14,6 +14,7 @@ import { api, type VideoDetail, type Video } from "@/lib/api";
 import { ModernVideoPlayer } from "@/components/ModernVideoPlayer";
 import { RelatedVideos } from "@/components/eyk/related-content";
 import { UserAvatar } from "@/components/UserAvatar";
+import { BotaoDenunciar } from "@/components/moderacao/denunciar";
 
 /**
  * Guarda, na sessão do browser, um pequeno "histórico de navegação" entre vídeos.
@@ -181,6 +182,7 @@ export default function VideoPlayerPage() {
                 onNext={goToNextVideo}
                 onPrevious={goToPreviousVideo}
                 recursos={video.recursos}
+                temLegenda={video.temLegenda}
               />
             </div>
           </Card>
@@ -203,7 +205,10 @@ export default function VideoPlayerPage() {
 
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{video.title}</h1>
-            <ShareButton url={`/videos/${video.id}`} titulo={video.title} />
+            <div className="flex shrink-0 items-center gap-1">
+              <ShareButton url={`/videos/${video.id}`} titulo={video.title} />
+              <BotaoDenunciar tipo="video" id={video.id} autorId={video.teacherUserId} />
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-surface/40 px-4 py-3">

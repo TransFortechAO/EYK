@@ -389,6 +389,18 @@ function RegisterConteudo() {
                 )}
               </span>
             </Button>
+
+            <p className="text-center text-xs leading-relaxed text-white/45">
+              Ao criar conta, aceitas os{" "}
+              <Link href="/termos" target="_blank" className="underline-offset-2 hover:underline" style={{ color: EYK_GOLD }}>
+                Termos de Utilização
+              </Link>{" "}
+              e a{" "}
+              <Link href="/privacidade" target="_blank" className="underline-offset-2 hover:underline" style={{ color: EYK_GOLD }}>
+                Política de Privacidade
+              </Link>
+              .
+            </p>
           </form>
 
           <p className="mt-8 text-center text-sm text-white/55">

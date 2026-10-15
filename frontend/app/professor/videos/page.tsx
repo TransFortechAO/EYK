@@ -1,5 +1,7 @@
 "use client";
 
+import { useLimitesUpload } from "@/hooks/useLimitesUpload";
+import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -46,6 +48,7 @@ const EMPTY_FORM: ProfessorVideoPayload = {
 };
 
 export default function ProfessorVideosPage() {
+  const limites = useLimitesUpload();
   const confirm = useConfirm();
   const [videos, setVideos] = useState<ProfessorVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +106,7 @@ export default function ProfessorVideosPage() {
     setModalAberto(true);
   };
 
-  const RECURSO_TAMANHO_MAX_MB = 50;
+  const RECURSO_TAMANHO_MAX_MB = limites.pdfMb;
 
   const escolherRecursos = () => recursosInputRef.current?.click();
 
@@ -154,8 +157,12 @@ export default function ProfessorVideosPage() {
 
   const onVideoSelecionado = (e: React.ChangeEvent<HTMLInputElement>) => {
     const ficheiro = e.target.files?.[0] || null;
-    if (ficheiro) setVideoFile(ficheiro);
     e.target.value = "";
+    if (ficheiro && ficheiro.size > limites.videoMb * 1024 * 1024) {
+      setErro(`O vídeo tem mais de ${limites.videoMb}MB, o máximo permitido.`);
+      return;
+    }
+    if (ficheiro) setVideoFile(ficheiro);
   };
 
   const escolherThumbnail = () => thumbnailInputRef.current?.click();
@@ -329,6 +336,14 @@ export default function ProfessorVideosPage() {
                     ) : (
                       <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 shrink-0">Rascunho</Badge>
                     )}
+                    {video.oculto && (
+                      <Badge
+                        className="bg-red-500/15 text-red-300 border-red-500/30 shrink-0"
+                        title="Ocultado pela moderação depois de denúncias. Recebeste uma notificação com o link para contestar."
+                      >
+                        Oculto pela moderação
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                     {video.duracao_segundos > 0 && (
@@ -346,6 +361,13 @@ export default function ProfessorVideosPage() {
                       <MessageCircle className="h-3.5 w-3.5" /> {video.total_comentarios}
                     </span>
                     <span className="flex items-center gap-1">{tempoRelativo(video.atualizado_em)}</span>
+                    <BotaoLegendas
+                      videoId={video.id}
+                      temLegenda={video.tem_legenda}
+                      onChange={(tem) =>
+                        setVideos((prev) => prev.map((v) => (v.id === video.id ? { ...v, tem_legenda: tem } : v)))
+                      }
+                    />
                   </div>
                 </div>
 

@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
-import { api, type Post } from "@/lib/api";
+import { api, mensagemDeErro, type Post } from "@/lib/api";
 import { UserInitialsLink } from "@/components/UserAvatar";
 
 export default function ComunidadePage() {
@@ -52,6 +52,9 @@ function ComunidadeConteudo() {
       const newPost = await api.createPost(text.trim());
       setPosts((prev) => [newPost, ...prev]);
       setText("");
+    } catch (err) {
+      // Filtro automático (linguagem proibida, links em conta nova, spam…).
+      toast.error(mensagemDeErro(err, "Não foi possível publicar. Tenta de novo."));
     } finally {
       setSubmitting(false);
     }
@@ -131,7 +134,11 @@ function ComunidadeConteudo() {
                     : undefined
                 }
               >
-                <PostCard post={post} onToggleLike={() => void toggleLike(post.id)} />
+                <PostCard
+                  post={post}
+                  onToggleLike={() => void toggleLike(post.id)}
+                  onAutorBloqueado={(userId) => setPosts((prev) => prev.filter((p) => p.authorId !== userId))}
+                />
               </div>
             ))}
           </div>

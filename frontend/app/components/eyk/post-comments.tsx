@@ -14,12 +14,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { api, type Comentario } from "@/lib/api";
+import { api, mensagemDeErro, type Comentario } from "@/lib/api";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useConfirm } from "@/components/confirm-dialog";
+import { BotaoDenunciar } from "@/components/moderacao/denunciar";
 
 const COMENTARIOS_POR_PAGINA = 2;
 
@@ -101,7 +102,7 @@ export function PostComments({
       toast.success("Comentário publicado.");
     } catch (error) {
       console.error("Erro ao publicar comentário:", error);
-      toast.error("Não foi possível publicar o comentário.");
+      toast.error(mensagemDeErro(error, "Não foi possível publicar o comentário."));
     } finally {
       setEnviando(false);
     }
@@ -271,7 +272,7 @@ function ComentarioItem({
       await onChange();
     } catch (error) {
       console.error("Erro ao editar comentário:", error);
-      toast.error("Não foi possível editar o comentário.");
+      toast.error(mensagemDeErro(error, "Não foi possível editar o comentário."));
     } finally {
       setProcessando(false);
     }
@@ -308,7 +309,7 @@ function ComentarioItem({
       await onChange();
     } catch (error) {
       console.error("Erro ao responder ao comentário:", error);
-      toast.error("Não foi possível publicar a resposta.");
+      toast.error(mensagemDeErro(error, "Não foi possível publicar a resposta."));
     } finally {
       setProcessando(false);
     }
@@ -332,6 +333,7 @@ function ComentarioItem({
             <span className="text-[11px] text-muted-foreground">
               {comentario.time_ago}
               {comentario.editadoEm && " · editado"}
+              {comentario.oculto && " · oculto pela moderação (só tu o vês)"}
             </span>
           </div>
 
@@ -404,6 +406,7 @@ function ComentarioItem({
                 <Pencil className="h-3 w-3" /> Editar
               </button>
             )}
+            <BotaoDenunciar tipo="comentario" id={comentario.id} autorId={comentario.autorId} variante="texto" />
             {comentario.podeApagar && (
               <button
                 type="button"

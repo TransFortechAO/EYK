@@ -22,10 +22,12 @@ import {
   Download,
   HardDriveDownload,
   Trash2,
+  Captions,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { api, mediaUrl, type CursoRecurso } from "@/lib/api";
+import { useAuth } from "@/components/auth-gate";
 import {
   guardarAutomaticamenteSeElegivel,
   guardarVideoOffline,
@@ -95,6 +97,8 @@ interface ModernVideoPlayerProps extends VideoSource {
   /** Recursos (PDFs) do vídeo/curso — aparecem no menu de opções do player,
    * com download direto. Qualquer utilizador autenticado pode descarregar. */
   recursos?: CursoRecurso[];
+  /** O vídeo (de `videoId`) tem legendas carregadas pelo professor. */
+  temLegenda?: boolean;
 }
 
 const EMPTY_RECURSOS: CursoRecurso[] = [];
@@ -115,7 +119,16 @@ export function ModernVideoPlayer({
   videoId,
   onViewRegistered,
   recursos = EMPTY_RECURSOS,
+  temLegenda = false,
 }: ModernVideoPlayerProps) {
+  // Preferências de Configurações → Reprodução (com valores por omissão
+  // iguais aos do servidor, para quem ainda não as tem no payload).
+  const { user } = useAuth();
+  const velocidadePreferida = user?.preferencias?.velocidadeReproducao ?? 1;
+  const autoplayProximaAula = user?.preferencias?.autoplayProximaAula ?? true;
+  const retomarPosicao = user?.preferencias?.retomarPosicao ?? true;
+  const legendasPorOmissao = user?.preferencias?.legendasAtivas ?? true;
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -130,7 +143,7 @@ export function ModernVideoPlayer({
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(velocidadePreferida);
   const [isPiP, setIsPiP] = useState(false);
   const pipDisponivel =
     typeof document !== "undefined" && document.pictureInPictureEnabled;
@@ -240,6 +253,9 @@ export function ModernVideoPlayer({
     if (!retomaAtiva || !videoId) return;
 
     let vivo = true;
+    // "Retomar onde ficaste" desligado: a posição continua a ser guardada
+    // (para voltar a funcionar se o religar), mas começa sempre do início.
+    if (!retomarPosicao) return;
     void api.getPosicaoVideo(videoId).then((segundos) => {
       // Se entretanto o utilizador já avançou por conta própria, não salta.
       if (!vivo || (reproduziuRef.current && tempoAtualRef.current > 5)) return;
@@ -254,7 +270,38 @@ export function ModernVideoPlayer({
       // pedido termina mesmo que a página esteja a fechar).
       if (reproduziuRef.current) void api.guardarPosicaoVideo(id, tempoAtualRef.current, true);
     };
-  }, [videoId, fileUrl, retomaAtiva, aplicarPosicaoPendente]);
+  }, [videoId, fileUrl, retomaAtiva, aplicarPosicaoPendente, retomarPosicao]);
+
+  // --- Legendas (WebVTT carregado pelo professor) ---
+  const [legendaUrl, setLegendaUrl] = useState<string | null>(null);
+  const [legendasVisiveis, setLegendasVisiveis] = useState(legendasPorOmissao);
+  const legendaDoVideoAtual = temLegenda && !!videoId && current.fileUrl === fileUrl;
+
+  useEffect(() => {
+    setLegendaUrl(null);
+    if (!legendaDoVideoAtual || !videoId) return;
+    let vivo = true;
+    let url: string | null = null;
+    void api.carregarLegenda(videoId).then((u) => {
+      url = u;
+      if (vivo) setLegendaUrl(u);
+      else if (u) URL.revokeObjectURL(u);
+    });
+    return () => {
+      vivo = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [legendaDoVideoAtual, videoId]);
+
+  // O atributo `default` do <track> só conta no primeiro carregamento — o
+  // modo de cada faixa é o que manda a partir daí.
+  useEffect(() => {
+    const faixas = videoRef.current?.textTracks;
+    if (!faixas) return;
+    for (let i = 0; i < faixas.length; i++) {
+      faixas[i].mode = legendasVisiveis ? "showing" : "hidden";
+    }
+  }, [legendasVisiveis, legendaUrl]);
 
   // Fechar o separador / mudar de app no telemóvel: guarda já a posição.
   useEffect(() => {
@@ -405,11 +452,13 @@ export function ModernVideoPlayer({
     setDuration(0);
     setIsPlaying(false);
     setIsLoading(true);
-    setPlaybackRate(1);
+    setPlaybackRate(velocidadePreferida);
     cancelNextCountdown();
     if (videoRef.current) {
-      videoRef.current.playbackRate = 1;
       videoRef.current.load();
+      // `load()` repõe a velocidade a 1 — só depois se aplica a preferida.
+      videoRef.current.defaultPlaybackRate = velocidadePreferida;
+      videoRef.current.playbackRate = velocidadePreferida;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.fileUrl, current.externalUrl]);
@@ -595,7 +644,8 @@ export function ModernVideoPlayer({
     if (isLooping) return;
     // Ao terminar, inicia uma contagem regressiva de 5s antes de avançar
     // automaticamente para o próximo vídeo, dando tempo ao utilizador para cancelar.
-    if (canGoNext) {
+    // Só se a preferência "passar à aula seguinte" estiver ligada.
+    if (canGoNext && autoplayProximaAula) {
       startNextCountdown();
     }
   };
@@ -700,6 +750,11 @@ export function ModernVideoPlayer({
         case "L":
           e.preventDefault();
           setIsLooping((prev) => !prev);
+          break;
+        case "c":
+        case "C":
+          e.preventDefault();
+          setLegendasVisiveis((v) => !v);
           break;
       }
     };
@@ -833,7 +888,11 @@ export function ModernVideoPlayer({
         playsInline
         preload="metadata"
         loop={isLooping}
-      />
+      >
+        {legendaUrl && (
+          <track kind="subtitles" srcLang="pt" label="Português" src={legendaUrl} default={legendasVisiveis} />
+        )}
+      </video>
 
       {/* Loading overlay */}
       {isLoading && (
@@ -1052,6 +1111,20 @@ export function ModernVideoPlayer({
             </div>
 
             <div className="flex items-center gap-1">
+              {legendaUrl && (
+                <button
+                  onClick={() => setLegendasVisiveis((v) => !v)}
+                  className={cn(
+                    "p-1.5 rounded-full transition text-white",
+                    legendasVisiveis ? "bg-white/30" : "hover:bg-white/20"
+                  )}
+                  aria-label={legendasVisiveis ? "Esconder legendas" : "Mostrar legendas"}
+                  aria-pressed={legendasVisiveis}
+                  title={legendasVisiveis ? "Esconder legendas (C)" : "Mostrar legendas (C)"}
+                >
+                  <Captions className="h-4 w-4" />
+                </button>
+              )}
               <button
                 onClick={() => setIsLooping((prev) => !prev)}
                 className={cn(

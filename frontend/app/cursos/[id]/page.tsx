@@ -31,6 +31,7 @@ import { ListaRecursos } from "@/components/curso/ListaRecursos";
 import { UploadRecurso } from "@/components/curso/UploadRecurso";
 import { AvaliacoesCurso } from "@/components/curso/AvaliacoesCurso";
 import { BotaoCertificado } from "@/components/curso/BotaoCertificado";
+import { BotaoDenunciar } from "@/components/moderacao/denunciar";
 
 /** "Retomar onde ficaste": abre a aula mexida mais recentemente, se ainda
  * estiver a meio e desbloqueada; senão a primeira aula por ver; senão a 1.ª. */
@@ -178,6 +179,20 @@ export default function CoursePlayerPage() {
                   videoId={activeVideo.id}
                   onViewRegistered={() => marcarAulaComoAssistida(activeVideo.id)}
                   recursos={[...curso.recursos, ...activeVideo.recursos]}
+                  temLegenda={activeVideo.temLegenda}
+                  // "Seguinte"/"anterior" = outra aula deste curso (a seguinte só
+                  // se já estiver desbloqueada). Ao terminar, o player avança
+                  // sozinho se a preferência "passar à aula seguinte" estiver ligada.
+                  hasNext={activeIndex < curso.videos.length - 1 && desbloqueada(activeIndex + 1)}
+                  hasPrevious={activeIndex > 0}
+                  onNext={() => {
+                    const seguinte = curso.videos[activeIndex + 1];
+                    if (seguinte) selecionarAula(seguinte.id, activeIndex + 1);
+                  }}
+                  onPrevious={() => {
+                    const anterior = curso.videos[activeIndex - 1];
+                    if (anterior) setActiveVideoId(anterior.id);
+                  }}
                 />
               ) : (
                 <div
@@ -238,7 +253,10 @@ export default function CoursePlayerPage() {
 
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{curso.title}</h1>
-            <ShareButton url={`/cursos/${curso.id}`} titulo={curso.title} />
+            <div className="flex shrink-0 items-center gap-1">
+              <ShareButton url={`/cursos/${curso.id}`} titulo={curso.title} />
+              {!curso.souOProfessor && <BotaoDenunciar tipo="curso" id={curso.id} autorId={curso.teacherUserId} />}
+            </div>
           </div>
 
           <div className="flex items-center gap-3">

@@ -16,7 +16,8 @@ from apps.gamificacao.services import processar_atividade_diaria
 
 from .emails import enviar_email_verificacao
 from .models import User
-from .views import PRE_2FA_SESSION_KEY, _user_payload
+from .sessoes import registar_dispositivo
+from .views import PRE_2FA_SESSION_KEY, _user_payload, resposta_conta_sancionada
 
 
 def _json(data, status=200):
@@ -41,7 +42,15 @@ def perfil_completar(request):
     return _json({'ok': True, 'user': _user_payload(request.user)})
 
 
-# ── Preferências (tema + notificações) ───────────────────────────────────────
+# ── Preferências (tema, notificações, reprodução, acessibilidade, privacidade) ─
+
+CAMPOS_BOOLEANOS = (
+    'notif_email_novidades', 'notif_email_comunidade', 'notif_email_gamificacao',
+    'autoplay_proxima_aula', 'retomar_posicao', 'legendas_ativas',
+    'reduzir_animacoes', 'alto_contraste',
+    'aparecer_ranking', 'mostrar_cursos_perfil', 'mostrar_conquistas_perfil', 'mostrar_publicacoes_perfil',
+)
+
 
 @csrf_exempt
 @require_POST
@@ -65,9 +74,29 @@ def preferencias_atualizar(request):
         user.tema_preferido = tema
         update_fields.append('tema_preferido')
 
-    for campo in ('notif_email_novidades', 'notif_email_comunidade', 'notif_email_gamificacao'):
+    for campo in CAMPOS_BOOLEANOS:
         if campo in body:
             setattr(user, campo, bool(body.get(campo)))
+            update_fields.append(campo)
+
+    if 'velocidade_reproducao' in body:
+        try:
+            velocidade = float(body.get('velocidade_reproducao'))
+        except (TypeError, ValueError):
+            velocidade = None
+        if velocidade not in User.VELOCIDADES:
+            return _json({'ok': False, 'error': 'Velocidade inválida.'}, 400)
+        user.velocidade_reproducao = velocidade
+        update_fields.append('velocidade_reproducao')
+
+    for campo, choices in (
+        ('tamanho_texto', User.TAMANHO_TEXTO_CHOICES),
+        ('perfil_visibilidade', User.VISIBILIDADE_CHOICES),
+    ):
+        if campo in body:
+            if body.get(campo) not in dict(choices):
+                return _json({'ok': False, 'error': 'Valor inválido.'}, 400)
+            setattr(user, campo, body.get(campo))
             update_fields.append(campo)
 
     if update_fields:
@@ -157,7 +186,8 @@ def api_2fa_status(request):
     if not request.user.is_authenticated:
         return _json({'ok': False, 'error': 'Não autenticado.'}, 401)
     ativo = TOTPDevice.objects.filter(user=request.user, confirmed=True).exists()
-    return _json({'ok': True, 'ativo': ativo})
+    restantes = StaticToken.objects.filter(device__user=request.user).count() if ativo else 0
+    return _json({'ok': True, 'ativo': ativo, 'codigosRestantes': restantes})
 
 
 @csrf_exempt
@@ -207,15 +237,37 @@ def api_2fa_confirmar(request):
     device.confirmed = True
     device.save()
 
-    StaticDevice.objects.filter(user=request.user).delete()
-    static_device = StaticDevice.objects.create(user=request.user, name='backup')
-    codigos_backup = []
+    return _json({'ok': True, 'codigosBackup': _gerar_codigos_backup(request.user)})
+
+
+def _gerar_codigos_backup(user) -> list[str]:
+    StaticDevice.objects.filter(user=user).delete()
+    static_device = StaticDevice.objects.create(user=user, name='backup')
+    codigos = []
     for _ in range(10):
         token = StaticToken.random_token()
         StaticToken.objects.create(device=static_device, token=token)
-        codigos_backup.append(token)
+        codigos.append(token)
+    return codigos
 
-    return _json({'ok': True, 'codigosBackup': codigos_backup})
+
+@csrf_exempt
+@require_POST
+def api_2fa_novos_codigos(request):
+    """Gera 10 códigos de recuperação novos (os antigos deixam de valer).
+    Exige a palavra-passe atual."""
+    if not request.user.is_authenticated:
+        return _json({'ok': False, 'error': 'Não autenticado.'}, 401)
+    import json
+    try:
+        body = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return _json({'ok': False, 'error': 'Pedido inválido.'}, 400)
+    if not request.user.check_password(body.get('senha_atual') or ''):
+        return _json({'ok': False, 'error': 'Palavra-passe incorreta.'}, 400)
+    if not TOTPDevice.objects.filter(user=request.user, confirmed=True).exists():
+        return _json({'ok': False, 'error': 'O 2FA não está ativo nesta conta.'}, 400)
+    return _json({'ok': True, 'codigosBackup': _gerar_codigos_backup(request.user)})
 
 
 @csrf_exempt
@@ -261,8 +313,95 @@ def auth_verificar_2fa_json(request):
 
     del request.session[PRE_2FA_SESSION_KEY]
 
+    if user.esta_sancionado:
+        return resposta_conta_sancionada(user)
+
     from django.contrib.auth import login
     login(request, user)
     processar_atividade_diaria(user)
 
-    return _json({'ok': True, 'user': _user_payload(user)})
+    response = _json({'ok': True, 'user': _user_payload(user)})
+    registar_dispositivo(request, response, user)
+    return response
+
+
+# ── Segurança: sessões ativas ────────────────────────────────────────────────
+
+@require_GET
+def api_sessoes(request):
+    if not request.user.is_authenticated:
+        return _json({'ok': False, 'error': 'Não autenticado.'}, 401)
+    from .sessoes import sessoes_do_utilizador
+
+    atual = request.session.session_key
+    sessoes = sorted(
+        sessoes_do_utilizador(request.user), key=lambda x: (x.session_key != atual, -x.ultima_atividade.timestamp()),
+    )
+    return _json({'ok': True, 'sessoes': [
+        {
+            'id': x.id,
+            'dispositivo': x.dispositivo or 'Dispositivo desconhecido',
+            'ip': x.ip,
+            'criadaEm': x.criada_em.isoformat(),
+            'ultimaAtividade': x.ultima_atividade.isoformat(),
+            'atual': x.session_key == atual,
+        }
+        for x in sessoes
+    ]})
+
+
+@csrf_exempt
+@require_POST
+def api_sessao_terminar(request, sessao_id):
+    if not request.user.is_authenticated:
+        return _json({'ok': False, 'error': 'Não autenticado.'}, 401)
+    from .models import SessaoAtiva
+    from .sessoes import terminar_sessao
+
+    sessao = SessaoAtiva.objects.filter(id=sessao_id, utilizador=request.user).first()
+    if not sessao:
+        return _json({'ok': False, 'error': 'Sessão não encontrada.'}, 404)
+    if sessao.session_key == request.session.session_key:
+        return _json({'ok': False, 'error': 'Para terminar esta sessão, usa "Terminar sessão".'}, 400)
+    terminar_sessao(sessao)
+    return _json({'ok': True})
+
+
+@csrf_exempt
+@require_POST
+def api_sessoes_terminar_outras(request):
+    if not request.user.is_authenticated:
+        return _json({'ok': False, 'error': 'Não autenticado.'}, 401)
+    from .sessoes import terminar_sessoes
+
+    total = terminar_sessoes(request.user, exceto_chave=request.session.session_key)
+    return _json({'ok': True, 'terminadas': total})
+
+
+# ── Privacidade: exportar os meus dados ──────────────────────────────────────
+
+@require_GET
+def api_exportar_dados(request):
+    """Todos os dados pessoais do utilizador num JSON descarregável (direito
+    de acesso — Lei n.º 22/11 de Proteção de Dados Pessoais)."""
+    if not request.user.is_authenticated:
+        return _json({'ok': False, 'error': 'Não autenticado.'}, 401)
+    from .rate_limit import excedeu_limite
+
+    if excedeu_limite(f'exportar-dados:{request.user.pk}', 5, 60 * 60):
+        return _json({'ok': False, 'error': 'Já exportaste os teus dados várias vezes. Tenta daqui a uma hora.'}, 429)
+
+    from .exportacao import exportar_dados
+
+    import json
+    from django.http import HttpResponse
+    from django.utils import timezone
+
+    dados = exportar_dados(request.user)
+    response = HttpResponse(
+        json.dumps(dados, ensure_ascii=False, indent=2, default=str),
+        content_type='application/json; charset=utf-8',
+    )
+    nome = f'eyk-dados-{request.user.username}-{timezone.localdate():%Y-%m-%d}.json'
+    response['Content-Disposition'] = f'attachment; filename="{nome}"'
+    return response

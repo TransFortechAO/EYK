@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Avg, Count, Prefetch, Sum
-from django.http import HttpResponse
+from django.db.models import Avg, Count, Prefetch, Q, Sum
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -25,9 +25,11 @@ from apps.professores.models import (
     Video,
     VisualizacaoVideo,
 )
+from apps.accounts.notificacoes import notificar
 from apps.gamificacao.services import creditar_curso_concluido, creditar_professor_por_views
-
-TAMANHO_MAX_RECURSO_BYTES = 50 * 1024 * 1024  # 50MB, igual ao limite validado no frontend
+from apps.moderacao.filtro import ConteudoRecusado, sinalizar_se_necessario, verificar_publicacao
+from apps.moderacao.servicos import estao_bloqueados, ids_bloqueados
+from apps.plataforma.servicos import configuracao, limite_pdf_bytes
 
 User = get_user_model()
 
@@ -46,7 +48,7 @@ class CursoViewSet(viewsets.ModelViewSet):
         # queries, em vez de uma query extra por curso — e outra por vídeo
         # dentro de cada curso — como acontecia antes (bug de N+1 clássico,
         # o maior responsável por listagens lentas desta API).
-        videos_ativos = Video.objects.filter(ativo=True).order_by('ordem', 'criado_em').prefetch_related(
+        videos_ativos = Video.objects.filter(ativo=True, oculto=False).order_by('ordem', 'criado_em').prefetch_related(
             'reacoes', 'visualizacoes', 'recursos',
             # Só as posições do próprio utilizador ("retomar onde ficaste").
             Prefetch(
@@ -56,14 +58,14 @@ class CursoViewSet(viewsets.ModelViewSet):
             ),
         )
         return (
-            Curso.objects.filter(ativo=True)
+            Curso.objects.filter(ativo=True, oculto=False)
             .select_related('professor', 'categoria')
             .prefetch_related(
                 Prefetch('videos', queryset=videos_ativos, to_attr='videos_ativos'),
                 'inscricoes',
                 'engajamentos',
                 'recursos',
-                'avaliacoes',
+                Prefetch('avaliacoes', queryset=AvaliacaoCurso.objects.filter(oculto=False)),
             )
         )
 
@@ -101,7 +103,7 @@ def video_list(request):
     tab = request.query_params.get('tab', 'recent')
 
     videos_queryset = (
-        Video.objects.filter(ativo=True, curso__isnull=True)
+        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True)
         .select_related('professor')
         .prefetch_related('reacoes', 'visualizacoes', 'recursos')
     )
@@ -125,7 +127,7 @@ def video_list(request):
 @permission_classes([permissions.IsAuthenticated])
 def video_detail(request, pk):
     try:
-        video = Video.objects.select_related('professor').get(pk=pk, ativo=True, curso__isnull=True)
+        video = Video.objects.select_related('professor').get(pk=pk, ativo=True, oculto=False, curso__isnull=True)
     except Video.DoesNotExist:
         return Response({'detail': 'Vídeo não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -169,7 +171,7 @@ def _verificar_curso_concluido(user, curso) -> bool:
     if not inscricao or inscricao.concluido:
         return False
 
-    videos_ids = list(curso.videos.filter(ativo=True).values_list('id', flat=True))
+    videos_ids = list(curso.videos.filter(ativo=True, oculto=False).values_list('id', flat=True))
     if not videos_ids:
         return False
 
@@ -276,18 +278,32 @@ def video_comentarios(request, pk):
                 # Achata respostas-a-respostas para um só nível de conversa.
                 parent = parent.parent
 
+        if parent and estao_bloqueados(request.user, parent.autor):
+            return Response(
+                {'detail': 'Não podes responder a este utilizador.'}, status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            termos = verificar_publicacao(request.user, conteudo, 'comentario')
+        except ConteudoRecusado as erro:
+            return Response({'detail': erro.mensagem}, status=erro.status)
+
         comentario = ComentarioVideo.objects.create(
             video=video, autor=request.user, conteudo=conteudo, parent=parent,
         )
-        serializer = ComentarioVideoSerializer(comentario, context={'request': request})
+        sinalizar_se_necessario('comentario_video', comentario, termos)
+        _notificar_comentario_video(request, video, comentario, parent)
+        serializer = ComentarioVideoSerializer(comentario, context=_contexto(request))
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    ocultos = ids_bloqueados(request.user)
     comentarios = (
         ComentarioVideo.objects.filter(video=video, parent__isnull=True)
+        .filter(Q(oculto=False) | Q(autor=request.user))
+        .exclude(autor_id__in=ocultos)
         .select_related('autor')
         .order_by('-criado_em')
     )
-    serializer = ComentarioVideoSerializer(comentarios, many=True, context={'request': request})
+    serializer = ComentarioVideoSerializer(comentarios, many=True, context={'request': request, 'ocultos': ocultos})
     return Response(serializer.data)
 
 
@@ -304,7 +320,7 @@ def video_comentario_detail(request, pk, comentario_id):
     if request.method == 'DELETE':
         e_autor = comentario.autor_id == request.user.id
         e_dono_video = video.professor.user_id == request.user.id
-        if not (e_autor or e_dono_video):
+        if not (e_autor or e_dono_video or request.user.is_staff):
             return Response(
                 {'detail': 'Sem permissão para apagar este comentário.'}, status=status.HTTP_403_FORBIDDEN,
             )
@@ -319,11 +335,16 @@ def video_comentario_detail(request, pk, comentario_id):
     conteudo = (request.data.get('conteudo') or '').strip()
     if not conteudo:
         return Response({'detail': 'Escreve um comentário.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        termos = verificar_publicacao(request.user, conteudo, 'bio')
+    except ConteudoRecusado as erro:
+        return Response({'detail': erro.mensagem}, status=erro.status)
 
     comentario.conteudo = conteudo
     comentario.editado_em = timezone.now()
     comentario.save(update_fields=['conteudo', 'editado_em'])
-    serializer = ComentarioVideoSerializer(comentario, context={'request': request})
+    sinalizar_se_necessario('comentario_video', comentario, termos)
+    serializer = ComentarioVideoSerializer(comentario, context=_contexto(request))
     return Response(serializer.data)
 
 
@@ -351,7 +372,7 @@ def curso_inscrever(request, pk):
     """Auto-inscreve o aluno autenticado no curso e regista uma visualização
     (substitui a antiga view HTML `feed.assistir_curso`, que fazia o mesmo)."""
     try:
-        curso = Curso.objects.get(pk=pk, ativo=True)
+        curso = Curso.objects.get(pk=pk, ativo=True, oculto=False)
     except Curso.DoesNotExist:
         return Response({'detail': 'Curso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -395,9 +416,10 @@ def curso_recursos(request, pk):
         if (arquivo.content_type not in ('application/pdf',)
                 and not arquivo.name.lower().endswith('.pdf')):
             return Response({'detail': 'Apenas são aceites ficheiros PDF.'}, status=status.HTTP_400_BAD_REQUEST)
-        if arquivo.size > TAMANHO_MAX_RECURSO_BYTES:
+        if arquivo.size > limite_pdf_bytes():
             return Response(
-                {'detail': 'O ficheiro deve ter no máximo 50MB.'}, status=status.HTTP_400_BAD_REQUEST,
+                {'detail': f'O ficheiro deve ter no máximo {configuracao().limite_pdf_mb}MB.'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         nome = (request.data.get('nome') or arquivo.name or 'Recurso').strip()
@@ -503,9 +525,11 @@ def certificado_verificar(request, codigo):
 # ── Avaliações de curso ──────────────────────────────────────────────────────
 
 def _resumo_avaliacoes(curso) -> dict:
-    agregados = curso.avaliacoes.aggregate(media=Avg('estrelas'), total=Count('id'))
+    # As ocultadas pela moderação não contam para a média.
+    visiveis = curso.avaliacoes.filter(oculto=False)
+    agregados = visiveis.aggregate(media=Avg('estrelas'), total=Count('id'))
     distribuicao = {str(n): 0 for n in range(1, 6)}
-    for linha in curso.avaliacoes.values('estrelas').annotate(n=Count('id')):
+    for linha in visiveis.values('estrelas').annotate(n=Count('id')):
         distribuicao[str(linha['estrelas'])] = linha['n']
     return {
         'media': round(agregados['media'], 1) if agregados['media'] is not None else None,
@@ -540,10 +564,17 @@ def curso_avaliacoes(request, pk):
         if not 1 <= estrelas <= 5:
             return Response({'detail': 'Escolhe entre 1 e 5 estrelas.'}, status=status.HTTP_400_BAD_REQUEST)
         comentario = (request.data.get('comentario') or '').strip()[:2000]
+        termos = []
+        if comentario:
+            try:
+                termos = verificar_publicacao(request.user, comentario, 'avaliacao')
+            except ConteudoRecusado as erro:
+                return Response({'detail': erro.mensagem}, status=erro.status)
 
         avaliacao, criada = AvaliacaoCurso.objects.update_or_create(
             curso=curso, aluno=aluno, defaults={'estrelas': estrelas, 'comentario': comentario},
         )
+        sinalizar_se_necessario('avaliacao', avaliacao, termos)
         return Response(
             {
                 'avaliacao': AvaliacaoCursoSerializer(avaliacao, context={'request': request}).data,
@@ -557,7 +588,11 @@ def curso_avaliacoes(request, pk):
             AvaliacaoCurso.objects.filter(curso=curso, aluno=aluno).delete()
         return Response({'resumo': _resumo_avaliacoes(curso)})
 
-    avaliacoes = curso.avaliacoes.select_related('aluno__profile')
+    avaliacoes = (
+        curso.avaliacoes.select_related('aluno__profile')
+        .filter(Q(oculto=False) | Q(aluno=aluno))
+        .exclude(aluno__profile_id__in=ids_bloqueados(request.user))
+    )
     minha = next((a for a in avaliacoes if aluno and a.aluno_id == aluno.id), None)
     serializer_ctx = {'request': request}
     return Response({
@@ -566,3 +601,54 @@ def curso_avaliacoes(request, pk):
         'minha': AvaliacaoCursoSerializer(minha, context=serializer_ctx).data if minha else None,
         'avaliacoes': AvaliacaoCursoSerializer(avaliacoes, many=True, context=serializer_ctx).data,
     })
+
+
+def _contexto(request):
+    return {'request': request, 'ocultos': ids_bloqueados(request.user)}
+
+
+def _resumo_texto(texto: str, n: int = 80) -> str:
+    texto = ' '.join((texto or '').split())
+    return texto if len(texto) <= n else texto[:n - 1] + '…'
+
+
+def _notificar_comentario_video(request, video, comentario, parent):
+    """Avisa o autor do comentário original (resposta) e o professor do
+    vídeo (comentário novo) — nunca a própria pessoa nem quem a bloqueou."""
+    autor = request.user
+    nome = autor.get_display_name() or autor.username
+    link = f'/cursos/{video.curso_id}' if video.curso_id else f'/videos/{video.id}'
+    avisados = {autor.id}
+    if parent and parent.autor_id not in avisados and not estao_bloqueados(autor, parent.autor):
+        notificar(
+            parent.autor, 'comunidade',
+            f'{nome} respondeu ao teu comentário em "{video.titulo}": "{_resumo_texto(comentario.conteudo)}"',
+            link=link, categoria_email='comunidade', assunto_email=f'{nome} respondeu ao teu comentário',
+        )
+        avisados.add(parent.autor_id)
+    professor_user = video.professor.user
+    if professor_user.id not in avisados and not estao_bloqueados(autor, professor_user):
+        notificar(
+            professor_user, 'comunidade',
+            f'{nome} comentou o teu vídeo "{video.titulo}": "{_resumo_texto(comentario.conteudo)}"',
+            link=link, categoria_email='comunidade', assunto_email=f'Novo comentário em "{video.titulo}"',
+        )
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def video_legenda(request, pk):
+    """Legendas (WebVTT) de um vídeo. Servidas por aqui (e não pelo /media/)
+    para virem sempre com os cabeçalhos CORS da API — o player carrega-as
+    com fetch e cria um blob local para o <track>."""
+    video = get_object_or_404(Video, pk=pk, ativo=True)
+    if not video.legenda:
+        raise Http404
+    try:
+        with video.legenda.open('rb') as f:
+            conteudo = f.read()
+    except FileNotFoundError:
+        raise Http404
+    response = HttpResponse(conteudo, content_type='text/vtt; charset=utf-8')
+    response['Cache-Control'] = 'private, max-age=300'
+    return response

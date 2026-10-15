@@ -1,5 +1,7 @@
 "use client";
 
+import { useLimitesUpload } from "@/hooks/useLimitesUpload";
+import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -51,6 +53,7 @@ const EMPTY_FORM: ProfessorCursoPayload = {
 };
 
 export default function ProfessorCursosPage() {
+  const limites = useLimitesUpload();
   const confirm = useConfirm();
   const [cursos, setCursos] = useState<ProfessorCurso[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,16 +136,21 @@ export default function ProfessorCursosPage() {
 
   const onVideosSelecionados = (e: React.ChangeEvent<HTMLInputElement>) => {
     const ficheiros = Array.from(e.target.files || []);
-    if (ficheiros.length === 0) return;
-    setVideosNovos((prev) => [...prev, ...ficheiros]);
     e.target.value = "";
+    if (ficheiros.length === 0) return;
+    const grande = ficheiros.find((f) => f.size > limites.videoMb * 1024 * 1024);
+    if (grande) {
+      setErro(`"${grande.name}" tem mais de ${limites.videoMb}MB, o máximo por vídeo.`);
+      return;
+    }
+    setVideosNovos((prev) => [...prev, ...ficheiros]);
   };
 
   const removerVideoNovo = (index: number) => {
     setVideosNovos((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const RECURSO_TAMANHO_MAX_MB = 50;
+  const RECURSO_TAMANHO_MAX_MB = limites.pdfMb;
 
   const escolherRecursos = () => recursosInputRef.current?.click();
 
@@ -376,7 +384,15 @@ export default function ProfessorCursosPage() {
                 className="relative h-28 w-full bg-gradient-gold/20 bg-cover bg-center"
                 style={curso.thumbnail ? { backgroundImage: `url('${curso.thumbnail}')` } : undefined}
               >
-                <div className="absolute right-3 top-3">
+                <div className="absolute right-3 top-3 flex gap-1.5">
+                  {curso.oculto && (
+                    <Badge
+                      className="bg-red-600/90 text-white border-0 shadow"
+                      title="Ocultado pela moderação depois de denúncias. Recebeste uma notificação com o link para contestar."
+                    >
+                      Oculto pela moderação
+                    </Badge>
+                  )}
                   {curso.ativo ? (
                     <Badge className="bg-emerald-500/90 text-white border-0 shadow">Publicado</Badge>
                   ) : (
@@ -551,6 +567,11 @@ export default function ProfessorCursosPage() {
                             <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
                               <Film className="h-3.5 w-3.5 shrink-0" />
                               <span className="truncate">{video.titulo}</span>
+                              {video.oculto && (
+                                <span className="shrink-0 rounded bg-amber-500/15 px-1.5 text-[10px] text-amber-600 dark:text-amber-300">
+                                  oculta pela moderação
+                                </span>
+                              )}
                             </span>
                             <span className="flex shrink-0 items-center gap-2">
                               {video.duracao_segundos > 0 && (
@@ -588,6 +609,19 @@ export default function ProfessorCursosPage() {
                                 </button>
                               </span>
                             ))}
+                            <BotaoLegendas
+                              videoId={video.id}
+                              temLegenda={video.tem_legenda}
+                              disabled={submetendo}
+                              onChange={(tem) => {
+                                const cursoAtualizado = {
+                                  ...editando,
+                                  videos: editando.videos.map((v) => (v.id === video.id ? { ...v, tem_legenda: tem } : v)),
+                                };
+                                setEditando(cursoAtualizado);
+                                setCursos((prev) => prev.map((c) => (c.id === cursoAtualizado.id ? cursoAtualizado : c)));
+                              }}
+                            />
                             <button
                               type="button"
                               onClick={() => escolherRecursoAula(video.id)}

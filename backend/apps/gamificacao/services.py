@@ -196,4 +196,11 @@ def verificar_badges(user):
         if info['valor'] >= info['meta']:
             badge = Badge.objects.filter(slug=slug).first()
             if badge:
-                AlunoBadge.objects.get_or_create(utilizador=user, badge=badge)
+                _, nova = AlunoBadge.objects.get_or_create(utilizador=user, badge=badge)
+                if nova:
+                    from apps.accounts.notificacoes import notificar
+                    notificar(
+                        user, 'conquista', f'Desbloqueaste a conquista "{badge.nome}" — {badge.descricao}',
+                        link='/gamificacao', categoria_email='gamificacao',
+                        assunto_email=f'Nova conquista: {badge.nome}',
+                    )

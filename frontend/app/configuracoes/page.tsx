@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { User, Bell, Shield, Palette, Save, ShieldCheck, ShieldOff, Trash2, Copy, Check, Camera } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  User, Bell, Shield, Palette, Save, ShieldCheck, ShieldOff, Trash2, Copy, Check, Camera, PlayCircle, Lock, ExternalLink,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
@@ -19,6 +23,11 @@ import { useAuth } from "@/components/auth-gate";
 import { useTheme } from "@/components/theme-provider";
 import { useConfirm, useAlertDialog } from "@/components/confirm-dialog";
 import { api, API_BASE_URL, mediaUrl } from "@/lib/api";
+import { SecaoAcessibilidade, SecaoReproducao } from "./_componentes/preferencias";
+import { SecaoPrivacidade } from "./_componentes/privacidade";
+import { EstadoEmail, NovosCodigos2FA, SessoesAtivas } from "./_componentes/seguranca";
+
+const SEPARADORES = ["perfil", "notificacoes", "reproducao", "aparencia", "privacidade", "seguranca"];
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -32,11 +41,27 @@ function SaveButton({ state, onClick, label = "Guardar alterações" }: { state:
 }
 
 export default function ConfiguracoesPage() {
+  return (
+    <Suspense fallback={null}>
+      <Configuracoes />
+    </Suspense>
+  );
+}
+
+function Configuracoes() {
   const { user, refresh } = useAuth();
   const { theme, setTheme } = useTheme();
   const confirm = useConfirm();
   const alertDialog = useAlertDialog();
-  const [tab, setTab] = useState("perfil");
+  const router = useRouter();
+  // `?tab=` permite abrir um separador direto (ex: o link "desligar estes
+  // emails" no rodapé dos emails aponta para ?tab=notificacoes).
+  const tabInicial = useSearchParams().get("tab");
+  const [tab, setTabState] = useState(tabInicial && SEPARADORES.includes(tabInicial) ? tabInicial : "perfil");
+  const setTab = (t: string) => {
+    setTabState(t);
+    router.replace(`/configuracoes?tab=${t}`, { scroll: false });
+  };
 
   const isTeacher = Boolean(user?.isTeacher);
 
@@ -202,6 +227,7 @@ export default function ConfiguracoesPage() {
 
   // ── Segurança: 2FA ────────────────────────────────────────────────────────
   const [tem2FA, setTem2FA] = useState<boolean | null>(null);
+  const [codigosRestantes, setCodigosRestantes] = useState<number | null>(null);
   const [setup2FA, setSetup2FA] = useState<{ qrBase64: string; secret: string } | null>(null);
   const [codigo2FA, setCodigo2FA] = useState("");
   const [erro2FA, setErro2FA] = useState<string | null>(null);
@@ -210,7 +236,13 @@ export default function ConfiguracoesPage() {
   const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
-    api.seguranca.status2FA().then((r) => setTem2FA(r.ativo)).catch(() => setTem2FA(false));
+    api.seguranca
+      .status2FA()
+      .then((r) => {
+        setTem2FA(r.ativo);
+        setCodigosRestantes(typeof r.codigosRestantes === "number" ? r.codigosRestantes : null);
+      })
+      .catch(() => setTem2FA(false));
   }, []);
 
   const iniciar2FA = async () => {
@@ -303,20 +335,28 @@ export default function ConfiguracoesPage() {
       <PageHeader title="Configurações" description="Personaliza a tua experiência na plataforma EYK." />
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-surface">
-          <TabsTrigger value="perfil" className="gap-2">
-            <User className="h-4 w-4" /> Perfil
-          </TabsTrigger>
-          <TabsTrigger value="notificacoes" className="gap-2">
-            <Bell className="h-4 w-4" /> Notificações
-          </TabsTrigger>
-          <TabsTrigger value="seguranca" className="gap-2">
-            <Shield className="h-4 w-4" /> Segurança
-          </TabsTrigger>
-          <TabsTrigger value="aparencia" className="gap-2">
-            <Palette className="h-4 w-4" /> Aparência
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <TabsList className="bg-surface w-max">
+            <TabsTrigger value="perfil" className="gap-2">
+              <User className="h-4 w-4" /> Perfil
+            </TabsTrigger>
+            <TabsTrigger value="notificacoes" className="gap-2">
+              <Bell className="h-4 w-4" /> Notificações
+            </TabsTrigger>
+            <TabsTrigger value="reproducao" className="gap-2">
+              <PlayCircle className="h-4 w-4" /> Reprodução
+            </TabsTrigger>
+            <TabsTrigger value="aparencia" className="gap-2">
+              <Palette className="h-4 w-4" /> Aparência e acessibilidade
+            </TabsTrigger>
+            <TabsTrigger value="privacidade" className="gap-2">
+              <Lock className="h-4 w-4" /> Privacidade
+            </TabsTrigger>
+            <TabsTrigger value="seguranca" className="gap-2">
+              <Shield className="h-4 w-4" /> Segurança
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <div className="mt-6">
           {/* ═══════════════ PERFIL ═══════════════ */}
@@ -359,6 +399,11 @@ export default function ConfiguracoesPage() {
                     </Badge>
                   )}
                 </div>
+                <Button asChild variant="outline" className="gap-2 shrink-0">
+                  <Link href="/perfil">
+                    <ExternalLink className="h-4 w-4" /> Gerir o meu perfil
+                  </Link>
+                </Button>
               </div>
             </Card>
 
@@ -387,9 +432,9 @@ export default function ConfiguracoesPage() {
           <TabsContent value="notificacoes" className="space-y-5">
             <Card className="p-6 shadow-soft divide-y">
               {[
-                { key: "novidades", label: "Novidades da plataforma", desc: "Emails sobre atualizações e lançamentos.", value: notifNovidades, set: setNotifNovidades },
-                { key: "comunidade", label: "Emails da comunidade", desc: "Recebe emails quando alguém interage com os teus posts.", value: notifComunidade, set: setNotifComunidade },
-                { key: "gamificacao", label: "Gamificação", desc: "Conquistas, moedas e lembretes de streak.", value: notifGamificacao, set: setNotifGamificacao },
+                { key: "novidades", label: "Novidades da plataforma", desc: "Anúncios da equipa EYK e cursos/vídeos novos dos professores que segues.", value: notifNovidades, set: setNotifNovidades },
+                { key: "comunidade", label: "Emails da comunidade", desc: "Quando alguém comenta as tuas publicações ou vídeos, ou responde aos teus comentários (no máximo um email a cada 10 minutos).", value: notifComunidade, set: setNotifComunidade },
+                { key: "gamificacao", label: "Gamificação", desc: "Conquistas desbloqueadas e o lembrete para não perderes a ofensiva.", value: notifGamificacao, set: setNotifGamificacao },
               ].map((row) => (
                 <div key={row.key} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
                   <div>
@@ -409,10 +454,15 @@ export default function ConfiguracoesPage() {
                 <p className="pt-3 text-xs text-emerald-500">Preferências guardadas.</p>
               )}
             </Card>
+            <p className="text-xs text-muted-foreground">
+              As notificações dentro da plataforma (sino) aparecem sempre. Estes interruptores só controlam os emails, que
+              só são enviados se o teu email estiver confirmado. Alertas de segurança e decisões de moderação são sempre enviados.
+            </p>
           </TabsContent>
 
           {/* ═══════════════ SEGURANÇA ═══════════════ */}
           <TabsContent value="seguranca" className="space-y-5">
+            <EstadoEmail />
             <Card className="p-6 shadow-soft grid gap-5 sm:grid-cols-2">
               <div className="space-y-1 sm:col-span-2">
                 <p className="text-sm font-medium">Alterar email</p>
@@ -528,6 +578,8 @@ export default function ConfiguracoesPage() {
                 </div>
               )}
 
+              {tem2FA && !setup2FA && !codigosBackup && <NovosCodigos2FA restantes={codigosRestantes} />}
+
               {codigosBackup && codigosBackup.length > 0 && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
                   <p className="text-sm font-medium">
@@ -555,6 +607,8 @@ export default function ConfiguracoesPage() {
               )}
             </Card>
 
+            <SessoesAtivas />
+
             <Card className="p-6 shadow-soft border-red-500/30 space-y-3">
               <p className="font-medium text-red-400">Zona de perigo</p>
               <p className="text-sm text-muted-foreground">
@@ -578,6 +632,17 @@ export default function ConfiguracoesPage() {
                 <Switch checked={theme === "dark"} onCheckedChange={(v) => void alternarTema(v)} />
               </div>
             </Card>
+            <SecaoAcessibilidade />
+          </TabsContent>
+
+          {/* ═══════════════ REPRODUÇÃO ═══════════════ */}
+          <TabsContent value="reproducao" className="space-y-5">
+            <SecaoReproducao />
+          </TabsContent>
+
+          {/* ═══════════════ PRIVACIDADE ═══════════════ */}
+          <TabsContent value="privacidade" className="space-y-5">
+            <SecaoPrivacidade />
           </TabsContent>
         </div>
       </Tabs>

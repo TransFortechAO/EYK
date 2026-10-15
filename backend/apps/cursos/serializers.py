@@ -39,14 +39,18 @@ class CursoVideoSerializer(serializers.ModelSerializer):
     recursos = serializers.SerializerMethodField()
     posicao_segundos = serializers.SerializerMethodField()
     posicao_atualizada_em = serializers.SerializerMethodField()
+    tem_legenda = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail', 'ordem',
             'duracao_segundos', 'total_likes', 'assistido', 'recursos',
-            'posicao_segundos', 'posicao_atualizada_em',
+            'posicao_segundos', 'posicao_atualizada_em', 'tem_legenda',
         ]
+
+    def get_tem_legenda(self, obj):
+        return bool(obj.legenda)
 
     def _minha_posicao(self, obj):
         # `minhas_posicoes` vem de um Prefetch(..., to_attr=...) filtrado pelo
@@ -149,7 +153,7 @@ class CourseSerializer(serializers.ModelSerializer):
         cached = getattr(obj, 'videos_ativos', None)
         if cached is not None:
             return cached
-        return list(obj.videos.filter(ativo=True).order_by('ordem', 'criado_em'))
+        return list(obj.videos.filter(ativo=True, oculto=False).order_by('ordem', 'criado_em'))
 
     def get_videos(self, obj):
         return CursoVideoSerializer(self._videos_ativos(obj), many=True, context=self.context).data
@@ -209,10 +213,14 @@ class VideoSerializer(serializers.ModelSerializer):
     total_likes = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
     recursos = serializers.SerializerMethodField()
+    tem_legenda = serializers.SerializerMethodField()
 
     class Meta:
         model = Video
         fields = '__all__'
+
+    def get_tem_legenda(self, obj):
+        return bool(obj.legenda)
 
     def get_professor_foto(self, obj):
         prof = obj.professor
@@ -241,7 +249,7 @@ class AvaliacaoCursoSerializer(serializers.ModelSerializer):
         model = AvaliacaoCurso
         fields = [
             'id', 'estrelas', 'comentario', 'autor_nome', 'autor_user_id', 'autor_foto',
-            'criado_em', 'atualizado_em', 'tempo', 'minha',
+            'criado_em', 'atualizado_em', 'tempo', 'minha', 'oculto',
         ]
 
     def get_autor_nome(self, obj):
@@ -275,9 +283,9 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto', 'parent', 'conteudo',
             'criado_em', 'editado_em', 'tempo', 'total_likes', 'liked',
-            'pode_editar', 'pode_apagar', 'respostas',
+            'pode_editar', 'pode_apagar', 'respostas', 'oculto',
         ]
-        read_only_fields = ['id', 'autor', 'criado_em', 'editado_em']
+        read_only_fields = ['id', 'autor', 'criado_em', 'editado_em', 'oculto']
 
     def get_autor_nome(self, obj):
         return obj.autor.get_display_name()
@@ -326,7 +334,7 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
-        if obj.autor_id == request.user.id:
+        if obj.autor_id == request.user.id or request.user.is_staff:
             return True
         return obj.video.professor.user_id == request.user.id
 
@@ -334,4 +342,11 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
         if obj.parent_id is not None:
             return []
         respostas = obj.respostas.select_related('autor').order_by('criado_em')
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            from django.db.models import Q
+            respostas = respostas.filter(Q(oculto=False) | Q(autor=request.user))
+        ocultos = self.context.get('ocultos') or set()
+        if ocultos:
+            respostas = respostas.exclude(autor_id__in=ocultos)
         return ComentarioVideoSerializer(respostas, many=True, context=self.context).data

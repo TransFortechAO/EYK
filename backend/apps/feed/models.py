@@ -8,6 +8,9 @@ class Post(models.Model):
     conteudo = models.TextField()
     imagem = models.ImageField(upload_to='posts/', null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    # Ocultado pela moderação (denúncias): deixa de aparecer a terceiros, mas
+    # não é apagado — fica como prova e pode ser reposto.
+    oculto = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         ordering = ['-criado_em']
@@ -43,6 +46,7 @@ class Comentario(models.Model):
     conteudo = models.TextField()
     criado_em = models.DateTimeField(auto_now_add=True)
     editado_em = models.DateTimeField(null=True, blank=True)
+    oculto = models.BooleanField(default=False, db_index=True)  # ver Post.oculto
 
     class Meta:
         ordering = ['criado_em']

@@ -9,6 +9,7 @@ import { Topbar } from "@/components/topbar";
 import { AuthGate } from "@/components/auth-gate";
 import { OfflineBanner } from "@/components/pwa";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
+import { AvisoPlataforma } from "@/components/aviso-plataforma";
 
 const ROTAS_PUBLICAS = new Set([
   "/",
@@ -17,6 +18,9 @@ const ROTAS_PUBLICAS = new Set([
   "/recuperar-senha",
   "/recuperar-senha/confirmar",
   "/verificar-email",
+  "/contestar",
+  "/termos",
+  "/privacidade",
 ]);
 // Prefixos públicos (rotas dinâmicas), ex: verificação de um certificado.
 const PREFIXOS_PUBLICOS = ["/certificados/"];
@@ -32,6 +36,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     // Rotas públicas (landing, login, register) NÃO têm sidebar NÃO têm auth gate.
     return (
       <ThemeProvider>
+        <AvisoPlataforma />
         {children}
       </ThemeProvider>
     );
@@ -57,6 +62,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <div className="flex min-h-screen w-full">
             <AppSidebar />
             <div className="flex-1 flex flex-col">
+              <AvisoPlataforma />
               <OfflineBanner />
               <EmailVerificationBanner />
               <Topbar />

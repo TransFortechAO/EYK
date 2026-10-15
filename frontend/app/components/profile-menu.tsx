@@ -17,10 +17,8 @@ import { api, API_BASE_URL, mediaUrl } from "@/lib/api";
 
 /**
  * Ícone de perfil partilhado por toda a plataforma. Abre um menu cujo
- * primeiro item ("Perfil" / "Perfil do Professor") leva sempre à página de
- * perfil correta consoante o papel de quem está autenticado — aluno vai
- * para /configuracoes (que abre já na aba "Perfil"), professor vai para
- * /professor/perfil.
+ * primeiro item ("O meu perfil") leva à página privada do perfil (/perfil),
+ * igual para alunos e professores.
  */
 export function ProfileMenu({ className }: { className?: string }) {
   const { user } = useAuth();
@@ -51,8 +49,8 @@ export function ProfileMenu({ className }: { className?: string }) {
       .toUpperCase() ||
     "?";
 
-  const perfilHref = user?.isTeacher ? "/professor/perfil" : "/configuracoes";
-  const perfilLabel = user?.isTeacher ? "Perfil do Professor" : "O meu perfil";
+  const perfilHref = "/perfil";
+  const perfilLabel = "O meu perfil";
 
   return (
     <DropdownMenu>

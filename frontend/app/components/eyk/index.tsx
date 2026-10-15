@@ -14,6 +14,7 @@ import {
   Check,
   Link as LinkIcon,
   Star,
+  EyeOff,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { UserAvatar } from "@/components/UserAvatar";
 import { api, formatarDataCurta, type Course, type Video, type Post } from "@/lib/api";
 import { PostComments } from "@/components/eyk/post-comments";
+import { MenuModeracao } from "@/components/moderacao/denunciar";
 
 
 
@@ -312,7 +314,26 @@ export function VideoCard({ video }: { video: Video }) {
 }
 
 /* ---------- Post card ---------- */
-export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: () => void }) {
+/** Aviso no próprio conteúdo do autor quando a moderação o ocultou. */
+export function AvisoOculto({ className }: { className?: string }) {
+  return (
+    <p className={cn("inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2 py-1 text-xs text-amber-700 dark:text-amber-300", className)}>
+      <EyeOff className="h-3.5 w-3.5 shrink-0" />
+      Ocultado pela moderação — só tu o vês. Recebeste uma notificação com o link para contestar.
+    </p>
+  );
+}
+
+export function PostCard({
+  post,
+  onToggleLike,
+  onAutorBloqueado,
+}: {
+  post: Post;
+  onToggleLike?: () => void;
+  /** Chamado depois de o utilizador bloquear o autor (para tirar os posts dele da lista). */
+  onAutorBloqueado?: (userId: number) => void;
+}) {
   const [liked, setLiked] = useState(post.liked || false);
   const [likes, setLikes] = useState(post.likes);
 
@@ -361,9 +382,19 @@ export function PostCard({ post, onToggleLike }: { post: Post; onToggleLike?: ()
               <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
             </div>
           </div>
-          <ShareButton url={`/comunidade?post=${post.id}`} titulo="Publicação na comunidade EYK" />
+          <div className="flex items-center gap-1">
+            <ShareButton url={`/comunidade?post=${post.id}`} titulo="Publicação na comunidade EYK" />
+            <MenuModeracao
+              tipo="post"
+              id={post.id}
+              autorId={post.authorId}
+              autorNome={post.author}
+              onBloqueado={onAutorBloqueado}
+            />
+          </div>
         </div>
-        <p className="text-sm leading-relaxed text-foreground">{post.content}</p>
+        {post.oculto && <AvisoOculto />}
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{post.content}</p>
         <div className="flex items-center gap-4 pt-2">
           <Button
             variant="ghost"

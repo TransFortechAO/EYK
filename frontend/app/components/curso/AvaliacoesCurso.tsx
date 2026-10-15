@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useConfirm } from "@/components/confirm-dialog";
+import { BotaoDenunciar } from "@/components/moderacao/denunciar";
 import { cn } from "@/lib/utils";
 import { api, mensagemDeErro, type AvaliacoesCurso as Dados, type ResumoAvaliacoes } from "@/lib/api";
 
@@ -228,7 +229,10 @@ export function AvaliacoesCurso({
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                   <p className="text-sm font-medium">{a.minha ? "Tu" : a.autorNome}</p>
                   <Estrelas valor={a.estrelas} tamanho="h-3.5 w-3.5" />
-                  <span className="text-xs text-muted-foreground">{a.tempo}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {a.tempo}
+                    {a.oculto && " · oculta pela moderação (só tu a vês)"}
+                  </span>
                 </div>
                 {a.comentario && (
                   <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{a.comentario}</p>
@@ -245,6 +249,11 @@ export function AvaliacoesCurso({
                     >
                       <Trash2 className="h-3 w-3" /> Apagar
                     </button>
+                  </div>
+                )}
+                {!a.minha && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    <BotaoDenunciar tipo="avaliacao" id={a.id} autorId={a.autorUserId} variante="texto" className="-ml-1.5" />
                   </div>
                 )}
               </div>

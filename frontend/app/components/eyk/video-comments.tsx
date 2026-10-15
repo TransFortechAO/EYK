@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { api, type VideoComment } from "@/lib/api";
+import { api, mensagemDeErro, type VideoComment } from "@/lib/api";
+import { BotaoDenunciar } from "@/components/moderacao/denunciar";
 import { useAuth } from "@/components/auth-gate";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -50,7 +51,7 @@ export function VideoComments({ videoId }: { videoId: string | number }) {
       setNovoComentario("");
       await carregar();
     } catch (err) {
-      setErro(err instanceof Error ? err.message : "Erro ao comentar.");
+      setErro(mensagemDeErro(err, "Erro ao comentar."));
     } finally {
       setEnviando(false);
     }
@@ -212,6 +213,7 @@ function CommentItem({
           <span className="text-xs text-muted-foreground">
             {comentario.tempo}
             {comentario.editadoEm && " · editado"}
+            {comentario.oculto && " · oculto pela moderação (só tu o vês)"}
           </span>
         </div>
 
@@ -278,6 +280,13 @@ function CommentItem({
             </button>
           )}
 
+          <BotaoDenunciar
+            tipo="comentario_video"
+            id={comentario.id}
+            autorId={comentario.autorId}
+            variante="texto"
+            className="px-2 py-1"
+          />
           {comentario.podeApagar && (
             <button
               type="button"

@@ -200,6 +200,9 @@ def api_listar_utilizadores(request):
             'perfil_completo': u.perfil_completo,
             'date_joined': u.date_joined.isoformat(),
             'coins': coins,
+            'banido': u.banido,
+            'suspenso_ate': u.suspenso_ate.isoformat() if u.esta_suspenso else None,
+            'motivo_sancao': u.motivo_sancao if u.esta_sancionado else '',
         })
 
     return _json_response({'ok': True, 'users': users})

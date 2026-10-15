@@ -30,6 +30,7 @@ class Curso(models.Model):
     # (CursoViewSet, inscrição, recursos…) — sem índice isso é um varrimento
     # completo da tabela em cada pedido, cada vez mais lento com o crescimento.
     ativo = models.BooleanField(default=True, db_index=True)
+    oculto = models.BooleanField(default=False, db_index=True)  # ver Video.oculto
     publicado_em = models.DateField(null=True, blank=True)
 
     criado_em = models.DateTimeField(auto_now_add=True)
@@ -123,6 +124,7 @@ class AvaliacaoCurso(models.Model):
     aluno = models.ForeignKey(Aluno, on_delete=models.CASCADE, related_name='avaliacoes_cursos')
     estrelas = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comentario = models.TextField(blank=True)
+    oculto = models.BooleanField(default=False, db_index=True)  # ver feed.Post.oculto
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
