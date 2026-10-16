@@ -1,0 +1,67 @@
+# ============================================
+# NORMALIZAÇÃO DE QUEBRAS DE LINHA (LF vs CRLF)
+# ============================================
+# text=auto → Git decide automaticamente com base no conteúdo
+#             (converte para LF no repositório, mantém CRLF no Windows local)
+* text=auto eol=lf
+
+# ============================================
+# CÓDIGO FONTE — sempre LF no repositório
+# ============================================
+*.py      text eol=lf
+*.js      text eol=lf
+*.jsx     text eol=lf
+*.ts      text eol=lf
+*.tsx     text eol=lf
+*.json    text eol=lf
+*.css     text eol=lf
+*.scss    text eol=lf
+*.sass    text eol=lf
+*.html    text eol=lf
+*.vue     text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.toml    text eol=lf
+*.ini     text eol=lf
+*.cfg     text eol=lf
+*.conf    text eol=lf
+*.sh      text eol=lf
+*.bash    text eol=lf
+*.zsh     text eol=lf
+
+# ============================================
+# TEMPLATES DJANGO
+# ============================================
+*.html    text eol=lf
+
+# ============================================
+# BINÁRIOS — NÃO converter quebras de linha!
+# ============================================
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.svg     binary
+*.webp    binary
+*.bmp     binary
+*.mp4     binary
+*.mp3     binary
+*.wav     binary
+*.pdf     binary
+*.zip     binary
+*.tar     binary
+*.gz      binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.otf     binary
+*.eot     binary
+
+# ============================================
+# FICHEIROS ESPECÍFICOS DO WINDOWS
+# ============================================
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+*.ps1     text eol=crlf

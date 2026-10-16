@@ -1,0 +1,10 @@
+# Dependências de desenvolvimento
+-r base.txt
+
+# Ferramentas de desenvolvimento
+pytest==7.4.4
+pytest-django==4.5.2
+factory-boy==3.3.0
+ruff==0.5.5
+ipython==8.26.0
+django-extensions==3.2.3

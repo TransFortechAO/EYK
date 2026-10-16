@@ -1,0 +1,155 @@
+"use client";
+
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Users, Send } from "lucide-react";
+import { toast } from "sonner";
+import { PageHeader, SectionHeader, PostCard, EmptyState } from "@/components/eyk";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar } from "@/components/ui/avatar";
+import { api, mensagemDeErro, type Post } from "@/lib/api";
+import { UserInitialsLink } from "@/components/UserAvatar";
+
+export default function ComunidadePage() {
+  return (
+    <Suspense fallback={null}>
+      <ComunidadeConteudo />
+    </Suspense>
+  );
+}
+
+function ComunidadeConteudo() {
+  const searchParams = useSearchParams();
+  const postPartilhado = searchParams.get("post");
+  const [text, setText] = useState("");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [reagindoIds, setReagindoIds] = useState<Set<string>>(new Set());
+
+  const loadPosts = useCallback(async () => {
+    const list = await api.getPosts();
+    setPosts(list);
+  }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
+
+  useEffect(() => {
+    if (!postPartilhado || posts.length === 0) return;
+    const alvo = document.getElementById(`post-${postPartilhado}`);
+    if (alvo) {
+      alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [postPartilhado, posts]);
+
+  const submit = async () => {
+    if (!text.trim() || submitting) return;
+    try {
+      setSubmitting(true);
+      const newPost = await api.createPost(text.trim());
+      setPosts((prev) => [newPost, ...prev]);
+      setText("");
+    } catch (err) {
+      // Filtro automático (linguagem proibida, links em conta nova, spam…).
+      toast.error(mensagemDeErro(err, "Não foi possível publicar. Tenta de novo."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleLike = async (postId: string) => {
+    // Evita disparar dois pedidos para o mesmo post (ex: duplo clique antes
+    // do primeiro responder), que podia dar erro 500 por violar a restrição
+    // de reação única por utilizador.
+    if (reagindoIds.has(postId)) return;
+    setReagindoIds((prev) => new Set(prev).add(postId));
+    try {
+      const res = await api.reactPost(postId);
+
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                liked: res.liked,
+                likes: res.likes,
+              }
+            : post
+        )
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível reagir à publicação.");
+    } finally {
+      setReagindoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title="Comunidade"
+        description="Partilha o teu progresso, tira dúvidas e conecta-te com outros estudantes."
+      />
+
+      <Card className="p-5 shadow-soft">
+        <div className="flex gap-3">
+          <Avatar className="h-10 w-10 shrink-0">
+            <UserInitialsLink/>
+          </Avatar>
+          <div className="flex-1 space-y-3">
+            <Textarea
+              placeholder="O que estás a aprender hoje? Partilha com a comunidade..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="min-h-[90px] resize-none bg-surface"
+            />
+            <div className="flex justify-end">
+              <Button onClick={() => void submit()} disabled={!text.trim() || submitting} className="gap-2">
+                <Send className="h-4 w-4" />
+                {submitting ? "A publicar…" : "Publicar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <section>
+        <SectionHeader title="Publicações recentes" />
+        {posts.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2">
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                id={`post-${post.id}`}
+                className={
+                  postPartilhado === post.id
+                    ? "rounded-2xl ring-2 ring-primary transition-shadow"
+                    : undefined
+                }
+              >
+                <PostCard
+                  post={post}
+                  onToggleLike={() => void toggleLike(post.id)}
+                  onAutorBloqueado={(userId) => setPosts((prev) => prev.filter((p) => p.authorId !== userId))}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Users}
+            title="Ainda não há publicações."
+            description="Sê o primeiro a partilhar algo com a comunidade!"
+          />
+        )}
+      </section>
+    </div>
+  );
+}

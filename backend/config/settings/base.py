@@ -1,0 +1,155 @@
+import os
+from pathlib import Path
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Accept both names so existing deployments using SECRET_KEY keep working.
+SECRET_KEY = (
+    os.getenv('DJANGO_SECRET_KEY')
+    or os.getenv('SECRET_KEY')
+    or 'django-insecure-default-key-change-this-in-production'
+)
+
+DEBUG = False
+ALLOWED_HOSTS = []
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'apps.accounts',
+    'apps.alunos',
+    'apps.professores',
+    'apps.cursos',
+    'apps.feed',
+    'apps.gamificacao',
+    'apps.moderacao',
+    'apps.plataforma',
+    'rest_framework',
+    'corsheaders',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_otp.middleware.OTPMiddleware',
+    'apps.accounts.sessoes.ContaMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+ROOT_URLCONF = 'config.urls'
+TEMPLATES = [{
+    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+    'DIRS': [BASE_DIR / 'templates'],
+    'APP_DIRS': True,
+    'OPTIONS': {'context_processors': [
+        'django.template.context_processors.debug',
+        'django.template.context_processors.request',
+        'django.contrib.auth.context_processors.auth',
+        'django.contrib.messages.context_processors.messages',
+    ]},
+}]
+
+WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+DATABASES = {'default': {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': BASE_DIR / 'db.sqlite3',
+}}
+
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+LANGUAGE_CODE = 'pt'
+TIME_ZONE = 'Africa/Luanda'
+USE_I18N = True
+USE_TZ = True
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = 'accounts.User'
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+}
+
+NEXT_PUBLIC_URL = (os.getenv('NEXT_PUBLIC_URL') or os.getenv('NEXT_PUBLIC_APP_URL') or 'http://localhost:3000').rstrip('/')
+
+def _split_origins(*values):
+    result = []
+    for value in values:
+        for origin in (value or '').split(','):
+            origin = origin.strip().rstrip('/')
+            if origin and origin not in result:
+                result.append(origin)
+    return result
+
+CORS_ALLOWED_ORIGINS = _split_origins(NEXT_PUBLIC_URL, os.getenv('CORS_EXTRA'), os.getenv('CORS_ALLOWED_ORIGINS'))
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = _split_origins(
+    *CORS_ALLOWED_ORIGINS,
+    os.getenv('CSRF_TRUSTED_ORIGINS'),
+    os.getenv('CSRF_TRUSTED_ORIGINS_EXTRA'),
+)
+
+# Atrás de um proxy (nginx) que acrescenta o IP real em X-Forwarded-For —
+# usado pelos limites de frequência (apps/accounts/rate_limit.py).
+CONFIAR_X_FORWARDED_FOR = os.getenv('CONFIAR_X_FORWARDED_FOR', 'False').lower() in ('1', 'true', 'sim', 'yes')
+
+# Celery (tarefas em segundo plano: anúncios, lembrete de ofensiva…).
+# Sem CELERY_BROKER_URL (desenvolvimento sem Redis), as tarefas correm logo
+# no próprio pedido e o agendador (beat) não existe.
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', '').strip() or 'memory://'
+CELERY_TASK_ALWAYS_EAGER = CELERY_BROKER_URL == 'memory://'
+CELERY_TASK_EAGER_PROPAGATES = False
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+# Uma tarefa que o worker não chegou a terminar (reinício/deploy) volta à fila.
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+
+# Agendador (Celery beat). O horário de cada envio é editado pelos admins
+# em Administração → Plataforma — aqui só fica o "relógio" que o verifica.
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    'agendador-plataforma': {
+        'task': 'apps.plataforma.tasks.ciclo_agendador',
+        'schedule': crontab(minute='*/5'),
+    },
+    'resetar-ofensivas-quebradas': {
+        'task': 'apps.gamificacao.tasks.resetar_ofensivas_quebradas',
+        'schedule': crontab(hour=0, minute=5),
+    },
+}
