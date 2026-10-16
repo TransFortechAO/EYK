@@ -316,12 +316,13 @@ function Anuncios() {
 }
 
 function EstadoAgendador({ agendador }: { agendador: ConfigAdmin["agendador"] }) {
-  if (agendador.modo === "imediato") {
+  const externo = agendador.modo === "imediato";
+  if (externo && !agendador.ultimoCiclo) {
     return (
       <p className="flex items-start gap-2 rounded-xl border border-border/70 bg-surface/50 p-3 text-xs text-muted-foreground">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-        Sem Celery configurado (desenvolvimento): os anúncios saem logo, mas os agendados e o lembrete automático só
-        funcionam com o worker a correr (em produção, o serviço eyk-worker).
+        Sem Celery configurado: os anúncios saem logo, mas os agendados e o lembrete automático precisam de um
+        agendador — o serviço eyk-worker (plano pago) ou o workflow &quot;Agendador&quot; do GitHub Actions (plano gratuito).
       </p>
     );
   }
@@ -332,14 +333,16 @@ function EstadoAgendador({ agendador }: { agendador: ConfigAdmin["agendador"] })
         {agendador.ultimoCiclo
           ? `O agendador não dá sinal ${tempoRelativo(agendador.ultimoCiclo)}. `
           : "O agendador ainda não deu sinal. "}
-        Confirma que o worker do Celery (eyk-worker) está a correr — sem ele, nada agendado é enviado.
+        {externo
+          ? "Confirma que o workflow \"Agendador\" do GitHub Actions está a correr — sem ele, nada agendado é enviado."
+          : "Confirma que o worker do Celery (eyk-worker) está a correr — sem ele, nada agendado é enviado."}
       </p>
     );
   }
   return (
     <p className="flex items-center gap-2 text-xs text-muted-foreground">
-      <span className="h-2 w-2 rounded-full bg-emerald-500" /> Agendador ativo · última verificação{" "}
-      {tempoRelativo(agendador.ultimoCiclo)}
+      <span className="h-2 w-2 rounded-full bg-emerald-500" /> Agendador ativo{externo ? " (de hora a hora)" : ""} ·
+      última verificação {tempoRelativo(agendador.ultimoCiclo)}
     </p>
   );
 }

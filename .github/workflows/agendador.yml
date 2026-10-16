@@ -1,0 +1,70 @@
+# Agendador para o deploy gratuito (render-gratis.yaml), que não tem worker
+# nem Celery beat. Corre as mesmas tarefas que o beat, ligado diretamente à
+# base de dados de produção (Neon). Sem CELERY_BROKER_URL, as tarefas que
+# estas chamam (anúncios, lembretes) correm aqui mesmo.
+#
+# Secrets do repositório (Settings → Secrets and variables → Actions):
+#   DATABASE_URL, DJANGO_SECRET_KEY, NEXT_PUBLIC_URL, BREVO_API_KEY, DEFAULT_FROM_EMAIL
+# Sem DATABASE_URL, o workflow não faz nada (não falha).
+
+name: Agendador
+
+on:
+  schedule:
+    # De hora a hora: anúncios agendados e lembrete de ofensiva (hora definida
+    # em Administração → Plataforma).
+    - cron: "7 * * * *"
+    # 00:05 em Luanda (23:05 UTC): põe a zero as ofensivas quebradas.
+    - cron: "5 23 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: agendador
+  cancel-in-progress: false
+
+jobs:
+  agendador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DJANGO_ENV: prod
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+      NEXT_PUBLIC_URL: ${{ secrets.NEXT_PUBLIC_URL }}
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+      DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
+    steps:
+      - name: Verificar configuração
+        id: cfg
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL não definido — agendador desligado."
+            echo "ativo=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ativo=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ativo == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.cfg.outputs.ativo == 'true'
+        with:
+          python-version-file: backend/.python-version
+          cache: pip
+          cache-dependency-path: backend/requirements/*.txt
+
+      - name: Instalar dependências
+        if: steps.cfg.outputs.ativo == 'true'
+        working-directory: backend
+        run: pip install -r requirements/prod.txt
+
+      - name: Ciclo do agendador (anúncios e lembrete de ofensiva)
+        if: steps.cfg.outputs.ativo == 'true' && github.event.schedule != '5 23 * * *'
+        working-directory: backend
+        run: python manage.py shell -c "from apps.plataforma.tasks import ciclo_agendador; ciclo_agendador()"
+
+      - name: Repor ofensivas quebradas
+        if: steps.cfg.outputs.ativo == 'true' && github.event.schedule == '5 23 * * *'
+        working-directory: backend
+        run: python manage.py shell -c "from apps.gamificacao.tasks import resetar_ofensivas_quebradas; print(resetar_ofensivas_quebradas())"

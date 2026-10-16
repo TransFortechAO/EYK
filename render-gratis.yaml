@@ -1,0 +1,84 @@
+# Blueprint do Render — versão GRATUITA (planos free de vários serviços).
+#   Dashboard do Render → New → Blueprint → este repositório
+#   → Blueprint Path: render-gratis.yaml
+# Guia passo a passo: docs/DEPLOY_RENDER.md
+#
+#   browser ──► eyk-web (Next.js, Render free) ──/api, /media…──► eyk-api (Django, Render free)
+#                                                                    │
+#                         Neon (PostgreSQL) ◄────────────────────────┤
+#                         Cloudflare R2 (vídeos, fotos, PDFs) ◄──────┤
+#                         Brevo (emails, por API) ◄──────────────────┘
+#   GitHub Actions (.github/workflows/agendador.yml) faz o papel do Celery beat.
+#
+# Sem Redis nem worker: sem CELERY_BROKER_URL as tarefas correm no próprio
+# pedido. A versão paga (com worker, Redis e disco) continua em render.yaml.
+
+envVarGroups:
+  - name: eyk-comum
+    envVars:
+      - key: DJANGO_ENV
+        value: prod
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      # URL público do frontend, sem barra final (ex: https://eyk-web.onrender.com).
+      - key: NEXT_PUBLIC_URL
+        sync: false
+      # Neon → Connection string (direta, não "pooled"), com ?sslmode=require.
+      - key: DATABASE_URL
+        sync: false
+      # Brevo → SMTP & API → API Keys. Remetente verificado no Brevo.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+
+services:
+  # API Django
+  - type: web
+    name: eyk-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements/prod.txt && python manage.py collectstatic --noinput
+    # O plano free não tem preDeployCommand: as migrações correm no arranque.
+    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-1} --worker-class gthread --threads 8 --timeout 600
+    healthCheckPath: /health/
+    envVars:
+      - fromGroup: eyk-comum
+      # Cloudflare R2 (o plano free não tem disco: sem bucket, os ficheiros
+      # perdiam-se a cada reinício).
+      - key: AWS_STORAGE_BUCKET_NAME
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_ENDPOINT_URL
+        sync: false
+      - key: AWS_S3_REGION_NAME
+        value: auto
+      - key: CONFIAR_X_FORWARDED_FOR
+        value: "True"
+      # 512 MB de RAM: um só processo do gunicorn (com 8 threads).
+      - key: WEB_CONCURRENCY
+        value: "1"
+
+  # Frontend Next.js
+  - type: web
+    name: eyk-web
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      # "/" = a API está no mesmo domínio (o Next reencaminha para o eyk-api).
+      - key: NEXT_PUBLIC_API_URL
+        value: /
+      # Endereço público do eyk-api (ex: https://eyk-api.onrender.com).
+      - key: API_INTERNO
+        sync: false
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

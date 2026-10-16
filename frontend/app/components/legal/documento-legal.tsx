@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 // Dados de contacto usados nos Termos e na Política de Privacidade.
 export const CONTACTO_LEGAL = {
   entidade: "Transfortech — Projeto EYK",
-  email: "transfortech0@gmail.com",
+  email: "apoioekolayakelela@gmail.com",
 };
 export const ULTIMA_ATUALIZACAO = "15 de outubro de 2026";
 

@@ -18,6 +18,9 @@ from .tasks import enviar_anuncio, enviar_lembrete_agora
 # Sem notícias do beat há mais do que isto (corre de 5 em 5 min) → o painel
 # avisa que o worker do Celery está parado.
 AGENDADOR_PARADO_APOS = datetime.timedelta(minutes=15)
+# Sem Celery (deploy gratuito), o ciclo é chamado de hora a hora pelo
+# GitHub Actions (.github/workflows/agendador.yml).
+AGENDADOR_EXTERNO_PARADO_APOS = datetime.timedelta(minutes=90)
 ANUNCIO_AGENDAR_MAX_DIAS = 90
 
 CAMPOS_NUMERICOS = {
@@ -63,14 +66,16 @@ def _iso(valor):
 
 
 def _estado_agendador(config: ConfiguracaoPlataforma) -> dict:
-    # Sem broker (desenvolvimento), as tarefas correm logo no próprio pedido
-    # e não há beat: os anúncios saem na hora, os agendados e o lembrete não.
+    # Sem broker, as tarefas correm logo no próprio pedido e não há beat: os
+    # anúncios saem na hora; os agendados e o lembrete dependem de um
+    # agendador externo (GitHub Actions no deploy gratuito).
     imediato = bool(getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False))
     ultimo = config.agendador_ultimo_ciclo
+    limite = AGENDADOR_EXTERNO_PARADO_APOS if imediato else AGENDADOR_PARADO_APOS
     return {
         'modo': 'imediato' if imediato else 'celery',
         'ultimoCiclo': _iso(ultimo),
-        'ativo': bool(ultimo and timezone.now() - ultimo < AGENDADOR_PARADO_APOS),
+        'ativo': bool(ultimo and timezone.now() - ultimo < limite),
     }
 
 

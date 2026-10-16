@@ -110,7 +110,14 @@ if AWS_STORAGE_BUCKET_NAME:
 else:
     SERVIR_MEDIA = _env_bool('SERVIR_MEDIA', True)
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email. Com BREVO_API_KEY, envia pela API HTTP do Brevo — o plano free do
+# Render bloqueia as portas SMTP (25, 465, 587). Sem ela, usa SMTP.
+BREVO_API_KEY = os.getenv('BREVO_API_KEY', '').strip()
+if BREVO_API_KEY:
+    EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+    ANYMAIL = {'BREVO_API_KEY': BREVO_API_KEY}
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_SSL = _env_bool('EMAIL_USE_SSL', EMAIL_PORT == 465)
