@@ -7,6 +7,20 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
+from apps.accounts.notificacoes import notificar
+from apps.gamificacao.services import creditar_curso_concluido, creditar_professor_por_views
+from apps.moderacao.filtro import ConteudoRecusado, sinalizar_se_necessario, verificar_publicacao
+from apps.moderacao.servicos import estao_bloqueados, ids_bloqueados
+from apps.plataforma.servicos import configuracao, limite_pdf_bytes
+from apps.professores.models import (
+    ComentarioVideo,
+    PosicaoVisualizacao,
+    ReacaoComentarioVideo,
+    ReacaoVideo,
+    Video,
+    VisualizacaoVideo,
+)
+
 from .certificados import gerar_certificado_pdf
 from .models import AvaliacaoCurso, Categoria, Curso, Inscricao, RecursoCurso
 from .serializers import (
@@ -17,19 +31,6 @@ from .serializers import (
     RecursoCursoSerializer,
     VideoSerializer,
 )
-from apps.professores.models import (
-    ComentarioVideo,
-    PosicaoVisualizacao,
-    ReacaoComentarioVideo,
-    ReacaoVideo,
-    Video,
-    VisualizacaoVideo,
-)
-from apps.accounts.notificacoes import notificar
-from apps.gamificacao.services import creditar_curso_concluido, creditar_professor_por_views
-from apps.moderacao.filtro import ConteudoRecusado, sinalizar_se_necessario, verificar_publicacao
-from apps.moderacao.servicos import estao_bloqueados, ids_bloqueados
-from apps.plataforma.servicos import configuracao, limite_pdf_bytes
 
 User = get_user_model()
 
@@ -377,6 +378,7 @@ def curso_inscrever(request, pk):
         return Response({'detail': 'Curso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
     from apps.alunos.models import Aluno
+
     from .models import EngajamentoCurso, Inscricao
 
     try:

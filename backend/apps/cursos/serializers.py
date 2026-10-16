@@ -1,9 +1,10 @@
 from django.utils.timesince import timesince
 from rest_framework import serializers
 
-from .models import AvaliacaoCurso, Categoria, Curso, RecursoCurso
 from apps.professores.models import ComentarioVideo, Video
 from apps.professores.serializers import RecursoVideoSerializer
+
+from .models import AvaliacaoCurso, Categoria, Curso, RecursoCurso
 
 
 def _tempo_desde(data):

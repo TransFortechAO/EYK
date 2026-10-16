@@ -1,6 +1,5 @@
 from django.db import migrations
 
-
 BADGES_PROFESSOR = [
     ('professor-popular', 'Professor Popular', 'Atinge 500 visualizações totais', 'Eye', 12),
     ('professor-influente', 'Professor Influente', 'Atinge 2000 visualizações totais', 'TrendingUp', 13),

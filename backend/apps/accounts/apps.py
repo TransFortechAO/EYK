@@ -6,5 +6,5 @@ class AccountsConfig(AppConfig):
     name = 'apps.accounts'
 
     def ready(self):
-        import apps.accounts.signals  # noqa: F401
         import apps.accounts.sessoes  # noqa: F401  (recetores de login/logout)
+        import apps.accounts.signals  # noqa: F401

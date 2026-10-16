@@ -1,4 +1,5 @@
 import os
+
 from .base import *
 
 # Apenas para desenvolvimento local/rede privada. Não usar estas permissões em produção.

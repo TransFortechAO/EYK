@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
-from django.db.models import OuterRef, Subquery, Sum, Value, IntegerField, CharField, F
+
+from django.db.models import CharField, F, IntegerField, OuterRef, Subquery, Sum, Value
 from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from apps.accounts.models import User
-from .models import AlunoBadge, Badge, Carteira, TransacaoMoeda, Ofensiva
-from .services import nivel_info, progresso_badges, verificar_badges
 
+from .models import AlunoBadge, Badge, Carteira, Ofensiva, TransacaoMoeda
+from .services import nivel_info, progresso_badges, verificar_badges
 
 MOTIVO_LABEL = {
     'curso_concluido': 'Curso concluído',

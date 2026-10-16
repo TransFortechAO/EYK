@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 
 # Carregar .env ANTES de importar base.py, porque base.py lê SECRET_KEY e URLs.
 load_dotenv()
-from .base import *  # noqa: E402,F401,F403
-from .base import _split_origins  # noqa: E402
-
 import dj_database_url  # noqa: E402
 from django.core.exceptions import ImproperlyConfigured  # noqa: E402
+
+from .base import *  # noqa: E402,F401,F403
+from .base import _split_origins  # noqa: E402
 
 
 def _env_bool(nome, omissao=False):

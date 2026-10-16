@@ -1,25 +1,9 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import (
-    CursoViewSet,
-    usuario_atual,
-    categoria_list,
-    video_list,
-    video_detail,
-    video_react,
-    video_registar_view,
-    video_posicao,
-    video_legenda,
-    video_comentarios,
-    video_comentario_detail,
-    video_comentario_reagir,
-    curso_inscrever,
-    curso_recursos,
-    curso_recurso_delete,
-    curso_certificado,
-    certificado_verificar,
-    curso_avaliacoes,
+from apps.accounts.api_notificacoes import (
+    notificacao_list,
+    notificacao_marcar_lida,
 )
 from apps.feed.api_views import (
     comentario_detail,
@@ -28,18 +12,35 @@ from apps.feed.api_views import (
     post_list,
     post_react,
 )
-from apps.accounts.api_notificacoes import (
-    notificacao_list,
-    notificacao_marcar_lida,
-)
 from apps.gamificacao.api_views import (
+    badges_list,
+    carteira_historico,
     gamificacao_painel,
     leaderboard_list,
     leaderboard_professores_mensal,
-    badges_list,
-    carteira_historico,
 )
 from apps.professores.api_views import professor_toggle_seguir
+
+from .views import (
+    CursoViewSet,
+    categoria_list,
+    certificado_verificar,
+    curso_avaliacoes,
+    curso_certificado,
+    curso_inscrever,
+    curso_recurso_delete,
+    curso_recursos,
+    usuario_atual,
+    video_comentario_detail,
+    video_comentario_reagir,
+    video_comentarios,
+    video_detail,
+    video_legenda,
+    video_list,
+    video_posicao,
+    video_react,
+    video_registar_view,
+)
 
 router = DefaultRouter()
 router.register(r'cursos', CursoViewSet, basename='cursos')

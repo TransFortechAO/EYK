@@ -15,8 +15,8 @@ from django.core.files import File
 from django.core.files.base import ContentFile
 
 from apps.cursos.models import Curso
-from apps.professores.models import Video
 from apps.professores import video_processing
+from apps.professores.models import Video
 from apps.professores.video_processing import (
     atualizar_duracao,
     calcular_duracao_segundos,

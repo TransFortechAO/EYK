@@ -3,8 +3,8 @@ import io
 
 import qrcode
 from django.contrib.auth import update_session_auth_hash
-from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
@@ -391,11 +391,12 @@ def api_exportar_dados(request):
     if excedeu_limite(f'exportar-dados:{request.user.pk}', 5, 60 * 60):
         return _json({'ok': False, 'error': 'Já exportaste os teus dados várias vezes. Tenta daqui a uma hora.'}, 429)
 
-    from .exportacao import exportar_dados
-
     import json
+
     from django.http import HttpResponse
     from django.utils import timezone
+
+    from .exportacao import exportar_dados
 
     dados = exportar_dados(request.user)
     response = HttpResponse(

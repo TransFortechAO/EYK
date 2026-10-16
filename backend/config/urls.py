@@ -2,8 +2,8 @@ import re
 
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path, re_path
 from django.shortcuts import redirect
+from django.urls import include, path, re_path
 
 from . import views
 
