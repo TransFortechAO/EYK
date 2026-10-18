@@ -31,6 +31,32 @@ export function Topbar() {
 
   const me = rows.find((r) => r.isMe);
 
+  // Número de notificações por ler, mostrado no sino. Atualiza ao abrir a
+  // página, de minuto a minuto (só com o separador visível), ao voltar ao
+  // separador e quando a página de notificações marca algo como lido.
+  const [naoLidas, setNaoLidas] = useState(0);
+  useEffect(() => {
+    let ativo = true;
+    const atualizar = () => {
+      if (document.visibilityState !== "visible") return;
+      void api.getNotificacoesNaoLidas().then((n) => {
+        if (ativo) setNaoLidas(n);
+      });
+    };
+    atualizar();
+    const timer = window.setInterval(atualizar, 60_000);
+    window.addEventListener("focus", atualizar);
+    window.addEventListener("eyk:notificacoes", atualizar);
+    document.addEventListener("visibilitychange", atualizar);
+    return () => {
+      ativo = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", atualizar);
+      window.removeEventListener("eyk:notificacoes", atualizar);
+      document.removeEventListener("visibilitychange", atualizar);
+    };
+  }, []);
+
   // ── Pesquisa (cursos, categorias e professores) ─────────────────────────
   const [query, setQuery] = useState("");
   const [mostrarResultados, setMostrarResultados] = useState(false);
@@ -208,9 +234,23 @@ export function Topbar() {
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        <Button asChild variant="ghost" size="icon" className="rounded-full" aria-label="Novidades">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="relative rounded-full"
+          aria-label={naoLidas > 0 ? `Notificações (${naoLidas} por ler)` : "Notificações"}
+        >
           <Link href="/notificacoes">
             <Bell className="h-5 w-5" />
+            {naoLidas > 0 && (
+              <span
+                className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-background tabular-nums"
+                aria-hidden
+              >
+                {naoLidas > 9 ? "9+" : naoLidas}
+              </span>
+            )}
           </Link>
         </Button>
 

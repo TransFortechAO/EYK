@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from apps.accounts.api_notificacoes import (
     notificacao_list,
     notificacao_marcar_lida,
+    notificacao_nao_lidas,
 )
 from apps.feed.api_views import (
     comentario_detail,
@@ -76,6 +77,7 @@ urlpatterns = [
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/reagir/', comentario_reagir, name='api-comentario-reagir'),
 
     path('notificacoes/', notificacao_list, name='notificacao-list'),
+    path('notificacoes/nao-lidas/', notificacao_nao_lidas, name='notificacao-nao-lidas'),
     path('notificacoes/<int:pk>/marcar-lida/', notificacao_marcar_lida, name='notificacao-marcar-lida'),
 
     path('gamificacao/', gamificacao_painel, name='gamificacao-painel'),

@@ -1199,7 +1199,7 @@ function initiais(name: string): string {
 // --- Fallback mock (enquanto a base de dados estiver vazia) ---------------------------
 
 import {
-  mockVideos, mockPosts, mockNotifications,
+  mockVideos, mockPosts,
   mockLeaderboard, mockBadges, mockWallet, courseCategories,
 } from "@/lib/mock-data";
 import { limparCacheApiOffline } from "@/lib/offline";
@@ -1690,15 +1690,23 @@ export const api = {
   //  NOTIFICAÇÕES
   // =========================================================================
   getNotificacoes: async (): Promise<Notification[]> => {
+    // Sem notificações reais devolve lista vazia — não se mostram exemplos
+    // inventados, que davam a ideia de haver novidades que não existem.
     try {
       const res = await fetchAPI<RawNotif[]>('/api/notificacoes/');
-      if (Array.isArray(res) && res.length > 0) {
-        return res.map(normalizeNotif);
-      }
+      return Array.isArray(res) ? res.map(normalizeNotif) : [];
     } catch {
-      /* fallback */
+      return [];
     }
-    return mockNotifications;
+  },
+  /** Quantas notificações por ler (para o número no sino do topo). */
+  getNotificacoesNaoLidas: async (): Promise<number> => {
+    try {
+      const res = await fetchAPI<{ count: number }>('/api/notificacoes/nao-lidas/');
+      return typeof res?.count === 'number' ? res.count : 0;
+    } catch {
+      return 0;
+    }
   },
   marcarNotificacaoLida: async (id: number | string): Promise<{ ok: boolean; read: boolean }> => {
     try {

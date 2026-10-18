@@ -82,3 +82,11 @@ def notificacao_marcar_lida(request, pk):
     n.lida = True
     n.save(update_fields=['lida'])
     return Response({'ok': True, 'read': True})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def notificacao_nao_lidas(request):
+    """Contagem leve para o sino do topo: só quantas notificações por ler."""
+    total = Notificacao.objects.filter(utilizador=request.user, lida=False).count()
+    return Response({'count': total})

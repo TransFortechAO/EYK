@@ -59,3 +59,25 @@ class TestNotificacaoMarcarLida:
         assert response.status_code == 404
         n.refresh_from_db()
         assert n.lida is False
+
+
+@pytest.mark.django_db
+class TestNotificacaoNaoLidas:
+    def test_exige_autenticacao(self, client):
+        response = client.get(reverse("notificacao-nao-lidas"))
+        assert response.status_code == 403
+
+    def test_conta_so_as_nao_lidas_do_proprio_utilizador(self, client, aluno_user, professor_user):
+        Notificacao.objects.create(utilizador=aluno_user, tipo="novidade", mensagem="a")
+        Notificacao.objects.create(utilizador=aluno_user, tipo="novidade", mensagem="b")
+        Notificacao.objects.create(utilizador=aluno_user, tipo="novidade", mensagem="c", lida=True)
+        Notificacao.objects.create(utilizador=professor_user, tipo="novidade", mensagem="d")
+
+        client.force_login(aluno_user)
+        response = client.get(reverse("notificacao-nao-lidas"))
+        assert response.status_code == 200
+        assert response.json() == {"count": 2}
+
+    def test_zero_quando_nao_ha_notificacoes(self, client, aluno_user):
+        client.force_login(aluno_user)
+        assert client.get(reverse("notificacao-nao-lidas")).json() == {"count": 0}

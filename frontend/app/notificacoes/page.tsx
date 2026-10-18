@@ -33,11 +33,14 @@ export default function NotificacoesPage() {
 
   useEffect(() => { void load(); }, []);
 
+  // Avisa o sino do topo para atualizar o número de notificações por ler.
+  const avisarSino = () => window.dispatchEvent(new Event("eyk:notificacoes"));
+
   const markAll = async () => {
+    const porLer = items.filter((n) => !n.read);
     setItems(items.map((n) => ({ ...n, read: true })));
-    for (const n of items) {
-      if (!n.read) void api.marcarNotificacaoLida(n.id);
-    }
+    await Promise.all(porLer.map((n) => api.marcarNotificacaoLida(n.id)));
+    avisarSino();
   };
 
   return (
@@ -83,7 +86,7 @@ export default function NotificacoesPage() {
                       <Link
                         href={n.link}
                         onClick={() => {
-                          if (!n.read) void api.marcarNotificacaoLida(n.id);
+                          if (!n.read) void api.marcarNotificacaoLida(n.id).then(avisarSino);
                         }}
                         className="font-medium text-primary hover:underline underline-offset-2"
                       >
