@@ -413,9 +413,7 @@ function RegisterConteudo() {
 
           <div className="mt-6 border-t border-white/[0.08] pt-6 text-center">
             <Link
-              href="https://forms.gle/KEp7rH9QHuVwkNHA9"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/ser-professor"
               className="text-sm font-medium text-white/55 hover:text-white/80 hover:underline"
             >
               Quer ser professor no EYK?

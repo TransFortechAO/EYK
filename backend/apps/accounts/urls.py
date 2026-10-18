@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import admin_api, api_perfil, perfis, views
+from . import admin_api, api_perfil, candidatura, perfis, views
 
 app_name = 'accounts'
 
@@ -13,6 +13,9 @@ urlpatterns = [
     path('auth/password-reset/', views.auth_password_reset, name='auth-password-reset'),
     path('auth/password-reset/validar/', views.auth_password_reset_validar, name='auth-password-reset-validar'),
     path('auth/password-reset/confirmar/', views.auth_password_reset_confirmar, name='auth-password-reset-confirmar'),
+    path('auth/professor/candidatura/', candidatura.candidatura_enviar, name='candidatura-enviar'),
+    path('auth/professor/candidatura/validar/', candidatura.candidatura_validar, name='candidatura-validar'),
+    path('auth/professor/candidatura/concluir/', candidatura.candidatura_concluir, name='candidatura-concluir'),
     path('auth/verificar-email/', views.auth_verificar_email, name='auth-verificar-email'),
     path('auth/reenviar-verificacao/', views.auth_reenviar_verificacao, name='auth-reenviar-verificacao'),
     path('api/pesquisar-utilizadores/', views.pesquisar_utilizadores, name='pesquisar-utilizadores'),

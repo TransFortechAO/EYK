@@ -19,6 +19,33 @@ class Professor(models.Model):
         return self.nome_publico
 
 
+class CandidaturaProfessor(models.Model):
+    """Pedido de quem quer ser professor, feito na página pública
+    "Quero ser professor". Fica guardado (para consulta e para tratar abusos
+    mais tarde); a conta só é criada quando a pessoa confirma o email e
+    escolhe a sua palavra-passe."""
+
+    nome = models.CharField(max_length=120)
+    email = models.EmailField()
+    telefone = models.CharField(max_length=30, blank=True)
+    area = models.CharField(max_length=100, blank=True)
+    apresentacao = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    concluida_em = models.DateTimeField(null=True, blank=True)
+    user = models.OneToOneField(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='candidatura_professor',
+    )
+
+    class Meta:
+        ordering = ['-criado_em']
+        verbose_name = 'candidatura a professor'
+        verbose_name_plural = 'candidaturas a professor'
+
+    def __str__(self):
+        return f'{self.nome} <{self.email}>'
+
+
 class Video(models.Model):
     professor = models.ForeignKey(Professor, on_delete=models.CASCADE, related_name='videos')
     curso = models.ForeignKey(

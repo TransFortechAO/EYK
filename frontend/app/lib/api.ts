@@ -634,6 +634,14 @@ export type CriarProfessorPayload = {
   area?: string;
 };
 
+export type CandidaturaProfessorPayload = {
+  nome: string;
+  email: string;
+  telefone?: string;
+  area?: string;
+  apresentacao?: string;
+};
+
 export type CriarAdministradorPayload = {
   username: string;
   email: string;
@@ -1502,6 +1510,25 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ uid, token, password }),
     });
+  },
+  // --- Candidatura pública a professor (sem intervenção de administradores) ---
+  enviarCandidaturaProfessor: async (dados: CandidaturaProfessorPayload) => {
+    return await fetchAPI<{ ok: boolean; email: string }>('/accounts/auth/professor/candidatura/', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    });
+  },
+  validarCandidaturaProfessor: async (token: string) => {
+    return await fetchAPI<{ ok: boolean; nome: string; email: string }>(
+      '/accounts/auth/professor/candidatura/validar/',
+      { method: 'POST', body: JSON.stringify({ token }) },
+    );
+  },
+  concluirCandidaturaProfessor: async (token: string, password: string) => {
+    return await fetchAPI<{ ok: boolean; user: AuthUser | null }>(
+      '/accounts/auth/professor/candidatura/concluir/',
+      { method: 'POST', body: JSON.stringify({ token, password }) },
+    );
   },
   verificarEmail: async (token: string) => {
     return await fetchAPI<{ ok: boolean; authenticated: boolean }>('/accounts/auth/verificar-email/', {

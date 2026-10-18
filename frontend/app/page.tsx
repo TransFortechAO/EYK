@@ -44,7 +44,7 @@ const rodapeLinks = {
     { label: "Termos de uso", href: "/termos" },
   ],
   Ensinar: [
-    { label: "Quero ser professor", href: "https://forms.gle/qfs6zo8QLHfRsnKX9", external: true },
+    { label: "Quero ser professor", href: "/ser-professor" },
   ],
   
 };

@@ -18,6 +18,8 @@ const ROTAS_PUBLICAS = new Set([
   "/recuperar-senha",
   "/recuperar-senha/confirmar",
   "/verificar-email",
+  "/ser-professor",
+  "/ser-professor/concluir",
   "/contestar",
   "/termos",
   "/privacidade",

@@ -131,3 +131,51 @@ def enviar_email_boas_vindas_conta(user: User, senha_temporaria: str, papel: str
         'Equipa EYK'
     )
     return _enviar(user, 'EYK · Bem-vindo(a) à plataforma', corpo)
+
+
+# ── Candidatura a professor ──────────────────────────────────────────────────
+
+CANDIDATURA_SALT = 'eyk.professores.candidatura'
+CANDIDATURA_VALIDADE_SEGUNDOS = 3 * 24 * 60 * 60  # 3 dias
+
+
+def gerar_token_candidatura(candidatura) -> str:
+    # O email vai dentro do token: se a candidatura mudar de email, os links
+    # antigos deixam de valer.
+    return signing.dumps({'c': candidatura.pk, 'e': candidatura.email.lower()}, salt=CANDIDATURA_SALT)
+
+
+def candidatura_do_token(token: str):
+    """Devolve a candidatura por concluir a que o token pertence, ou None se o
+    token for inválido, tiver expirado ou a candidatura já tiver sido usada."""
+    from apps.professores.models import CandidaturaProfessor
+
+    try:
+        dados = signing.loads(token, salt=CANDIDATURA_SALT, max_age=CANDIDATURA_VALIDADE_SEGUNDOS)
+    except signing.BadSignature:  # inclui SignatureExpired
+        return None
+    candidatura = CandidaturaProfessor.objects.filter(pk=dados.get('c')).first()
+    if (not candidatura or candidatura.concluida_em is not None
+            or candidatura.email.lower() != dados.get('e')):
+        return None
+    return candidatura
+
+
+def enviar_email_candidatura(candidatura) -> bool:
+    """Email com o link para confirmar o endereço e escolher a palavra-passe."""
+    link = _link_frontend('/ser-professor/concluir', token=gerar_token_candidatura(candidatura))
+    corpo = (
+        f'Olá {candidatura.nome},\n\n'
+        'Recebemos o teu pedido para ser professor na EYK. Para criares a tua conta, '
+        'confirma o teu email e escolhe a tua palavra-passe neste link:\n\n'
+        f'{link}\n\n'
+        'O link é válido durante 3 dias e só pode ser usado uma vez.\n\n'
+        'Se não fizeste este pedido, ignora este email.\n\n'
+        'Equipa EYK'
+    )
+    try:
+        send_mail('EYK · Cria a tua conta de professor', corpo, settings.DEFAULT_FROM_EMAIL, [candidatura.email])
+        return True
+    except Exception:
+        logger.exception('Falha ao enviar o email de candidatura %s', candidatura.pk)
+        return False
