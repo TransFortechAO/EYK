@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, Check, Copy, X } from "lucide-react";
+import { BodyPortal } from "@/components/body-portal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -34,6 +35,7 @@ export function CredenciaisDialog({
   };
 
   return (
+    <BodyPortal>
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       role="dialog"
@@ -84,5 +86,6 @@ export function CredenciaisDialog({
         </div>
       </Card>
     </div>
+    </BodyPortal>
   );
 }

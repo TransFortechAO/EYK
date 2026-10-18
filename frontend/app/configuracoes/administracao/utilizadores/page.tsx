@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/components/auth-gate";
+import { BodyPortal } from "@/components/body-portal";
 import { DialogoDecisao, type Decisao } from "@/components/moderacao/dialogo-decisao";
 import { NovoAdministradorDialog } from "@/components/admin/novo-administrador-dialog";
 import { CredenciaisDialog } from "@/components/admin/credenciais-dialog";
@@ -531,6 +532,7 @@ export default function AdminUtilizadoresPage() {
 
       {/* ===== Modal confirmar apagar ===== */}
       {apagar && (
+        <BodyPortal>
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
           onMouseDown={(e) => {
@@ -576,6 +578,7 @@ export default function AdminUtilizadoresPage() {
             </div>
           </Card>
         </div>
+        </BodyPortal>
       )}
 
       {novoAdminAberto && (

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Crown, Mail, User, UserRound, Lock, X } from "lucide-react";
 import { api, type ContaCriada, type CriarAdministradorPayload } from "@/lib/api";
+import { BodyPortal } from "@/components/body-portal";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ export function NovoAdministradorDialog({
   };
 
   return (
+    <BodyPortal>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       role="dialog"
@@ -169,5 +171,6 @@ export function NovoAdministradorDialog({
         </form>
       </Card>
     </div>
+    </BodyPortal>
   );
 }

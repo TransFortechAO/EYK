@@ -35,6 +35,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar } from "@/components/ui/avatar";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/components/auth-gate";
+import { BodyPortal } from "@/components/body-portal";
 import { CredenciaisDialog } from "@/components/admin/credenciais-dialog";
 
 type Toast = {
@@ -413,6 +414,7 @@ export default function AdminProfessoresPage() {
 
       {/* ===== Modal registar professor ===== */}
       {modalAberto && (
+        <BodyPortal>
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
           onMouseDown={(e) => {
@@ -526,6 +528,7 @@ export default function AdminProfessoresPage() {
             </form>
           </Card>
         </div>
+        </BodyPortal>
       )}
 
       {credenciais && (
