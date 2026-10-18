@@ -280,6 +280,10 @@ def auth_password_reset_confirmar(request):
 
     user.set_password(password)
     update_fields = ['password']
+    if user.deve_alterar_senha:
+        # Quem recupera a senha por email já escolheu uma própria.
+        user.deve_alterar_senha = False
+        update_fields.append('deve_alterar_senha')
     if not user.email_verificado:
         # Abrir o link enviado para o email já prova que o endereço é dele.
         user.email_verificado = True
@@ -466,6 +470,8 @@ def _user_payload(user: User) -> dict:
         'isTeacher': user.is_teacher if hasattr(user, 'is_teacher') else False,
         'isStudent': user.is_student if hasattr(user, 'is_student') else True,
         'isStaff': bool(user.is_staff),
+        'isSuperuser': bool(user.is_superuser),
+        'deveAlterarSenha': bool(user.deve_alterar_senha),
         'perfilCompleto': bool(user.perfil_completo),
         'emailVerificado': bool(user.email_verificado),
         'temaPreferido': user.tema_preferido,

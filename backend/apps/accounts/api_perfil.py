@@ -128,8 +128,12 @@ def alterar_senha(request):
     if len(nova_senha) < 8:
         return _json({'ok': False, 'error': 'A nova palavra-passe deve ter pelo menos 8 caracteres.', 'errors': {'nova_senha': 'Mínimo de 8 caracteres.'}}, 400)
 
+    if nova_senha == senha_atual:
+        return _json({'ok': False, 'error': 'A nova palavra-passe tem de ser diferente da atual.', 'errors': {'nova_senha': 'Tem de ser diferente da atual.'}}, 400)
+
     user.set_password(nova_senha)
-    user.save(update_fields=['password'])
+    user.deve_alterar_senha = False  # fim da senha temporária
+    user.save(update_fields=['password', 'deve_alterar_senha'])
     update_session_auth_hash(request, user)  # mantém a sessão válida após trocar a senha
 
     return _json({'ok': True})

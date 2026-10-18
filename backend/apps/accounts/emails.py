@@ -93,3 +93,41 @@ def enviar_email_verificacao(user: User) -> bool:
         'Equipa EYK'
     )
     return _enviar(user, 'EYK · Confirma o teu email', corpo)
+
+
+# ── Contas criadas por um administrador ──────────────────────────────────────
+
+_ALFABETO_SENHA = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'  # sem 0/O, 1/l/I
+
+
+def gerar_senha_temporaria(tamanho: int = 12) -> str:
+    """Senha aleatória legível (sem caracteres ambíguos) com pelo menos uma
+    minúscula, uma maiúscula e um algarismo."""
+    import secrets
+
+    while True:
+        senha = ''.join(secrets.choice(_ALFABETO_SENHA) for _ in range(tamanho))
+        if (any(c.islower() for c in senha) and any(c.isupper() for c in senha)
+                and any(c.isdigit() for c in senha)):
+            return senha
+
+
+def enviar_email_boas_vindas_conta(user: User, senha_temporaria: str, papel: str) -> bool:
+    """Felicita quem acabou de entrar na plataforma (professor ou administrador)
+    e envia o utilizador e a senha temporária. O frontend obriga a trocar a
+    senha no primeiro acesso, por isso a senha enviada deixa de valer logo."""
+    nome = user.get_display_name() or user.username
+    link = _link_frontend('/login')
+    corpo = (
+        f'Olá {nome},\n\n'
+        f'Parabéns e bem-vindo(a) à EYK! A tua conta de {papel} foi criada.\n\n'
+        'Os teus dados de acesso:\n'
+        f'  Utilizador: {user.username}\n'
+        f'  Senha temporária: {senha_temporaria}\n\n'
+        f'Entra aqui: {link}\n\n'
+        'No primeiro acesso vais ter de escolher uma senha nova, só tua. '
+        'Não partilhes esta senha com ninguém.\n\n'
+        'Se não esperavas este email, ignora-o.\n\n'
+        'Equipa EYK'
+    )
+    return _enviar(user, 'EYK · Bem-vindo(a) à plataforma', corpo)

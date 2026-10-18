@@ -82,7 +82,149 @@ class TestApiRegistarProfessor:
         response = _post_json(client, "accounts:api-admin-registar-professor", {})
         assert response.status_code == 400
         errors = response.json()["errors"]
-        assert "username" in errors and "email" in errors and "password" in errors
+        assert "username" in errors and "email" in errors and "nome_publico" in errors
+        # A senha e a área são opcionais: não são erros quando faltam.
+        assert "password" not in errors and "area" not in errors
+
+    def test_area_e_senha_opcionais_gera_senha_e_envia_email(self, client, staff_user):
+        from django.core import mail
+
+        client.force_login(staff_user)
+        response = _post_json(client, "accounts:api-admin-registar-professor", {
+            "username": "profsemarea",
+            "email": "profsemarea@exemplo.com",
+            "nome_publico": "Prof. Sem Área",
+        })
+        assert response.status_code == 201
+        body = response.json()
+        assert body["email_enviado"] is True
+        assert "senha_temporaria" not in body  # só volta quando o email falha
+        assert body["professor"]["area"] == ""
+
+        user = User.objects.get(username="profsemarea")
+        assert user.deve_alterar_senha is True
+        assert Professor.objects.get(user=user).area == ""
+
+        assert len(mail.outbox) == 1
+        email = mail.outbox[0]
+        assert email.to == ["profsemarea@exemplo.com"]
+        assert "profsemarea" in email.body
+        assert "Parabéns" in email.body
+        # A senha enviada por email é a que a conta realmente tem.
+        senha = next(
+            linha.split(":", 1)[1].strip()
+            for linha in email.body.splitlines()
+            if "Senha temporária:" in linha
+        )
+        assert user.check_password(senha)
+
+    def test_senha_indicada_pelo_admin_e_usada(self, client, staff_user):
+        client.force_login(staff_user)
+        response = _post_json(client, "accounts:api-admin-registar-professor", {
+            "username": "profcomsenha", "email": "pcs@exemplo.com",
+            "nome_publico": "Prof. Com Senha", "password": "temporaria1",
+        })
+        assert response.status_code == 201
+        assert User.objects.get(username="profcomsenha").check_password("temporaria1")
+
+    def test_falha_no_email_devolve_senha_ao_admin(self, client, staff_user, settings):
+        settings.EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        settings.EMAIL_HOST = "localhost"
+        settings.EMAIL_PORT = 1  # ligação recusada
+        settings.EMAIL_TIMEOUT = 1
+        client.force_login(staff_user)
+        response = _post_json(client, "accounts:api-admin-registar-professor", {
+            "username": "proffalha", "email": "pf@exemplo.com", "nome_publico": "Prof. Falha",
+        })
+        assert response.status_code == 201  # a conta fica criada
+        body = response.json()
+        assert body["email_enviado"] is False
+        assert User.objects.get(username="proffalha").check_password(body["senha_temporaria"])
+
+
+@pytest.mark.django_db
+class TestApiRegistarAdministrador:
+    URL = "accounts:api-admin-registar-administrador"
+
+    @pytest.fixture
+    def superuser(self, db):
+        return User.objects.create_superuser(username="root1", email="root@exemplo.com", password="SenhaForte123!")
+
+    def test_nao_autenticado_401(self, client):
+        assert _post_json(client, self.URL, {}).status_code == 401
+
+    def test_aluno_e_professor_nao_podem(self, client, aluno_user):
+        client.force_login(aluno_user)
+        assert _post_json(client, self.URL, {}).status_code == 403
+
+    def test_staff_sem_ser_superuser_nao_pode(self, client, staff_user):
+        client.force_login(staff_user)
+        response = _post_json(client, self.URL, {
+            "username": "novoadmin", "email": "na@exemplo.com",
+        })
+        assert response.status_code == 403
+        assert not User.objects.filter(username="novoadmin").exists()
+
+    def test_superuser_cria_outro_superuser(self, client, superuser):
+        from django.core import mail
+
+        client.force_login(superuser)
+        response = _post_json(client, self.URL, {
+            "username": "novoadmin", "email": "na@exemplo.com", "nome": "Nova Admin",
+        })
+        assert response.status_code == 201
+        body = response.json()
+        assert body["ok"] is True and body["email_enviado"] is True
+
+        novo = User.objects.get(username="novoadmin")
+        assert novo.is_staff and novo.is_superuser
+        assert novo.deve_alterar_senha is True
+        assert novo.first_name == "Nova Admin"
+        assert len(mail.outbox) == 1 and mail.outbox[0].to == ["na@exemplo.com"]
+
+    def test_rejeita_username_e_email_duplicados(self, client, superuser):
+        client.force_login(superuser)
+        response = _post_json(client, self.URL, {"username": superuser.username, "email": superuser.email})
+        assert response.status_code == 400
+        errors = response.json()["errors"]
+        assert "username" in errors and "email" in errors
+
+
+@pytest.mark.django_db
+class TestSenhaTemporaria:
+    def test_alterar_senha_limpa_a_obrigacao_de_trocar(self, client):
+        user = User.objects.create_user(
+            username="temp1", email="t1@exemplo.com", password="Temporaria123", deve_alterar_senha=True,
+        )
+        client.force_login(user)
+        me = client.get(reverse("accounts:auth-me")).json()["user"]
+        assert me["deveAlterarSenha"] is True
+
+        response = _post_json(client, "accounts:api-alterar-senha", {
+            "senha_atual": "Temporaria123", "nova_senha": "MinhaSenhaNova456",
+        })
+        assert response.status_code == 200
+        user.refresh_from_db()
+        assert user.deve_alterar_senha is False
+        assert user.check_password("MinhaSenhaNova456")
+
+    def test_nova_senha_igual_a_atual_e_rejeitada(self, client):
+        user = User.objects.create_user(
+            username="temp2", password="Temporaria123", deve_alterar_senha=True,
+        )
+        client.force_login(user)
+        response = _post_json(client, "accounts:api-alterar-senha", {
+            "senha_atual": "Temporaria123", "nova_senha": "Temporaria123",
+        })
+        assert response.status_code == 400
+        user.refresh_from_db()
+        assert user.deve_alterar_senha is True
+
+    def test_payload_expoe_is_superuser(self, client):
+        root = User.objects.create_superuser(username="root2", email="r2@exemplo.com", password="SenhaForte123!")
+        client.force_login(root)
+        me = client.get(reverse("accounts:auth-me")).json()["user"]
+        assert me["isSuperuser"] is True and me["deveAlterarSenha"] is False
 
 
 @pytest.mark.django_db

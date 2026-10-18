@@ -4,6 +4,7 @@ from functools import wraps
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db.models import Avg, Count, Q, Sum
@@ -15,6 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from apps.professores.models import Professor
 
+from .emails import enviar_email_boas_vindas_conta, gerar_senha_temporaria
 from .models import User
 
 
@@ -42,6 +44,18 @@ def _staff_and_json(view_func):
             return _json_response({'ok': False, 'error': 'Não autenticado.'}, 401)
         if not request.user.is_staff:
             return _json_response({'ok': False, 'error': 'Permissões de administrador necessárias.'}, 403)
+        return view_func(request, *args, **kwargs)
+    return wrapped
+
+
+def _superuser_and_json(view_func):
+    """Como `_staff_and_json`, mas só deixa passar superutilizadores."""
+    @csrf_exempt
+    def wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return _json_response({'ok': False, 'error': 'Não autenticado.'}, 401)
+        if not request.user.is_superuser:
+            return _json_response({'ok': False, 'error': 'Só um super administrador pode fazer isto.'}, 403)
         return view_func(request, *args, **kwargs)
     return wrapped
 
@@ -82,21 +96,7 @@ def api_listar_professores(request):
     return _json_response({'ok': True, 'professores': data})
 
 
-@_staff_and_json
-@require_POST
-def api_registar_professor(request):
-    """POST /accounts/api/admin/professores/  →  cria user professor + perfil"""
-    body = _parse_body(request)
-    if body is None:
-        return _json_response({'ok': False, 'error': 'Corpo JSON inválido.'}, 400)
-
-    username = (body.get('username') or '').strip()
-    email = (body.get('email') or '').strip().lower()
-    password = body.get('password') or ''
-    nome_publico = (body.get('nome_publico') or '').strip()
-    area = (body.get('area') or '').strip()
-
-    errors = {}
+def _validar_username_email(username, email, errors):
     if not username:
         errors['username'] = 'O nome de utilizador é obrigatório.'
     elif User.objects.filter(username=username).exists():
@@ -112,33 +112,82 @@ def api_registar_professor(request):
         if not errors.get('email') and User.objects.filter(email__iexact=email).exists():
             errors['email'] = 'Este email já está registado.'
 
-    if not password or len(password) < 6:
+
+def _resposta_conta_criada(user, mensagem, senha, email_enviado, extra=None):
+    """Resposta comum à criação de professores e administradores. A senha só
+    volta na resposta quando o email falhou: o administrador tem de a passar à
+    pessoa por outra via (e só a vê desta vez)."""
+    corpo = {
+        'ok': True,
+        'message': mensagem,
+        'email_enviado': email_enviado,
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'is_active': user.is_active,
+            'perfil_completo': user.perfil_completo,
+            'date_joined': user.date_joined.isoformat(),
+        },
+    }
+    if not email_enviado:
+        corpo['senha_temporaria'] = senha
+    if extra:
+        corpo.update(extra)
+    return corpo
+
+
+@_staff_and_json
+@require_POST
+def api_registar_professor(request):
+    """POST /accounts/api/admin/professores/criar/  →  cria user professor + perfil.
+
+    A área de atuação é opcional (o professor preenche-a no perfil). Se a senha
+    vier vazia, gera-se uma temporária. A pessoa recebe um email de boas-vindas
+    com os dados e é obrigada a trocar a senha no primeiro acesso."""
+    body = _parse_body(request)
+    if body is None:
+        return _json_response({'ok': False, 'error': 'Corpo JSON inválido.'}, 400)
+
+    username = (body.get('username') or '').strip()
+    email = (body.get('email') or '').strip().lower()
+    password = body.get('password') or ''
+    nome_publico = (body.get('nome_publico') or '').strip()
+    area = (body.get('area') or '').strip()
+
+    errors = {}
+    _validar_username_email(username, email, errors)
+
+    if password and len(password) < 6:
         errors['password'] = 'A senha temporária deve ter pelo menos 6 caracteres.'
 
     if not nome_publico:
         errors['nome_publico'] = 'O nome público é obrigatório.'
-    if not area:
-        errors['area'] = 'A área de atuação é obrigatória.'
 
     if errors:
         return _json_response({'ok': False, 'error': 'Há campos inválidos.', 'errors': errors}, 400)
 
+    senha = password or gerar_senha_temporaria()
     user = User.objects.create_user(
         username=username,
         email=email,
-        password=password,
+        password=senha,
         is_teacher=True,
         perfil_completo=False,
+        deve_alterar_senha=True,
     )
     prof = Professor.objects.create(
         user=user,
         nome_publico=nome_publico,
         area=area,
     )
-    return _json_response({
-        'ok': True,
-        'message': f'Professor "{username}" registado com sucesso.',
-        'professor': {
+    email_enviado = enviar_email_boas_vindas_conta(user, senha, 'professor')
+    return _json_response(_resposta_conta_criada(
+        user,
+        f'Professor "{username}" registado com sucesso.',
+        senha,
+        email_enviado,
+        extra={'professor': {
             'id': prof.id,
             'nome_publico': prof.nome_publico,
             'area': prof.area,
@@ -150,9 +199,60 @@ def api_registar_professor(request):
                 'is_active': user.is_active,
                 'perfil_completo': user.perfil_completo,
                 'date_joined': user.date_joined.isoformat(),
-            }
-        }
-    }, 201)
+            },
+        }},
+    ), 201)
+
+
+# ─────────────────────────── Administradores ────────────────────────────────
+
+@_superuser_and_json
+@require_POST
+def api_registar_administrador(request):
+    """POST /accounts/api/admin/administradores/criar/  →  cria outro super administrador.
+
+    Só um super administrador pode criar outro. A conta nasce com senha
+    temporária (gerada se vier vazia), recebe o email de boas-vindas e é
+    obrigada a trocar a senha no primeiro acesso."""
+    body = _parse_body(request)
+    if body is None:
+        return _json_response({'ok': False, 'error': 'Corpo JSON inválido.'}, 400)
+
+    username = (body.get('username') or '').strip()
+    email = (body.get('email') or '').strip().lower()
+    password = body.get('password') or ''
+    nome = (body.get('nome') or '').strip()
+
+    errors = {}
+    _validar_username_email(username, email, errors)
+
+    if password:
+        try:
+            validate_password(password)
+        except ValidationError as e:
+            errors['password'] = e.messages[0]
+
+    if errors:
+        return _json_response({'ok': False, 'error': 'Há campos inválidos.', 'errors': errors}, 400)
+
+    senha = password or gerar_senha_temporaria()
+    user = User.objects.create_user(
+        username=username,
+        email=email,
+        password=senha,
+        first_name=nome,
+        is_staff=True,
+        is_superuser=True,
+        perfil_completo=True,  # um administrador não passa pelo onboarding
+        deve_alterar_senha=True,
+    )
+    email_enviado = enviar_email_boas_vindas_conta(user, senha, 'super administrador')
+    return _json_response(_resposta_conta_criada(
+        user,
+        f'Super administrador "{username}" criado com sucesso.',
+        senha,
+        email_enviado,
+    ), 201)
 
 
 # ─────────────────────────── Utilizadores ───────────────────────────────────

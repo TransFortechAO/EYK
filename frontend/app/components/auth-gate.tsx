@@ -39,6 +39,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }));
       if (!authenticated) {
         window.location.assign("/login");
+      } else if (res.user?.deveAlterarSenha && window.location.pathname !== "/definir-senha") {
+        // Conta criada por um administrador com senha temporária: tem de
+        // escolher uma senha própria antes de usar a plataforma.
+        window.location.assign("/definir-senha");
       } else if (res.user?.preferencias) {
         // As preferências guardadas na conta mandam (podem ter sido mudadas
         // noutro dispositivo) — e ficam em cache para as páginas públicas.

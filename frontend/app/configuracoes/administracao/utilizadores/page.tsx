@@ -36,6 +36,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/components/auth-gate";
 import { DialogoDecisao, type Decisao } from "@/components/moderacao/dialogo-decisao";
+import { NovoAdministradorDialog } from "@/components/admin/novo-administrador-dialog";
+import { CredenciaisDialog } from "@/components/admin/credenciais-dialog";
 
 type Toast = { tipo: "sucesso" | "erro" | "aviso"; msg: string };
 
@@ -102,6 +104,12 @@ export default function AdminUtilizadoresPage() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [operando, setOperando] = useState<number | null>(null);
   const [aModerar, setAModerar] = useState<AdminUser | null>(null);
+  const [novoAdminAberto, setNovoAdminAberto] = useState(false);
+  const [credenciais, setCredenciais] = useState<{
+    username: string;
+    email: string;
+    senha: string;
+  } | null>(null);
 
   useEffect(() => {
     if (authUser && !authUser.isStaff) router.replace("/inicio");
@@ -218,7 +226,14 @@ export default function AdminUtilizadoresPage() {
       <PageHeader
         title="Utilizadores"
         description="Pesquisa, filtra e gere contas de toda a plataforma."
-      />
+      >
+        {authUser?.isSuperuser && (
+          <Button onClick={() => setNovoAdminAberto(true)} className="gap-2">
+            <Crown className="h-4 w-4" />
+            Novo administrador
+          </Button>
+        )}
+      </PageHeader>
 
       {/* ===== Estatísticas ===== */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -561,6 +576,37 @@ export default function AdminUtilizadoresPage() {
             </div>
           </Card>
         </div>
+      )}
+
+      {novoAdminAberto && (
+        <NovoAdministradorDialog
+          onClose={() => setNovoAdminAberto(false)}
+          onCriado={(conta) => {
+            setNovoAdminAberto(false);
+            carregar();
+            if (conta.email_enviado) {
+              setToast({
+                tipo: "sucesso",
+                msg: `Administrador "${conta.username}" criado. Enviámos um email com os dados de acesso.`,
+              });
+            } else if (conta.senha_temporaria) {
+              setCredenciais({
+                username: conta.username,
+                email: conta.email,
+                senha: conta.senha_temporaria,
+              });
+            }
+          }}
+        />
+      )}
+
+      {credenciais && (
+        <CredenciaisDialog
+          username={credenciais.username}
+          email={credenciais.email}
+          senha={credenciais.senha}
+          onClose={() => setCredenciais(null)}
+        />
       )}
     </div>
   );

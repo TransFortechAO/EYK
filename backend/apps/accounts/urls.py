@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/admin/metricas/', admin_api.api_metricas, name='api-admin-metricas'),
     path('api/admin/professores/', admin_api.api_listar_professores, name='api-admin-listar-professores'),
     path('api/admin/professores/criar/', admin_api.api_registar_professor, name='api-admin-registar-professor'),
+    path('api/admin/administradores/criar/', admin_api.api_registar_administrador, name='api-admin-registar-administrador'),
     path('api/admin/utilizadores/', admin_api.api_listar_utilizadores, name='api-admin-listar-utilizadores'),
     path('api/admin/utilizadores/<int:user_id>/toggle/', admin_api.api_toggle_ativo_usuario, name='api-admin-toggle-ativo-usuario'),
     path('api/admin/utilizadores/<int:user_id>/apagar/', admin_api.api_apagar_usuario, name='api-admin-apagar-usuario'),

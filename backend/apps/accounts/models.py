@@ -16,6 +16,10 @@ class User(AbstractUser):
     morada = models.CharField(max_length=200, null=True, blank=True)
     perfil_completo = models.BooleanField(default=False)
     email_verificado = models.BooleanField(default=False)
+    # Contas criadas por um administrador (professores e outros administradores)
+    # nascem com uma senha temporária: no primeiro acesso o frontend obriga a
+    # definir uma nova, e o campo volta a False quando a senha muda.
+    deve_alterar_senha = models.BooleanField(default=False)
     convidado_por = models.ForeignKey(
         'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='convidados',
         help_text='Utilizador cujo link de convite foi usado para criar esta conta.',

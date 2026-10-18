@@ -25,7 +25,7 @@ const ROTAS_PUBLICAS = new Set([
 // Prefixos públicos (rotas dinâmicas), ex: verificação de um certificado.
 const PREFIXOS_PUBLICOS = ["/certificados/"];
 // Autenticadas, mas sem sidebar/topbar (ex: onboarding a meio do fluxo).
-const ROTAS_SEM_CHROME = new Set(["/personalizar-perfil"]);
+const ROTAS_SEM_CHROME = new Set(["/personalizar-perfil", "/definir-senha"]);
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

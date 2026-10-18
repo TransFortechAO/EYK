@@ -35,6 +35,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar } from "@/components/ui/avatar";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/components/auth-gate";
+import { CredenciaisDialog } from "@/components/admin/credenciais-dialog";
 
 type Toast = {
   tipo: "sucesso" | "erro" | "aviso";
@@ -104,12 +105,17 @@ export default function AdminProfessoresPage() {
     Partial<Record<keyof CriarProfessorPayload, string>>
   >({});
 
+  const [credenciais, setCredenciais] = useState<{
+    username: string;
+    email: string;
+    senha: string;
+  } | null>(null);
+
   const [form, setForm] = useState<CriarProfessorPayload>({
     username: "",
     email: "",
     password: "",
     nome_publico: "",
-    area: "",
   });
 
   // === Bloqueio para nãos-staff ===
@@ -140,7 +146,7 @@ export default function AdminProfessoresPage() {
   }, []);
 
   const abrirModal = () => {
-    setForm({ username: "", email: "", password: "", nome_publico: "", area: "" });
+    setForm({ username: "", email: "", password: "", nome_publico: "" });
     setFormErrors({});
     setModalAberto(true);
   };
@@ -153,22 +159,33 @@ export default function AdminProfessoresPage() {
     if (!form.email.trim()) erros.email = "Obrigatório.";
     else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email))
       erros.email = "Email inválido.";
-    if (!form.password || form.password.length < 6)
+    if (form.password && form.password.length < 6)
       erros.password = "Mínimo de 6 caracteres.";
     if (!form.nome_publico.trim()) erros.nome_publico = "Obrigatório.";
-    if (!form.area.trim()) erros.area = "Obrigatória.";
     if (Object.keys(erros).length) {
       setFormErrors(erros);
       return;
     }
     setSubmetendo(true);
     try {
-      await api.admin.criarProfessor(form);
-      setToast({
-        tipo: "sucesso",
-        msg: `Professor "${form.username}" registado com sucesso.`,
+      const conta = await api.admin.criarProfessor({
+        ...form,
+        password: form.password || undefined,
       });
       setModalAberto(false);
+      if (conta.email_enviado) {
+        setToast({
+          tipo: "sucesso",
+          msg: `Professor "${conta.username}" registado. Enviámos um email com os dados de acesso.`,
+        });
+      } else if (conta.senha_temporaria) {
+        // Email falhou: o admin vê a senha uma única vez para a passar à pessoa.
+        setCredenciais({
+          username: conta.username,
+          email: conta.email,
+          senha: conta.senha_temporaria,
+        });
+      }
       carregar();
     } catch (err) {
       // Tentar extrair erros por campo do Django (400)
@@ -210,7 +227,7 @@ export default function AdminProfessoresPage() {
       const qq = q.toLowerCase();
       return (
         p.nome_publico.toLowerCase().includes(qq) ||
-        p.area.toLowerCase().includes(qq) ||
+        (p.area || "").toLowerCase().includes(qq) ||
         p.user.username.toLowerCase().includes(qq) ||
         p.user.email.toLowerCase().includes(qq)
       );
@@ -347,9 +364,13 @@ export default function AdminProfessoresPage() {
                       </div>
                     </td>
                     <td className="py-3 pr-4 bg-surface/40 group-hover:bg-surface/70 transition border-y border-y-transparent group-hover:border-y-border/50 whitespace-nowrap">
-                      <Badge variant="outline" className="text-xs">
-                        <Briefcase className="h-3 w-3 mr-1" /> {p.area}
-                      </Badge>
+                      {p.area ? (
+                        <Badge variant="outline" className="text-xs">
+                          <Briefcase className="h-3 w-3 mr-1" /> {p.area}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="py-3 pr-4 bg-surface/40 group-hover:bg-surface/70 transition border-y border-y-transparent group-hover:border-y-border/50 hidden sm:table-cell whitespace-nowrap">
                       <span className="font-mono text-xs text-muted-foreground">@{p.user.username}</span>
@@ -410,7 +431,7 @@ export default function AdminProfessoresPage() {
                 <div>
                   <h2 id="reg-prof-title" className="font-serif text-xl font-semibold">Registar novo professor</h2>
                   <p className="text-sm text-muted-foreground">
-                    Será enviado um convite implícito — o professor completa o perfil no primeiro login.
+                    O professor recebe um email de boas-vindas com os dados de acesso e escolhe uma senha nova no primeiro login.
                   </p>
                 </div>
               </div>
@@ -455,18 +476,19 @@ export default function AdminProfessoresPage() {
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="rp-password" className="flex items-center gap-1.5">
-                    <Lock className="h-3.5 w-3.5" /> Senha temporária
+                    <Lock className="h-3.5 w-3.5" /> Senha temporária (opcional)
                   </Label>
                   <PasswordInput
                     id="rp-password"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    placeholder="Mínimo 6 caracteres — partilha com o professor."
+                    placeholder="Deixa vazio para gerar uma automaticamente"
+                    autoComplete="new-password"
                     className={formErrors.password ? "border-red-500/60 focus-visible:ring-red-500/30" : ""}
                   />
                   {formErrors.password && <p className="text-xs text-red-400">{formErrors.password}</p>}
                 </div>
-                <div className="space-y-2 sm:col-span-1">
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="rp-nome" className="flex items-center gap-1.5">
                     <BookOpenText className="h-3.5 w-3.5" /> Nome público
                   </Label>
@@ -480,19 +502,6 @@ export default function AdminProfessoresPage() {
                   {formErrors.nome_publico && (
                     <p className="text-xs text-red-400">{formErrors.nome_publico}</p>
                   )}
-                </div>
-                <div className="space-y-2 sm:col-span-1">
-                  <Label htmlFor="rp-area" className="flex items-center gap-1.5">
-                    <Briefcase className="h-3.5 w-3.5" /> Área de atuação
-                  </Label>
-                  <Input
-                    id="rp-area"
-                    value={form.area}
-                    onChange={(e) => setForm({ ...form, area: e.target.value })}
-                    placeholder="ex: Matemática, Programação…"
-                    className={formErrors.area ? "border-red-500/60 focus-visible:ring-red-500/30" : ""}
-                  />
-                  {formErrors.area && <p className="text-xs text-red-400">{formErrors.area}</p>}
                 </div>
               </div>
 
@@ -517,6 +526,15 @@ export default function AdminProfessoresPage() {
             </form>
           </Card>
         </div>
+      )}
+
+      {credenciais && (
+        <CredenciaisDialog
+          username={credenciais.username}
+          email={credenciais.email}
+          senha={credenciais.senha}
+          onClose={() => setCredenciais(null)}
+        />
       )}
     </div>
   );

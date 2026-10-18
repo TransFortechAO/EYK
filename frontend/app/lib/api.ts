@@ -143,6 +143,8 @@ export type AuthUser = {
   isTeacher: boolean;
   isStudent: boolean;
   isStaff: boolean;
+  isSuperuser?: boolean;
+  deveAlterarSenha?: boolean;
   perfilCompleto?: boolean;
   emailVerificado?: boolean;
   temaPreferido?: 'auto' | 'claro' | 'escuro';
@@ -625,9 +627,30 @@ export type AdminUserTipoFiltro = "" | "aluno" | "professor" | "staff";
 export type CriarProfessorPayload = {
   username: string;
   email: string;
-  password: string;
+  /** Opcional: vazio = o servidor gera uma senha temporária. */
+  password?: string;
   nome_publico: string;
-  area: string;
+  /** Opcional: o professor preenche-a no próprio perfil. */
+  area?: string;
+};
+
+export type CriarAdministradorPayload = {
+  username: string;
+  email: string;
+  nome?: string;
+  /** Opcional: vazio = o servidor gera uma senha temporária. */
+  password?: string;
+};
+
+/** Resultado da criação de uma conta por um administrador. */
+export type ContaCriada = {
+  message: string;
+  /** False se o email de boas-vindas não pôde ser enviado. */
+  email_enviado: boolean;
+  /** Só vem quando o email falhou: o admin tem de a passar à pessoa. */
+  senha_temporaria?: string;
+  username: string;
+  email: string;
 };
 
 // =================== Tipos: perfil, segurança, professor =====================
@@ -1921,12 +1944,39 @@ export const api = {
       return res?.professores ?? [];
     },
 
-    criarProfessor: async (payload: CriarProfessorPayload): Promise<AdminProfessor> => {
-      const res = await fetchAPI<{ ok: boolean; professor: AdminProfessor; errors?: Record<string, string> }>(
+    criarProfessor: async (payload: CriarProfessorPayload): Promise<ContaCriada> => {
+      const res = await fetchAPI<{
+        ok: boolean; message: string; email_enviado: boolean; senha_temporaria?: string;
+        user: { username: string; email: string };
+      }>(
         '/accounts/api/admin/professores/criar/',
         { method: 'POST', body: JSON.stringify(payload) },
       );
-      return res.professor;
+      return {
+        message: res.message,
+        email_enviado: res.email_enviado,
+        senha_temporaria: res.senha_temporaria,
+        username: res.user.username,
+        email: res.user.email,
+      };
+    },
+
+    /** Só um super administrador pode criar outro. */
+    criarAdministrador: async (payload: CriarAdministradorPayload): Promise<ContaCriada> => {
+      const res = await fetchAPI<{
+        ok: boolean; message: string; email_enviado: boolean; senha_temporaria?: string;
+        user: { username: string; email: string };
+      }>(
+        '/accounts/api/admin/administradores/criar/',
+        { method: 'POST', body: JSON.stringify(payload) },
+      );
+      return {
+        message: res.message,
+        email_enviado: res.email_enviado,
+        senha_temporaria: res.senha_temporaria,
+        username: res.user.username,
+        email: res.user.email,
+      };
     },
 
     // ── Utilizadores ───────────────────────────────────────────────────
