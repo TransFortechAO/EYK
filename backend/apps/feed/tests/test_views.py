@@ -179,13 +179,37 @@ class TestComentarioDetail:
         assert response.status_code == 204
         assert not Comentario.objects.filter(id=comentario.id).exists()
 
-    def test_autor_do_post_pode_apagar_comentario_de_outro(self, client, aluno_user, post, comentario):
+    def test_autor_do_post_nao_pode_apagar_comentario_de_outro(self, client, aluno_user, post, comentario):
         # `post` é do aluno_user; `comentario` é do professor_user — o dono
-        # do post pode moderar/apagar comentários de outros no seu post.
+        # do post NÃO pode apagar comentários de outras pessoas.
         client.force_login(aluno_user)
+        response = client.delete(reverse("api-comentario-detail", args=[post.id, comentario.id]))
+        assert response.status_code == 403
+        assert Comentario.objects.filter(id=comentario.id).exists()
+
+    def test_super_administrador_pode_apagar_qualquer_comentario(self, client, post, comentario):
+        from apps.accounts.models import User
+
+        root = User.objects.create_superuser(username="root", email="root@exemplo.com", password="SenhaForte123!")
+        client.force_login(root)
         response = client.delete(reverse("api-comentario-detail", args=[post.id, comentario.id]))
         assert response.status_code == 204
         assert not Comentario.objects.filter(id=comentario.id).exists()
+
+    def test_administrador_comum_nao_pode_apagar_comentario_de_outro(self, client, post, comentario):
+        from apps.accounts.models import User
+
+        staff = User.objects.create_user(username="staff1", password="SenhaForte123!", is_staff=True)
+        client.force_login(staff)
+        response = client.delete(reverse("api-comentario-detail", args=[post.id, comentario.id]))
+        assert response.status_code == 403
+        assert Comentario.objects.filter(id=comentario.id).exists()
+
+    def test_pode_apagar_na_api_so_para_autor_e_super_administrador(self, client, aluno_user, post, comentario):
+        client.force_login(aluno_user)  # dono do post, não autor do comentário
+        lista = client.get(reverse("api-comentario-list", args=[post.id])).json()
+        itens = lista["results"] if isinstance(lista, dict) and "results" in lista else lista
+        assert itens and all(c["pode_apagar"] is False for c in itens)
 
     def test_terceiro_sem_relacao_nao_pode_apagar(self, client, post, comentario):
         from apps.accounts.models import User

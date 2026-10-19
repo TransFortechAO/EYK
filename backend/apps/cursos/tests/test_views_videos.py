@@ -212,12 +212,28 @@ class TestVideoComentarioDetail:
         response = _patch_json(client, "video-comentario-detail", [video.id, comentario.id], {"conteudo": "Hackeado"})
         assert response.status_code == 403
 
-    def test_dono_do_video_pode_apagar_comentario_de_outro(self, client, aluno_user, professor_user, video):
+    def test_dono_do_video_nao_pode_apagar_comentario_de_outro(self, client, aluno_user, professor_user, video):
         comentario = ComentarioVideo.objects.create(video=video, autor=aluno_user, conteudo="x")
         client.force_login(professor_user)
         response = client.delete(reverse("video-comentario-detail", args=[video.id, comentario.id]))
+        assert response.status_code == 403
+        assert ComentarioVideo.objects.filter(id=comentario.id).exists()
+
+    def test_super_administrador_pode_apagar_comentario_de_video(self, client, aluno_user, video):
+        from apps.accounts.models import User
+
+        root = User.objects.create_superuser(username="rootv", email="rootv@exemplo.com", password="SenhaForte123!")
+        comentario = ComentarioVideo.objects.create(video=video, autor=aluno_user, conteudo="x")
+        client.force_login(root)
+        response = client.delete(reverse("video-comentario-detail", args=[video.id, comentario.id]))
         assert response.status_code == 204
         assert not ComentarioVideo.objects.filter(id=comentario.id).exists()
+
+    def test_autor_apaga_o_proprio_comentario_de_video(self, client, aluno_user, video):
+        comentario = ComentarioVideo.objects.create(video=video, autor=aluno_user, conteudo="x")
+        client.force_login(aluno_user)
+        response = client.delete(reverse("video-comentario-detail", args=[video.id, comentario.id]))
+        assert response.status_code == 204
 
     def test_terceiro_sem_relacao_nao_pode_apagar(self, client, video, professor_user):
         from apps.accounts.models import User

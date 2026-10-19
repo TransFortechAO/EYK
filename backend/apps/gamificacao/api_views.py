@@ -87,9 +87,11 @@ def leaderboard_list(request):
     carteira_saldo = Carteira.objects.filter(utilizador=OuterRef('pk')).values('saldo')
     ofensiva_dias = Ofensiva.objects.filter(utilizador=OuterRef('pk')).values('dias_atual')
 
-    # Quem escolheu não aparecer no ranking (Configurações → Privacidade) e
-    # contas banidas ficam de fora.
-    users = User.objects.filter(aparecer_ranking=True, banido=False, is_active=True).annotate(
+    # Ficam de fora: quem escolheu não aparecer (Configurações → Privacidade),
+    # contas banidas e administradores (não competem no ranking).
+    users = User.objects.filter(
+        aparecer_ranking=True, banido=False, is_active=True, is_staff=False, is_superuser=False,
+    ).annotate(
         _coins=Subquery(carteira_saldo, output_field=IntegerField()),
         _streak=Subquery(ofensiva_dias, output_field=IntegerField()),
     ).order_by(F('_coins').desc(nulls_last=True), F('_streak').desc(nulls_last=True))[:20]
@@ -162,6 +164,7 @@ def leaderboard_professores_mensal(request):
         .filter(
             motivo='views_professor', criado_em__gte=inicio_mes, utilizador__is_teacher=True,
             utilizador__aparecer_ranking=True, utilizador__banido=False,
+            utilizador__is_staff=False, utilizador__is_superuser=False,
         )
         .values('utilizador')
         .annotate(total=Sum('valor'))

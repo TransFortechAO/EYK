@@ -64,6 +64,31 @@ class TestLeaderboardList:
         assert linha["coins"] == 0
 
 
+    def test_administradores_ficam_fora_do_ranking(self, client, aluno_user, professor_user):
+        from apps.accounts.models import User
+
+        staff = User.objects.create_user(username="adm", password="SenhaForte123!", is_staff=True)
+        root = User.objects.create_superuser(username="root", email="r@exemplo.com", password="SenhaForte123!")
+        for u, saldo in ((aluno_user, 10), (staff, 9999), (root, 8888)):
+            Carteira.objects.create(utilizador=u, saldo=saldo)
+
+        client.force_login(aluno_user)
+        ids = [r["userId"] for r in client.get(reverse("leaderboard-list")).json()]
+        assert aluno_user.id in ids
+        assert staff.id not in ids and root.id not in ids
+
+    def test_administrador_nao_se_ve_no_proprio_ranking(self, client, aluno_user):
+        from apps.accounts.models import User
+
+        root = User.objects.create_superuser(username="root2", email="r2@exemplo.com", password="SenhaForte123!")
+        Carteira.objects.create(utilizador=root, saldo=500)
+        Carteira.objects.create(utilizador=aluno_user, saldo=5)
+        client.force_login(root)
+        linhas = client.get(reverse("leaderboard-list")).json()
+        assert all(r["isMe"] is False for r in linhas)
+        assert [r["userId"] for r in linhas] == [aluno_user.id]
+
+
 @pytest.mark.django_db
 class TestBadgesList:
     def test_exige_autenticacao(self, client):
@@ -141,3 +166,15 @@ class TestLeaderboardProfessoresMensal:
         client.force_login(aluno_user)
         response = client.get(reverse("leaderboard-professores-mensal"))
         assert response.json() == []
+
+    def test_administradores_ficam_fora_do_ranking_de_professores(self, client, professor_user, aluno_user):
+        from apps.accounts.models import User
+
+        admin_prof = User.objects.create_user(
+            username="admprof", password="SenhaForte123!", is_staff=True, is_teacher=True,
+        )
+        TransacaoMoeda.objects.create(utilizador=professor_user, valor=30, motivo="views_professor")
+        TransacaoMoeda.objects.create(utilizador=admin_prof, valor=900, motivo="views_professor")
+        client.force_login(aluno_user)
+        ids = [r["userId"] for r in client.get(reverse("leaderboard-professores-mensal")).json()]
+        assert ids == [professor_user.id]

@@ -137,11 +137,8 @@ class ComentarioSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
-        if obj.autor_id == request.user.id or request.user.is_staff:
-            return True
-        # O autor do post também pode moderar os comentários no seu post,
-        # tal como o professor pode apagar comentários no seu próprio vídeo.
-        return obj.post.autor_id == request.user.id
+        # Só o autor do comentário ou um super administrador (o dono do post não).
+        return obj.autor_id == request.user.id or request.user.is_superuser
 
     def get_respostas(self, obj):
         if obj.parent_id is not None:

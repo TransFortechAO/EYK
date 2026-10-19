@@ -319,9 +319,10 @@ def video_comentario_detail(request, pk, comentario_id):
     comentario = get_object_or_404(ComentarioVideo, id=comentario_id, video=video)
 
     if request.method == 'DELETE':
+        # Só o próprio autor ou um super administrador apagam um comentário:
+        # o professor dono do vídeo NÃO pode apagar comentários de outras pessoas.
         e_autor = comentario.autor_id == request.user.id
-        e_dono_video = video.professor.user_id == request.user.id
-        if not (e_autor or e_dono_video or request.user.is_staff):
+        if not (e_autor or request.user.is_superuser):
             return Response(
                 {'detail': 'Sem permissão para apagar este comentário.'}, status=status.HTTP_403_FORBIDDEN,
             )

@@ -335,9 +335,8 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
-        if obj.autor_id == request.user.id or request.user.is_staff:
-            return True
-        return obj.video.professor.user_id == request.user.id
+        # Só o autor do comentário ou um super administrador (o dono do vídeo não).
+        return obj.autor_id == request.user.id or request.user.is_superuser
 
     def get_respostas(self, obj):
         if obj.parent_id is not None:

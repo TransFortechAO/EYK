@@ -179,9 +179,10 @@ def comentario_detail(request, post_id, comentario_id):
     comentario = get_object_or_404(Comentario, id=comentario_id, post=post)
 
     if request.method == 'DELETE':
+        # Só o próprio autor ou um super administrador apagam um comentário:
+        # o dono da publicação NÃO pode apagar comentários de outras pessoas.
         e_autor = comentario.autor_id == request.user.id
-        e_dono_post = post.autor_id == request.user.id
-        if not (e_autor or e_dono_post or request.user.is_staff):
+        if not (e_autor or request.user.is_superuser):
             return Response(
                 {'detail': 'Sem permissão para apagar este comentário.'}, status=status.HTTP_403_FORBIDDEN,
             )

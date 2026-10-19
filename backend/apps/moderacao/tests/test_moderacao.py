@@ -272,8 +272,14 @@ class TestFiltroAutomatico:
         client.force_login(autor)
         assert _post(client, reverse('api-post-list'), {'conteudo': 'gosto de batata'}).status_code == 201
 
-    def test_staff_pode_apagar_qualquer_comentario(self, client, staff, post):
+    def test_so_super_administrador_apaga_comentario_de_outro(self, client, staff, post):
         comentario = Comentario.objects.create(post=post, autor=_criar('c'), conteudo='x')
-        client.force_login(staff)
         url = reverse('api-comentario-detail', args=[post.id, comentario.id])
+
+        client.force_login(staff)  # administrador comum: não pode
+        assert client.delete(url).status_code == 403
+        assert Comentario.objects.filter(id=comentario.id).exists()
+
+        root = User.objects.create_superuser(username='root', email='root@example.com', password='x')
+        client.force_login(root)
         assert client.delete(url).status_code == 204
