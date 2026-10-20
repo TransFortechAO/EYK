@@ -534,7 +534,7 @@ export default function AdminUtilizadoresPage() {
       {apagar && (
         <BodyPortal>
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget && operando !== apagar.id) setApagar(null);
           }}
@@ -543,7 +543,7 @@ export default function AdminUtilizadoresPage() {
           aria-labelledby="del-title"
           aria-describedby="del-desc"
         >
-          <Card className="w-full max-w-md shadow-2xl border-destructive/40">
+          <Card className="w-full max-w-md shadow-2xl border-destructive/40 max-h-[92dvh] overflow-y-auto rounded-b-none sm:rounded-b-xl">
             <div className="flex flex-col items-center text-center p-6 border-b border-border">
               <div className="grid h-14 w-14 place-items-center rounded-2xl bg-red-500/15 text-red-300 mb-4">
                 <AlertTriangle className="h-7 w-7" />

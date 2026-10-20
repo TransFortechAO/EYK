@@ -62,14 +62,14 @@ export function PublicacoesPerfil({
                 </p>
               )}
               <p className="line-clamp-5 whitespace-pre-wrap break-words text-sm leading-relaxed">{p.conteudo}</p>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span>{p.tempo}</span>
                 <span className="inline-flex items-center gap-1"><Hand className="h-3.5 w-3.5" /> {p.gostos}</span>
                 <span className="inline-flex items-center gap-1">
                   <MessageCircle className="h-3.5 w-3.5" /> {p.comentarios}
                 </span>
                 {!p.oculto && (
-                  <Link href={`/comunidade?post=${p.id}`} className="ml-auto font-medium text-primary hover:underline">
+                  <Link href={`/comunidade?post=${p.id}`} className="hit ml-auto font-medium text-primary hover:underline">
                     Ver na comunidade
                   </Link>
                 )}

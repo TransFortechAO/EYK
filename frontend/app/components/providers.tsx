@@ -61,14 +61,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider>
       <AuthGate>
         <SidebarProvider>
-          <div className="flex min-h-screen w-full">
+          <div className="flex min-h-dvh w-full">
             <AppSidebar />
-            <div className="flex-1 flex flex-col">
+            <div className="flex min-w-0 flex-1 flex-col">
               <AvisoPlataforma />
               <OfflineBanner />
               <EmailVerificationBanner />
               <Topbar />
-              <main className="flex-1 p-6 md:p-8">
+              <main className="flex-1 p-4 sm:p-6 md:p-8">
                 <PageTransition routeKey={pathname}>
                   {children}
                 </PageTransition>

@@ -125,7 +125,7 @@ export function PostComments({
       <button
         type="button"
         onClick={() => setAberto((anterior) => !anterior)}
-        className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="hit flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         aria-expanded={aberto}
       >
         <MessageCircle className="h-4 w-4" />

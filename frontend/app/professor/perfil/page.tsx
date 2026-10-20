@@ -112,7 +112,7 @@ export default function ProfessorPerfilPage() {
                 disabled={enviandoFoto}
                 aria-label="Alterar foto de perfil"
                 title="Alterar foto de perfil"
-                className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full border border-border bg-background shadow-sm transition hover:bg-surface disabled:opacity-50"
+                className="pointer-coarse:after:absolute pointer-coarse:after:-inset-2 pointer-coarse:after:content-[''] absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full border border-border bg-background shadow-sm transition hover:bg-surface disabled:opacity-50"
               >
                 <Camera className="h-3.5 w-3.5" />
               </button>

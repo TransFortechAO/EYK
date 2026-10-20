@@ -40,7 +40,7 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
+    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
       <div className="min-w-0">
         <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {title}
@@ -49,7 +49,7 @@ export function PageHeader({
           <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">{description}</p>
         )}
       </div>
-      {children && <div className="shrink-0 flex items-center gap-2">{children}</div>}
+      {children && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">{children}</div>}
     </div>
   );
 }
@@ -70,7 +70,7 @@ export function SectionHeader({
       {href && (
         <Link
           href={href}
-          className="group inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          className="hit group inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
         >
           {cta}
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -217,7 +217,7 @@ export function CourseCard({ course }: { course: Course }) {
               {course.teacherUserId ? (
                 <Link
                   href={`/perfil/${course.teacherUserId}`}
-                  className="truncate text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                  className="hit truncate text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
                 >
                   {course.teacher}
                 </Link>
@@ -292,7 +292,7 @@ export function VideoCard({ video }: { video: Video }) {
             {video.teacherUserId ? (
               <Link
                 href={`/perfil/${video.teacherUserId}`}
-                className="truncate hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                className="hit truncate hover:text-foreground hover:underline underline-offset-2 transition-colors"
               >
                 {video.teacher}
               </Link>

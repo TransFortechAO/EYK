@@ -37,12 +37,12 @@ export function CredenciaisDialog({
   return (
     <BodyPortal>
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="cred-title"
     >
-      <Card className="w-full max-w-md shadow-2xl border-border">
+      <Card className="w-full max-w-md shadow-2xl border-border max-h-[92dvh] overflow-y-auto rounded-b-none sm:rounded-b-xl">
         <div className="flex items-start justify-between gap-4 border-b border-border p-5">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
@@ -60,7 +60,7 @@ export function CredenciaisDialog({
           <button
             type="button"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition rounded-md p-1"
+            className="text-muted-foreground hover:text-foreground transition rounded-md p-1 pointer-coarse:p-2.5"
             aria-label="Fechar"
           >
             <X className="h-5 w-5" />

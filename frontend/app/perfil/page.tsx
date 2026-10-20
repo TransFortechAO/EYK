@@ -242,7 +242,7 @@ function EditarPerfil({ perfil, onGuardado }: { perfil: MeuPerfil["perfil"]; onG
             onClick={() => fotoRef.current?.click()}
             disabled={aGuardar}
             aria-label="Alterar foto de perfil"
-            className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow-sm transition hover:bg-surface"
+            className="pointer-coarse:after:absolute pointer-coarse:after:-inset-2 pointer-coarse:after:content-[''] absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border border-border bg-background shadow-sm transition hover:bg-surface"
           >
             <Camera className="h-4 w-4" />
           </button>

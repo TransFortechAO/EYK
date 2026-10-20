@@ -399,7 +399,7 @@ function TarefasAgendadas({
             onCheckedChange={(v) => void guardar({ lembrete_ofensiva_ativo: v }, v ? "Lembrete ligado." : "Lembrete desligado.")}
           />
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <div className="space-y-2">
             <Label htmlFor="lembrete-hora">Hora do envio (hora de Angola)</Label>
             <Input

@@ -392,7 +392,7 @@ function RegisterConteudo() {
 
             <p className="text-center text-xs leading-relaxed text-white/45">
               Ao criar conta, aceitas os{" "}
-              <Link href="/termos" target="_blank" className="underline-offset-2 hover:underline" style={{ color: EYK_GOLD }}>
+              <Link href="/termos" target="_blank" className="hit underline-offset-2 hover:underline" style={{ color: EYK_GOLD }}>
                 Termos de Utilização
               </Link>{" "}
               e a{" "}
@@ -405,7 +405,7 @@ function RegisterConteudo() {
 
           <p className="mt-8 text-center text-sm text-white/55">
             Já tens conta?{" "}
-            <Link href="/login" className="font-semibold hover:underline inline-flex items-center gap-1" style={{ color: EYK_GOLD }}>
+            <Link href="/login" className="hit font-semibold hover:underline inline-flex items-center gap-1" style={{ color: EYK_GOLD }}>
               Iniciar sessão
               <ArrowRight className="w-3.5 h-3.5" aria-hidden />
             </Link>
@@ -414,7 +414,7 @@ function RegisterConteudo() {
           <div className="mt-6 border-t border-white/[0.08] pt-6 text-center">
             <Link
               href="/ser-professor"
-              className="text-sm font-medium text-white/55 hover:text-white/80 hover:underline"
+              className="hit text-sm font-medium text-white/55 hover:text-white/80 hover:underline"
             >
               Quer ser professor no EYK?
             </Link>

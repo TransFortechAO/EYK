@@ -416,7 +416,7 @@ export default function AdminProfessoresPage() {
       {modalAberto && (
         <BodyPortal>
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) setModalAberto(false);
           }}
@@ -424,7 +424,7 @@ export default function AdminProfessoresPage() {
           aria-modal="true"
           aria-labelledby="reg-prof-title"
         >
-          <Card className="w-full max-w-lg shadow-2xl border-border animate-in zoom-in-95 duration-150">
+          <Card className="w-full max-w-lg shadow-2xl border-border animate-in zoom-in-95 duration-150 max-h-[92dvh] overflow-y-auto rounded-b-none sm:rounded-b-xl">
             <div className="flex items-start justify-between gap-4 border-b border-border p-5">
               <div className="flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
@@ -440,7 +440,7 @@ export default function AdminProfessoresPage() {
               <button
                 type="button"
                 onClick={() => setModalAberto(false)}
-                className="text-muted-foreground hover:text-foreground transition rounded-md p-1"
+                className="text-muted-foreground hover:text-foreground transition rounded-md p-1 pointer-coarse:p-2.5"
                 aria-label="Fechar"
               >
                 <X className="h-5 w-5" />

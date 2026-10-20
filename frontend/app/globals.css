@@ -190,6 +190,16 @@
 }
 
 @layer base {
+  /*
+   * Grelhas sem colunas definidas têm uma coluna implícita `auto`, que cresce
+   * até ao conteúdo mais largo e empurra a página para fora do ecrã no
+   * telemóvel. `minmax(0, 1fr)` deixa-a encolher. As classes `grid-cols-*` e
+   * `sm:grid-cols-*` continuam a ter prioridade.
+   */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   * {
     border-color: var(--color-border);
   }
@@ -311,4 +321,39 @@ video::cue {
   line-height: 1.35;
   background-color: rgb(0 0 0 / 0.8);
   color: #fff;
+}
+
+
+/*
+ * Ecrãs táteis (telemóveis e tablets). Fora das camadas do Tailwind, por isso
+ * ganha às classes `text-sm`/`text-xs`: o iOS faz zoom ao focar um campo com
+ * letra abaixo de 16px.
+ */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Alarga a área de toque de uma ligação/botão pequeno sem mexer no layout. */
+@utility hit {
+  @media (pointer: coarse) {
+    position: relative;
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -0.75rem -0.25rem;
+    }
+  }
+}
+
+/* Ligações soltas com área de toque de 44px só em ecrãs táteis. */
+@utility tap {
+  @media (pointer: coarse) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }

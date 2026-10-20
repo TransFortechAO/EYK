@@ -297,14 +297,14 @@ export default function ProfessorVideosPage() {
           {videosFiltrados.map((video) => {
             const index = videos.indexOf(video);
             return (
-              <Card key={video.id} className="p-4 shadow-soft flex items-center gap-4">
+              <Card key={video.id} className="p-4 shadow-soft flex flex-col gap-4 sm:flex-row sm:items-center">
                 {semFiltroAtivo && (
-                  <div className="flex flex-col gap-1 shrink-0">
+                  <div className="flex flex-row gap-1 shrink-0 self-start sm:flex-col">
                     <button
                       type="button"
                       disabled={index === 0 || reordenando}
                       onClick={() => void mover(index, -1)}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition"
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition rounded-md pointer-coarse:p-3"
                       aria-label="Mover para cima"
                     >
                       <ArrowUp className="h-4 w-4" />
@@ -313,7 +313,7 @@ export default function ProfessorVideosPage() {
                       type="button"
                       disabled={index === videos.length - 1 || reordenando}
                       onClick={() => void mover(index, 1)}
-                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition"
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition rounded-md pointer-coarse:p-3"
                       aria-label="Mover para baixo"
                     >
                       <ArrowDown className="h-4 w-4" />
@@ -371,7 +371,7 @@ export default function ProfessorVideosPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirEditar(video)}>
                     <Pencil className="h-3.5 w-3.5" /> Editar
                   </Button>

@@ -366,7 +366,7 @@ export default function LoginPage() {
                   <Label htmlFor="password" className="text-white/85 text-sm">
                     Palavra-passe
                   </Label>
-                  <Link href="/recuperar-senha" className="text-xs font-medium hover:underline text-white/55">
+                  <Link href="/recuperar-senha" className="hit text-xs font-medium hover:underline text-white/55">
                     Esqueceste-te?
                   </Link>
                 </div>
@@ -435,7 +435,7 @@ export default function LoginPage() {
           {!precisa2FA && (
             <p className="mt-8 text-center text-sm text-white/55">
               Ainda não tens conta?{" "}
-              <Link href="/register" className="font-semibold hover:underline inline-flex items-center gap-1" style={{ color: EYK_GOLD }}>
+              <Link href="/register" className="hit font-semibold hover:underline inline-flex items-center gap-1" style={{ color: EYK_GOLD }}>
                 Criar conta agora
                 <ArrowRight className="w-3.5 h-3.5" aria-hidden />
               </Link>
