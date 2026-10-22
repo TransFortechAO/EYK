@@ -21,10 +21,12 @@ import {
   Video,
   ShieldAlert,
   SlidersHorizontal,
+  Building2,
 } from "lucide-react";
 import { useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
+import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 
 import {
   Sidebar,
@@ -52,10 +54,12 @@ const secondary = [
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
+  ...(INSTITUICOES_ATIVAS ? [{ title: "Instituição", url: "/instituicao", icon: Building2 }] : []),
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 const administracao = [
+  ...(INSTITUICOES_ATIVAS ? [{ title: "Instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
