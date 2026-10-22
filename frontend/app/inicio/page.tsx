@@ -76,58 +76,6 @@ export default function InicioPage() {
         title={`Olá, ${firstName}`}
         description="Continua de onde ficaste ou explora novos conteúdos."
       >
-        <div ref={searchWrapRef} className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Pesquisar utilizadores…"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setMostrarResultados(true);
-            }}
-            onFocus={() => setMostrarResultados(true)}
-            className="pl-9 pr-9"
-          />
-          {mostrarResultados && (query.trim().length >= 2 || resultados.length > 0 || aPesquisar) && (
-            <Card className="absolute right-0 left-0 top-full z-30 mt-2 overflow-hidden p-1 shadow-elevated">
-              {aPesquisar ? (
-                <div className="px-3 py-4 text-sm text-muted-foreground text-center">A pesquisar…</div>
-              ) : resultados.length === 0 ? (
-                <div className="px-3 py-4 text-sm text-muted-foreground text-center">Nenhum utilizador encontrado.</div>
-              ) : (
-                <ul className="max-h-80 overflow-y-auto py-1">
-                  {resultados.map((u) => (
-                    <li key={u.id}>
-                      <Link
-                        href={`/perfil/${u.id}`}
-                        onClick={() => setMostrarResultados(false)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-surface",
-                        )}
-                      >
-                        <Avatar className="h-9 w-9 shrink-0">
-                          {u.foto ? (
-                            <AvatarImage src={u.foto} alt={u.name} className="object-cover" />
-                          ) : null}
-                          <AvatarFallback className="bg-gradient-gold text-primary-foreground font-semibold uppercase text-sm">
-                            {u.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">{u.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">@{u.username}</p>
-                        </div>
-                        <Badge variant="outline" className="shrink-0 rounded-full text-[10px] font-normal">
-                          {u.isTeacher ? "Professor" : "Aluno"}
-                        </Badge>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          )}
-        </div>
       </PageHeader>
 
       <section>
