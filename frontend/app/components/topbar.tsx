@@ -63,7 +63,7 @@ export function Topbar() {
   const [mostrarResultados, setMostrarResultados] = useState(false);
   const [aPesquisar, setAPesquisar] = useState(false);
   const [cursosEncontrados, setCursosEncontrados] = useState<Course[]>([]);
-  const [professoresEncontrados, setProfessoresEncontrados] = useState<UtilizadorPesquisa[]>([]);
+  const [utilizadoresEncontrados, setUtilizadoresEncontrados] = useState<UtilizadorPesquisa[]>([]);
   const todosCursosRef = useRef<Course[] | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
@@ -72,7 +72,7 @@ export function Topbar() {
     const termo = q.trim();
     if (termo.length < 2) {
       setCursosEncontrados([]);
-      setProfessoresEncontrados([]);
+      setUtilizadoresEncontrados([]);
       setAPesquisar(false);
       return;
     }
@@ -90,10 +90,8 @@ export function Topbar() {
     );
 
     const utilizadores = await api.pesquisarUtilizadores(termo);
-    const professores = utilizadores.filter((u) => u.isTeacher);
-
     setCursosEncontrados(cursos.slice(0, 5));
-    setProfessoresEncontrados(professores.slice(0, 5));
+    setUtilizadoresEncontrados(utilizadores.slice(0, 5));
     setAPesquisar(false);
   }, []);
 
@@ -121,7 +119,7 @@ export function Topbar() {
   const [buscaAberta, setBuscaAberta] = useState(false);
 
   const semResultados =
-    !aPesquisar && cursosEncontrados.length === 0 && professoresEncontrados.length === 0;
+    !aPesquisar && cursosEncontrados.length === 0 && utilizadoresEncontrados.length === 0;
 
   return (
     <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center gap-3 border-b border-border bg-background/80 px-3 pt-[env(safe-area-inset-top)] backdrop-blur md:px-6">
@@ -203,13 +201,13 @@ export function Topbar() {
                   </div>
                 )}
 
-                {professoresEncontrados.length > 0 && (
+                {utilizadoresEncontrados.length > 0 && (
                   <div className="py-1">
                     <p className="px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                      Professores
+                      Utilizadores
                     </p>
                     <ul>
-                      {professoresEncontrados.map((prof) => (
+                      {utilizadoresEncontrados.map((prof) => (
                         <li key={prof.id}>
                           <Link
                             href={`/perfil/${prof.id}`}
@@ -228,7 +226,7 @@ export function Topbar() {
                               <p className="truncate text-sm font-medium text-foreground">{prof.name}</p>
                               <p className="truncate text-xs text-muted-foreground">@{prof.username}</p>
                             </div>
-                            <GraduationCap className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            {prof.isTeacher && <GraduationCap className="h-4 w-4 shrink-0 text-muted-foreground" />}
                           </Link>
                         </li>
                       ))}

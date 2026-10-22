@@ -95,8 +95,8 @@ export default function GamificacaoPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard icon={Coins} label="Moedas EYK" value={p.coins} tone="gold" />
         <StatCard icon={Zap} label="XP total" value={p.xp} />
-        <StatCard icon={Flame} label="Streak atual" value={`${p.streak} dias`} tone="streak" />
-        <StatCard icon={Target} label="Recorde streak" value={`${p.streakRecord} dias`} />
+        <StatCard icon={Flame} label="Meus dias de ofensiva" value={`${p.streak} dias`} tone="streak" />
+        <StatCard icon={Target} label="Recorde de dias de ofensiva" value={`${p.streakRecord} dias`} />
         <StatCard icon={TrendingUp} label="Nível atual" value={`Nível ${p.level}`} tone="success" />
       </div>
 
@@ -108,7 +108,9 @@ export default function GamificacaoPage() {
               className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold"
               name={p.name}
               initials={p.initials}
+              foto={user?.foto ?? p.foto}
               userId={user?.id}
+              size={80}
             />
           </Avatar>
           <div className="flex-1 space-y-2">

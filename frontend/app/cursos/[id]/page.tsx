@@ -261,7 +261,7 @@ export default function CoursePlayerPage() {
 
           <div className="flex items-center gap-3">
             <Avatar className="h-11 w-11">
-              <UserAvatar noLink name={curso.teacher} userId={curso.teacherUserId ?? undefined} />
+              <UserAvatar noLink name={curso.teacher} foto={curso.teacherFoto} userId={curso.teacherUserId ?? undefined} />
             </Avatar>
             <div>
               {curso.teacherUserId ? (

@@ -209,6 +209,7 @@ export function CourseCard({ course }: { course: Course }) {
               <UserAvatar
                 name={course.teacher}
                 initials={course.teacherAvatar}
+                foto={course.teacherFoto}
                 userId={course.teacherUserId ?? undefined}
                 size={24}
                 noLink

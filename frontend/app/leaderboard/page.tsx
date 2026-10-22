@@ -46,7 +46,7 @@ export default function LeaderboardPage() {
           hint="Continua assim!"
         />
         <StatCard icon={Coins} label="Moedas EYK" value={meStats.coins} tone="gold" />
-        <StatCard icon={Flame} label="Streak atual" value={`${meStats.streak} dias`} tone="streak" />
+        <StatCard icon={Flame} label="Meus dias de ofensiva" value={`${meStats.streak} dias`} tone="streak" />
       </div>
 
       <div className="grid grid-cols-3 items-end justify-items-center gap-4 pt-6 pb-10">
@@ -61,6 +61,7 @@ export default function LeaderboardPage() {
                 <UserAvatar
                   name={row.name}
                   initials={row.initials}
+                  foto={row.foto}
                   userId={row.userId ?? undefined}
                   size={56}
                   noLink
@@ -108,6 +109,7 @@ export default function LeaderboardPage() {
                     noLink
                     name={row.name}
                     initials={row.initials}
+                    foto={row.foto}
                     userId={row.userId ?? undefined}
                     size={36}
                     backgroundColor="transparent"

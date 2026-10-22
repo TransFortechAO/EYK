@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import CharField, F, IntegerField, OuterRef, Subquery, Sum, Value
 from django.utils import timezone
 from rest_framework import permissions
@@ -30,6 +31,17 @@ def _get_initials(user: User) -> str:
 
 def _get_name(user: User) -> str:
     return user.get_display_name()
+
+
+def _get_photo(user: User) -> str | None:
+    try:
+        photo = user.professor.foto
+    except ObjectDoesNotExist:
+        try:
+            photo = user.aluno.foto
+        except ObjectDoesNotExist:
+            return None
+    return photo.url if photo else None
 
 
 def _format_date_transacao(criado_em: datetime) -> str:
@@ -77,6 +89,7 @@ def gamificacao_painel(request):
         'nextLevelXp': nivel['nextLevelXp'],
         'initials': _get_initials(user),
         'name': _get_name(user),
+        'foto': _get_photo(user),
     }
     return Response(data)
 
@@ -94,7 +107,9 @@ def leaderboard_list(request):
     ).annotate(
         _coins=Subquery(carteira_saldo, output_field=IntegerField()),
         _streak=Subquery(ofensiva_dias, output_field=IntegerField()),
-    ).order_by(F('_coins').desc(nulls_last=True), F('_streak').desc(nulls_last=True))[:20]
+    ).select_related('professor', 'aluno').order_by(
+        F('_coins').desc(nulls_last=True), F('_streak').desc(nulls_last=True),
+    )[:20]
 
     resultado = []
     for idx, u in enumerate(users, start=1):
@@ -105,6 +120,7 @@ def leaderboard_list(request):
             'userId': u.id,
             'name': _get_name(u),
             'initials': _get_initials(u),
+            'foto': _get_photo(u),
             'coins': coins,
             'streak': streak,
             'isMe': u.id == request.user.id,
@@ -120,8 +136,12 @@ def badges_list(request):
     progresso = progresso_badges(user)
     desbloqueados = set(AlunoBadge.objects.filter(utilizador=user).values_list('badge__slug', flat=True))
 
+    badges = Badge.objects.all()
+    if not user.is_teacher:
+        badges = badges.exclude(slug__in=('professor-popular', 'professor-influente', 'mentor'))
+
     resultado = []
-    for badge in Badge.objects.all().order_by('ordem'):
+    for badge in badges.order_by('ordem'):
         info = progresso.get(badge.slug, {'progresso': 0})
         earned = badge.slug in desbloqueados
         resultado.append({

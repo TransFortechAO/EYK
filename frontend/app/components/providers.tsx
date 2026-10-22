@@ -3,6 +3,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { PageTransition } from "@/components/page-transition";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Topbar } from "@/components/topbar";
@@ -31,9 +32,26 @@ const PREFIXOS_PUBLICOS = ["/certificados/"];
 const ROTAS_SEM_CHROME = new Set(["/personalizar-perfil", "/definir-senha"]);
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [montado, setMontado] = useState(false);
+  const [caminhoInicial, setCaminhoInicial] = useState<string | null>(null);
   const pathname = usePathname();
-  const isPublica = ROTAS_PUBLICAS.has(pathname) || PREFIXOS_PUBLICOS.some((p) => pathname.startsWith(p));
-  const isSemChrome = ROTAS_SEM_CHROME.has(pathname);
+  useEffect(() => {
+    setCaminhoInicial(window.location.pathname);
+    setMontado(true);
+  }, []);
+  const caminho = pathname ?? caminhoInicial;
+
+  // O servidor e o primeiro render do cliente mostram o mesmo placeholder.
+  // Depois da hidratação, espera também pelo caminho antes de montar o AuthGate.
+  if (!montado || caminho === null) {
+    return (
+      <ThemeProvider>
+        <div className="fixed inset-0 bg-[#0a0a0a]" aria-busy="true" />
+      </ThemeProvider>
+    );
+  }
+  const isPublica = ROTAS_PUBLICAS.has(caminho) || PREFIXOS_PUBLICOS.some((p) => caminho.startsWith(p));
+  const isSemChrome = ROTAS_SEM_CHROME.has(caminho);
 
   if (isPublica) {
     // Rotas públicas (landing, login, register) NÃO têm sidebar NÃO têm auth gate.
@@ -70,7 +88,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <EmailVerificationBanner />
               <Topbar />
               <main className="flex-1 p-4 sm:p-6 md:p-8 max-lg:pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
-                <PageTransition routeKey={pathname}>
+                <PageTransition routeKey={caminho}>
                   {children}
                 </PageTransition>
               </main>

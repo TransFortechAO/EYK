@@ -527,6 +527,7 @@ export type LeaderRow = {
   userId: number | null;
   name: string;
   initials: string;
+  foto?: string | null;
   coins: number;
   streak: number;
   isMe?: boolean;
@@ -581,6 +582,7 @@ export type GamePanel = {
   nextLevelXp: number;
   initials: string;
   name: string;
+  foto?: string | null;
 };
 
 // =================== Tipos ADMIN (Painel de Gestão) ========================
@@ -1752,7 +1754,7 @@ export const api = {
   getDadosGamificacao: async (): Promise<GamePanel> => {
     try {
       const res = await fetchAPI<GamePanel>('/api/gamificacao/');
-      if (res) return res;
+      if (res) return { ...res, foto: mediaUrl(res.foto) };
     } catch {
       /* fallback */
     }
@@ -1765,7 +1767,7 @@ export const api = {
     try {
       const res = await fetchAPI<LeaderRow[]>('/api/leaderboard/');
       if (Array.isArray(res) && res.length > 0) {
-        return res;
+        return res.map((row) => ({ ...row, foto: mediaUrl(row.foto) }));
       }
     } catch {
       /* fallback */
