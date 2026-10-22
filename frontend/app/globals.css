@@ -357,3 +357,9 @@ video::cue {
     min-height: 44px;
   }
 }
+
+/* Telemóvel deitado com recorte (iPhone): o conteúdo não fica por baixo dele. */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

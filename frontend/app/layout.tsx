@@ -18,6 +18,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0a0a0a",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover", // permite usar as áreas seguras (env(safe-area-inset-*)) do iPhone
 };
 
 export default function RootLayout({

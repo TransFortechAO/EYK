@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, Coins, Flame, Sun, Moon, BookOpen, GraduationCap } from "lucide-react";
+import { Bell, Search, Coins, Flame, Sun, Moon, BookOpen, GraduationCap, X } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { ProfileMenu } from "@/components/profile-menu";
 import { InstallAppButton } from "@/components/pwa";
 import { api, type LeaderRow, type Course, type UtilizadorPesquisa } from "@/lib/api";
@@ -116,16 +117,33 @@ export function Topbar() {
     return () => document.removeEventListener("mousedown", onClickFora);
   }, []);
 
+  // Em telemóvel a pesquisa abre por cima do cabeçalho; a partir de `sm` fica sempre visível.
+  const [buscaAberta, setBuscaAberta] = useState(false);
+
   const semResultados =
     !aPesquisar && cursosEncontrados.length === 0 && professoresEncontrados.length === 0;
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-3 backdrop-blur md:px-6">
-      <SidebarTrigger className="shrink-0" />
+    <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center gap-3 border-b border-border bg-background/80 px-3 pt-[env(safe-area-inset-top)] backdrop-blur md:px-6">
+      {/* Menu de baixo (< lg): o logótipo ocupa o canto superior esquerdo. */}
+      <Link href="/inicio" aria-label="EYK — Início" className="shrink-0 lg:hidden">
+        <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt="EYK" className="h-14 w-auto object-contain" />
+      </Link>
+      <SidebarTrigger className="hidden shrink-0 lg:inline-flex" />
 
-      <div ref={searchWrapRef} className="relative flex-1 min-w-0 max-w-xl">
+      <div
+        ref={searchWrapRef}
+        className={cn(
+          "relative min-w-0 flex-1 max-w-xl",
+          buscaAberta
+            ? "absolute inset-x-0 bottom-0 z-40 flex h-16 max-w-none items-center gap-2 bg-background px-3 sm:static sm:inset-auto sm:h-auto sm:max-w-xl sm:bg-transparent sm:px-0"
+            : "hidden sm:block",
+        )}
+      >
+        <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          autoFocus={buscaAberta}
           placeholder="Pesquisar curso, categoria ou professor…"
           value={query}
           onChange={(e) => {
@@ -135,6 +153,20 @@ export function Topbar() {
           onFocus={() => setMostrarResultados(true)}
           className="h-10 rounded-full bg-surface pl-10 pr-4 border-border/70 focus-visible:ring-2 focus-visible:ring-primary/40"
         />
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Fechar pesquisa"
+          onClick={() => {
+            setBuscaAberta(false);
+            setMostrarResultados(false);
+          }}
+          className="shrink-0 sm:hidden"
+        >
+          <X className="h-5 w-5" />
+        </Button>
 
         {mostrarResultados && (query.trim().length >= 2 || aPesquisar) && (
           <Card className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[70vh] overflow-y-auto p-1 shadow-elevated">
@@ -210,6 +242,16 @@ export function Topbar() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Pesquisar"
+          onClick={() => setBuscaAberta(true)}
+          className="rounded-full sm:hidden"
+        >
+          <Search className="h-5 w-5" />
+        </Button>
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Coins className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium tabular-nums">

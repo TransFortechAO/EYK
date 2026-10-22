@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { PageTransition } from "@/components/page-transition";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Topbar } from "@/components/topbar";
+import { BottomNav } from "@/components/bottom-nav";
 import { AuthGate } from "@/components/auth-gate";
 import { OfflineBanner } from "@/components/pwa";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
@@ -68,11 +69,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <OfflineBanner />
               <EmailVerificationBanner />
               <Topbar />
-              <main className="flex-1 p-4 sm:p-6 md:p-8">
+              <main className="flex-1 p-4 sm:p-6 md:p-8 max-lg:pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
                 <PageTransition routeKey={pathname}>
                   {children}
                 </PageTransition>
               </main>
+              <BottomNav />
             </div>
           </div>
         </SidebarProvider>

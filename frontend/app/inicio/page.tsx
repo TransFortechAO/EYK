@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { CartaoGamificacao, CartaoLeaderboard } from "@/components/inicio-cartoes";
 import { cn } from "@/lib/utils";
 
 export default function InicioPage() {
@@ -29,7 +30,7 @@ export default function InicioPage() {
       const [c, v] = await Promise.all([api.getCursos(), api.getVideos("recent")]);
       if (!alive) return;
       setCourses(c);
-      setVideos(v.slice(0, 3));
+      setVideos(v.slice(0, 4));
     })();
     return () => { alive = false; };
   }, []);
@@ -134,8 +135,9 @@ export default function InicioPage() {
           title="Continuar a aprender"
           href="/cursos"
         />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {(emAndamento.length > 0 ? emAndamento : courses.slice(0, 3)).map((course) => (
+        {/* 2 colunas em tablet, 3 em computador (a 4.ª só aparece nas 2 colunas). */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:[&>*:nth-child(n+4)]:hidden">
+          {(emAndamento.length > 0 ? emAndamento : courses.slice(0, 4)).map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}
         </div>
@@ -143,11 +145,18 @@ export default function InicioPage() {
 
       <section>
         <SectionHeader title="Vídeos recentes" href="/videos" />
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:[&>*:nth-child(n+4)]:hidden">
           {videos.map((video) => (
             <VideoCard key={video.id} video={video} />
           ))}
         </div>
+      </section>
+
+      {/* Tablet: Leaderboard e Gamificação ficam no Início (no telemóvel estão em "Mais"; no
+          computador, na barra lateral). */}
+      <section className="hidden gap-5 md:grid md:grid-cols-2 lg:hidden">
+        <CartaoLeaderboard />
+        <CartaoGamificacao />
       </section>
     </div>
   );

@@ -5,7 +5,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { PanelLeft } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useIsCompact } from "@/hooks/useIsCompact";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -39,7 +39,7 @@ export function SidebarProvider({
   children,
   ...props
 }: React.ComponentProps<"div"> & { defaultOpen?: boolean }) {
-  const isMobile = useIsMobile();
+  const isMobile = useIsCompact();
   const [open, setOpen] = React.useState(defaultOpen);
   const [openMobile, setOpenMobile] = React.useState(false);
   const state: SidebarState = open ? "expanded" : "collapsed";
@@ -98,7 +98,7 @@ export function Sidebar({
       data-variant={variant}
       data-collapsible={collapsible}
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col text-sidebar-foreground transition-[width] duration-200 ease-linear",
+        "sticky top-0 flex h-screen shrink-0 flex-col max-lg:hidden text-sidebar-foreground transition-[width] duration-200 ease-linear",
         collapsed ? "w-[3.5rem]" : "w-64",
         variant === "floating"
           ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar shadow-soft"
