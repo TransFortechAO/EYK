@@ -27,7 +27,7 @@ import { useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
-import { navegacaoEscola } from "@/lib/instituicoes/navegacao";
+import { abasTelemovel, restoParaMais, type ItemNav } from "@/lib/instituicoes/navegacao";
 import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { ICONE_NAV } from "@/components/instituicao/icones-nav";
 
@@ -70,34 +70,47 @@ const administracao = [
 ];
 
 /**
- * "A minha escola": as funcionalidades da escola do papel atual (aluno, família,
- * educador, formador, coordenação, administração, observador).
+ * Um grupo da navegação por papel (lib/instituicoes/navegacao.ts), com os
+ * números do que há por ver. Usado no topo da barra (as mesmas entradas das
+ * abas do telemóvel), em "A minha escola" e em "Plataforma EYK".
  */
-function GrupoEscola({ isActive, aoNavegar }: { isActive: (url: string) => boolean; aoNavegar: () => void }) {
-  const escola = useInstituicaoOpcional();
-  if (!escola || escola.aCarregar) return null;
-  const { atual, contadores } = escola;
-  const itens = atual
-    ? navegacaoEscola(atual.membro.papel, contadores)
-    : [{ id: "entrar", titulo: "Entrar numa escola", url: "/instituicao/aderir", icone: "escola" as const }];
-  const ativo = (url: string) => (url === "/instituicao" ? isActive(url) && !itens.some((i) => i.url !== url && isActive(i.url)) : isActive(url));
+function GrupoNav({
+  titulo,
+  itens,
+  isActive,
+  pathname,
+  aoNavegar,
+  separador = true,
+}: {
+  titulo?: string;
+  itens: ItemNav[];
+  isActive: (url: string) => boolean;
+  pathname: string;
+  aoNavegar: () => void;
+  separador?: boolean;
+}) {
+  if (itens.length === 0) return null;
+  // O painel (/instituicao) só fica ativo na própria página, não nas subpáginas que têm entrada própria.
+  const ativo = (url: string) => (url === "/instituicao" ? pathname === "/instituicao" : isActive(url));
 
   return (
     <>
-      <SidebarSeparator />
+      {separador && <SidebarSeparator />}
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton disabled tooltip={atual?.instituicao.nome ?? "Escola"} className="opacity-60 cursor-default hover:bg-transparent">
-                <Building2 />
-                <span className="truncate">{atual ? atual.instituicao.nome : "Escola"}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {titulo && (
+              <SidebarMenuItem>
+                <SidebarMenuButton disabled tooltip={titulo} className="opacity-60 cursor-default hover:bg-transparent">
+                  <Building2 />
+                  <span className="truncate">{titulo}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             {itens.map((item) => {
               const Icone = ICONE_NAV[item.icone];
               return (
-                <SidebarMenuItem key={item.id}>
+                <SidebarMenuItem key={`${item.id}-${item.url}`}>
                   <SidebarMenuButton
                     asChild
                     isActive={ativo(item.url)}
@@ -144,6 +157,13 @@ export function AppSidebar() {
     if (isMobile) setOpenMobile(false);
   };
 
+  // Navegação por papel (escola parceira): igual no computador, tablet e telemóvel.
+  const escola = useInstituicaoOpcional();
+  const papel = escola && !escola.aCarregar ? escola.atual?.membro.papel ?? null : null;
+  const contadores = escola?.contadores ?? { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
+  const principais = papel ? abasTelemovel(papel, contadores) : null;
+  const resto = papel ? restoParaMais(papel, contadores) : null;
+
   const handleLogout = async () => {
     if (logoutLoading) return;
     try {
@@ -167,29 +187,45 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {primary.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                    className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
-                  >
-                    <Link href={item.url} onClick={closeOnNavigate}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {principais ? (
+          // Com escola: as mesmas entradas principais das abas do telemóvel, por papel.
+          <GrupoNav itens={principais} isActive={isActive} pathname={pathname} aoNavegar={closeOnNavigate} separador={false} />
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {primary.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                      className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
+                    >
+                      <Link href={item.url} onClick={closeOnNavigate}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <GrupoEscola isActive={isActive} aoNavegar={closeOnNavigate} />
+        {escola && !escola.aCarregar && (
+          <GrupoNav
+            titulo={escola.atual ? escola.atual.instituicao.nome : "Escola"}
+            itens={resto ? resto.escola : [{ id: "entrar", titulo: "Entrar numa escola", url: "/instituicao/aderir", icone: "escola" }]}
+            isActive={isActive}
+            pathname={pathname}
+            aoNavegar={closeOnNavigate}
+          />
+        )}
+        {resto && resto.geral.length > 0 && (
+          <GrupoNav titulo="Plataforma EYK" itens={resto.geral} isActive={isActive} pathname={pathname} aoNavegar={closeOnNavigate} />
+        )}
 
         <SidebarSeparator />
 
