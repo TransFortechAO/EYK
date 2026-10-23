@@ -189,6 +189,11 @@ O que não cabe nas abas fica no painel "Mais", agrupado em "escola", "Plataform
 (respostas por rever, trabalhos por fazer, avisos por ler) atualizam-se ao mudar de página e depois de corrigir uma
 resposta.
 
+**A equipa EYK não pertence a escolas:** contas `isStaff` (superadmin) nunca recebem o contexto de uma escola — a barra
+lateral, o menu de baixo e as páginas principais mostram só a plataforma e a Administração, mesmo que o "Ver como" da
+demonstração esteja numa pessoa de escola. Para ver o espaço de uma escola, usam "Pré-visualizar o espaço de uma
+escola" em Escolas e instituições: `/instituicao` monta então um contexto só para essa área.
+
 **Cada funcionalidade fica num só lugar:** os separadores no topo da página `/instituicao` mostram só as secções que
 não estão no menu desse papel (`urlsNoMenu` em `navegacao.ts`). Ex: o aluno tem Turmas, Praticar, Gestuário, Avisos,
 Agenda e Ficheiros no menu, e na página fica só Painel e Conteúdos; a administração tem na página Praticar, Gestuário,

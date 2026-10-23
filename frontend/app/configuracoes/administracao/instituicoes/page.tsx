@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, Check, FlaskConical, Globe, HardDrive, History, Plus, ShieldAlert, SlidersHorizontal, Users, X } from "lucide-react";
+import { Building2, Check, Eye, FlaskConical, Globe, HardDrive, History, Plus, ShieldAlert, SlidersHorizontal, Users, X } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,12 @@ export default function AdminInstituicoesPage() {
         title="Escolas e instituições"
         description="Criar escolas, centros e organizações parceiras (o responsável recebe o convite de administrador), ativar, suspender, ajustar quotas e aprovar o que as escolas querem publicar na plataforma geral."
       >
+        <Button asChild variant="outline" className="gap-1.5">
+          {/* A equipa EYK não pertence a escolas: vê o espaço de uma escola só em pré-visualização. */}
+          <Link href="/instituicao">
+            <Eye className="h-4 w-4" /> Pré-visualizar o espaço de uma escola
+          </Link>
+        </Button>
         <Button className="gap-1.5" onClick={() => setNova(true)}>
           <Plus className="h-4 w-4" /> Nova instituição
         </Button>

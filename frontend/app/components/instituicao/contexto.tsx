@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/auth-gate";
 import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo } from "@/lib/instituicoes/api";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { apiLga } from "@/lib/instituicoes/lga";
@@ -168,9 +169,16 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
 
-/** Só monta o contexto quando a área Instituição está ativa (senão a app fica exatamente como antes). */
+/**
+ * Só monta o contexto quando a área Instituição está ativa (senão a app fica
+ * exatamente como antes). A equipa EYK (superadmin/staff) não pertence a
+ * nenhuma escola: fica sempre com a navegação da plataforma e da
+ * Administração. Pode pré-visualizar o espaço de uma escola em /instituicao,
+ * que monta o seu próprio contexto só para essa área.
+ */
 export function EscolaGlobal({ children }: { children: ReactNode }) {
-  if (!INSTITUICOES_ATIVAS) return <>{children}</>;
+  const { user } = useAuth();
+  if (!INSTITUICOES_ATIVAS || user?.isStaff) return <>{children}</>;
   return <InstituicaoProvider>{children}</InstituicaoProvider>;
 }
 

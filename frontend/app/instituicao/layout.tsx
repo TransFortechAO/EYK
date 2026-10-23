@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/eyk";
 import { Button } from "@/components/ui/button";
-import { useInstituicao } from "@/components/instituicao/contexto";
+import { InstituicaoProvider, useInstituicao, useInstituicaoOpcional } from "@/components/instituicao/contexto";
+import { useAuth } from "@/components/auth-gate";
 import { Carregando, EtiquetaPapel, Seletor } from "@/components/instituicao/ui";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { PESSOAS_DEMO } from "@/lib/instituicoes/api";
@@ -76,14 +77,25 @@ function ativo(pathname: string, url: string) {
 
 function FaixaDemo() {
   const { pessoa, mudarPessoa, reporDados } = useInstituicao();
+  const { user } = useAuth();
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <p className="flex items-start gap-2 text-muted-foreground">
         <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-        <span>
-          <span className="font-medium text-foreground">Demonstração.</span> Os dados são fictícios e ficam só neste
-          browser, até a eyk-api estar pronta.
-        </span>
+        {user?.isStaff ? (
+          <span>
+            <span className="font-medium text-foreground">Pré-visualização.</span> A tua conta da equipa EYK não pertence a
+            nenhuma escola: aqui vês o espaço como o membro escolhido. O menu continua o da plataforma.{" "}
+            <Link href="/configuracoes/administracao/instituicoes" className="font-medium text-primary hover:underline">
+              Voltar a Escolas e instituições
+            </Link>
+          </span>
+        ) : (
+          <span>
+            <span className="font-medium text-foreground">Demonstração.</span> Os dados são fictícios e ficam só neste
+            browser, até a eyk-api estar pronta.
+          </span>
+        )}
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <label htmlFor="ver-como" className="text-xs font-medium text-muted-foreground">
@@ -228,6 +240,7 @@ function Moldura({ children }: { children: ReactNode }) {
 
 export default function InstituicaoLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const global = useInstituicaoOpcional();
 
   useEffect(() => {
     if (!INSTITUICOES_ATIVAS) router.replace("/inicio");
@@ -236,5 +249,14 @@ export default function InstituicaoLayout({ children }: { children: ReactNode })
   if (!INSTITUICOES_ATIVAS) return null;
 
   // O contexto da escola vem de components/providers.tsx (partilhado com os menus).
+  // A equipa EYK não o tem (não pertence a escolas): aqui monta-se um só para a
+  // pré-visualização, sem mexer na barra lateral nem no menu de baixo.
+  if (!global) {
+    return (
+      <InstituicaoProvider>
+        <Moldura>{children}</Moldura>
+      </InstituicaoProvider>
+    );
+  }
   return <Moldura>{children}</Moldura>;
 }
