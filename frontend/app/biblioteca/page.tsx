@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { lgaCategories, lgaSigns } from "@/lib/lga-data";
 import { LGASign } from "@/components/lga-sign";
+import { GestosValidadosBiblioteca } from "@/components/instituicao/escola";
 
 export default function BibliotecaPage() {
   const [cat, setCat] = useState("Todos");
@@ -59,6 +60,9 @@ export default function BibliotecaPage() {
           description="Tenta outra categoria ou ajusta a pesquisa."
         />
       )}
+
+      {/* Gestos validados por formadores surdos nas escolas parceiras (com variantes regionais). */}
+      <GestosValidadosBiblioteca pesquisa={q} />
     </div>
   );
 }

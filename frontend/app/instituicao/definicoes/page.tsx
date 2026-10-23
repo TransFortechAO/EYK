@@ -14,11 +14,22 @@ export default function DefinicoesPage() {
   const inst = atual.instituicao;
   const [aprovar, setAprovar] = useState(inst.aprovarPedidosPorCodigo);
   const [email, setEmail] = useState(inst.canaisAviso.includes("email"));
-  const alterado = aprovar !== inst.aprovarPedidosPorCodigo || email !== inst.canaisAviso.includes("email");
+  const [comunidade, setComunidade] = useState(inst.escola.comunidadePublicaParaAlunos);
+  const [ranking, setRanking] = useState(inst.escola.rankingVisivel);
+  const alterado =
+    aprovar !== inst.aprovarPedidosPorCodigo ||
+    email !== inst.canaisAviso.includes("email") ||
+    comunidade !== inst.escola.comunidadePublicaParaAlunos ||
+    ranking !== inst.escola.rankingVisivel;
 
   const guardar = async () => {
     const ok = await acao(
-      () => api.atualizarDefinicoes(instituicaoId, { aprovarPedidosPorCodigo: aprovar, canaisAviso: email ? ["plataforma", "email"] : ["plataforma"] }),
+      () =>
+        api.atualizarDefinicoes(instituicaoId, {
+          aprovarPedidosPorCodigo: aprovar,
+          canaisAviso: email ? ["plataforma", "email"] : ["plataforma"],
+          escola: { comunidadePublicaParaAlunos: comunidade, rankingVisivel: ranking },
+        }),
       "Definições guardadas.",
     );
     if (ok) await recarregar();
@@ -55,6 +66,30 @@ export default function DefinicoesPage() {
               </p>
             </div>
             <Switch id="def-email" checked={email} onCheckedChange={setEmail} />
+          </div>
+          <div className="flex items-start justify-between gap-4 p-5">
+            <div>
+              <label htmlFor="def-comunidade" className="text-sm font-medium">
+                Alunos na Comunidade pública da EYK
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Desligado, os alunos da escola só vêem e publicam na comunidade da sua turma, moderada pelos professores.
+                Recomendado para crianças.
+              </p>
+            </div>
+            <Switch id="def-comunidade" checked={comunidade} onCheckedChange={setComunidade} />
+          </div>
+          <div className="flex items-start justify-between gap-4 p-5">
+            <div>
+              <label htmlFor="def-ranking" className="text-sm font-medium">
+                Classificações da turma e da escola
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Mostra quem ganhou mais moedas a praticar LGA (só o primeiro nome). Desliga se a classificação desmotivar alguns
+                alunos.
+              </p>
+            </div>
+            <Switch id="def-ranking" checked={ranking} onCheckedChange={setRanking} />
           </div>
           <div className="flex justify-end p-4">
             <Button disabled={!alterado} onClick={() => void guardar()}>

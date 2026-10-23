@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { api, mensagemDeErro, type Post } from "@/lib/api";
 import { UserInitialsLink } from "@/components/UserAvatar";
+import { ComunidadeComEscola } from "@/components/instituicao/escola";
 
 export default function ComunidadePage() {
   return (
@@ -98,58 +99,63 @@ function ComunidadeConteudo() {
         description="Partilha o teu progresso, tira dúvidas e conecta-te com outros estudantes."
       />
 
-      <Card className="p-5 shadow-soft">
-        <div className="flex gap-3">
-          <Avatar className="h-10 w-10 shrink-0">
-            <UserInitialsLink/>
-          </Avatar>
-          <div className="flex-1 space-y-3">
-            <Textarea
-              placeholder="O que estás a aprender hoje? Partilha com a comunidade..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="min-h-[90px] resize-none bg-surface"
-            />
-            <div className="flex justify-end">
-              <Button onClick={() => void submit()} disabled={!text.trim() || submitting} className="gap-2">
-                <Send className="h-4 w-4" />
-                {submitting ? "A publicar…" : "Publicar"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <section>
-        <SectionHeader title="Publicações recentes" />
-        {posts.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                id={`post-${post.id}`}
-                className={
-                  postPartilhado === post.id
-                    ? "rounded-2xl ring-2 ring-primary transition-shadow"
-                    : undefined
-                }
-              >
-                <PostCard
-                  post={post}
-                  onToggleLike={() => void toggleLike(post.id)}
-                  onAutorBloqueado={(userId) => setPosts((prev) => prev.filter((p) => p.authorId !== userId))}
+      {/* Com escola parceira: separadores para a comunidade de cada Turma LGA. */}
+      <ComunidadeComEscola>
+        <div className="space-y-8">
+          <Card className="p-5 shadow-soft">
+            <div className="flex gap-3">
+              <Avatar className="h-10 w-10 shrink-0">
+                <UserInitialsLink/>
+              </Avatar>
+              <div className="flex-1 space-y-3">
+                <Textarea
+                  placeholder="O que estás a aprender hoje? Partilha com a comunidade..."
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  className="min-h-[90px] resize-none bg-surface"
                 />
+                <div className="flex justify-end">
+                  <Button onClick={() => void submit()} disabled={!text.trim() || submitting} className="gap-2">
+                    <Send className="h-4 w-4" />
+                    {submitting ? "A publicar…" : "Publicar"}
+                  </Button>
+                </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Users}
-            title="Ainda não há publicações."
-            description="Sê o primeiro a partilhar algo com a comunidade!"
-          />
-        )}
-      </section>
+            </div>
+          </Card>
+
+          <section>
+            <SectionHeader title="Publicações recentes" />
+            {posts.length > 0 ? (
+              <div className="grid gap-5 md:grid-cols-2">
+                {posts.map((post) => (
+                  <div
+                    key={post.id}
+                    id={`post-${post.id}`}
+                    className={
+                      postPartilhado === post.id
+                        ? "rounded-2xl ring-2 ring-primary transition-shadow"
+                        : undefined
+                    }
+                  >
+                    <PostCard
+                      post={post}
+                      onToggleLike={() => void toggleLike(post.id)}
+                      onAutorBloqueado={(userId) => setPosts((prev) => prev.filter((p) => p.authorId !== userId))}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Users}
+                title="Ainda não há publicações."
+                description="Sê o primeiro a partilhar algo com a comunidade!"
+              />
+            )}
+          </section>
+        </div>
+      </ComunidadeComEscola>
     </div>
   );
 }

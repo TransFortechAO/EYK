@@ -49,7 +49,7 @@ export const VALIDADE_CONVITE_DIAS = 14;
 export const DEFINICAO_ATIVO = "Pelo menos um acesso nos últimos 30 dias.";
 
 const DIA = 24 * 60 * 60 * 1000;
-const CHAVE_LOCAL = "eyk-instituicoes-demo-v1";
+const CHAVE_LOCAL = "eyk-instituicoes-demo-v2";
 const ATRASO_MS = 120;
 
 export class ErroInstituicao extends Error {}
@@ -196,14 +196,36 @@ export type PessoaDemo = { utilizadorId: number; nome: string; descricao: string
 export const PESSOAS_DEMO: PessoaDemo[] = [
   { utilizadorId: 1001, nome: "Ana Domingos", descricao: "Administradora na Escola 123 · educadora na Associação" },
   { utilizadorId: 1002, nome: "Paulo Neto", descricao: "Coordenador" },
-  { utilizadorId: 1003, nome: "Maria Kiala", descricao: "Educadora da 3.ª Classe A e do Apoio em LGA" },
+  { utilizadorId: 1003, nome: "Maria Kiala", descricao: "Educadora — turmas LGA da 3.ª A, famílias e professores" },
+  { utilizadorId: 1030, nome: "Domingos Sapalo", descricao: "Formador de LGA (surdo) — valida o gestuário" },
   { utilizadorId: 1008, nome: "Rosa Lopes", descricao: "Família — tutora de Kiesse" },
-  { utilizadorId: 1006, nome: "Kiesse Lopes", descricao: "Aluno" },
+  { utilizadorId: 1006, nome: "Kiesse Lopes", descricao: "Aluno da Turma LGA da 3.ª A" },
+  { utilizadorId: 1105, nome: "Wezo Sebastião", descricao: "Aluno sem consentimento para respostas em vídeo" },
   { utilizadorId: 1005, nome: "Direção Provincial de Educação", descricao: "Observador" },
 ];
 
+const CHAVE_PESSOA = "eyk-instituicoes-pessoa-demo";
+
 export function definirPessoaDemo(utilizadorId: number) {
   utilizadorDemo = utilizadorId;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CHAVE_PESSOA, String(utilizadorId));
+  } catch {
+    /* sem localStorage: a escolha dura só esta visita */
+  }
+}
+
+/** Repõe a pessoa escolhida em "ver como" (partilhada entre a área Instituição e as páginas principais). */
+export function restaurarPessoaDemo(): number {
+  if (typeof window === "undefined") return utilizadorDemo;
+  try {
+    const guardada = Number(window.localStorage.getItem(CHAVE_PESSOA));
+    if (guardada) utilizadorDemo = guardada;
+  } catch {
+    /* ignora */
+  }
+  return utilizadorDemo;
 }
 
 export function pessoaDemo(): number {
@@ -259,7 +281,7 @@ export const apiInstituicoes = {
 
   async atualizarDefinicoes(
     instituicaoId: string,
-    dados: Pick<Instituicao, "aprovarPedidosPorCodigo" | "canaisAviso">,
+    dados: Partial<Pick<Instituicao, "aprovarPedidosPorCodigo" | "canaisAviso" | "escola">>,
   ): Promise<Instituicao> {
     await esperar();
     exigir(instituicaoId, "gerir_definicoes");
@@ -279,7 +301,7 @@ export const apiInstituicoes = {
     const todos = carregar().membros.filter((x) => x.instituicaoId === instituicaoId && x.estado !== "removido");
     if (pode(m.papel, "gerir_membros") || pode(m.papel, "ver_todos_grupos")) return todos;
     // Educadores: só quem partilha grupos com eles.
-    if (m.papel === "educador") return todos.filter((x) => x.id === m.id || x.gruposIds.some((g) => m.gruposIds.includes(g)));
+    if (m.papel === "educador" || m.papel === "formador") return todos.filter((x) => x.id === m.id || x.gruposIds.some((g) => m.gruposIds.includes(g)));
     return [m];
   },
 
@@ -1002,6 +1024,7 @@ export const apiInstituicoes = {
         quotas: { armazenamentoMb: 1024, ficheiroMaxMb: 50, utilizadoresMax: 100 },
         aprovarPedidosPorCodigo: true,
         canaisAviso: ["plataforma", "email"],
+        escola: { comunidadePublicaParaAlunos: false, rankingVisivel: true },
       };
       e.instituicoes.push(inst);
       // O responsável recebe um convite por email e torna-se administrador.
@@ -1237,3 +1260,6 @@ export function calcularRelatorio(instituicaoId: string, agora: number): Relator
 
 // Exposto só para os testes.
 export const _interno = { carregar, eu };
+
+/** Auxiliares partilhados com o módulo de ensino de LGA (./lga.ts). */
+export const _nucleo = { carregar, guardar, esperar, novoId, gerarCodigo, instituicao, eu, exigir, auditar, destinatariosDe };

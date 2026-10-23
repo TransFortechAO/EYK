@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BarChart3, Baby, CalendarDays, HardDrive, Megaphone, Ticket, UserCheck, Users, UsersRound } from "lucide-react";
+import { ArrowRight, BarChart3, Baby, CalendarDays, Hand, HardDrive, Megaphone, Ticket, UserCheck, Users, UsersRound } from "lucide-react";
 import { SectionHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,39 @@ export default function PainelInstituicaoPage() {
           <StatCard icon={Ticket} label="Grupos onde estás" value={atual.membro.gruposIds.length} />
         )}
       </div>
+
+      {pode("ver_turmas_lga") && (
+        <Card className="flex flex-col gap-4 p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-gold text-primary-foreground shadow-gold">
+              <Hand className="h-5 w-5" aria-hidden />
+            </div>
+            <div>
+              <p className="font-serif text-lg font-semibold">Ensino de LGA</p>
+              <p className="text-sm text-muted-foreground">
+                {papel === "aluno"
+                  ? "As tuas aulas, os trabalhos em vídeo e a prática de gestos."
+                  : papel === "familia"
+                    ? "As aulas de LGA da tua criança e a turma para famílias."
+                    : "Turmas, aulas sinalizadas, respostas em vídeo e o gestuário da escola."}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/instituicao/turmas">Turmas LGA</Link>
+            </Button>
+            {pode("praticar") && (
+              <Button asChild variant="outline">
+                <Link href="/instituicao/praticar">Praticar</Link>
+              </Button>
+            )}
+            <Button asChild variant="outline">
+              <Link href="/instituicao/gestuario">Gestuário</Link>
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>

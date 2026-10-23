@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CartaoGamificacao, CartaoLeaderboard } from "@/components/inicio-cartoes";
+import { InicioEscola } from "@/components/instituicao/escola";
 import { cn } from "@/lib/utils";
 
 export default function InicioPage() {
@@ -129,6 +130,9 @@ export default function InicioPage() {
           )}
         </div>
       </PageHeader>
+
+      {/* Com escola parceira: trabalhos de LGA, aulas novas, avisos e desafios da escola. */}
+      <InicioEscola />
 
       <section>
         <SectionHeader

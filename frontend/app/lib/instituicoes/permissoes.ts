@@ -1,4 +1,17 @@
-import type { AcaoAuditoria, Papel, TipoGrupo, TipoInstituicao, EstadoInstituicao, Destinatarios, Grupo, Membro } from "./tipos";
+import type {
+  AcaoAuditoria,
+  Competencia,
+  Destinatarios,
+  EstadoInstituicao,
+  Grupo,
+  Membro,
+  NivelLga,
+  Papel,
+  PublicoTurmaLga,
+  TemaGesto,
+  TipoGrupo,
+  TipoInstituicao,
+} from "./tipos";
 
 // O que cada papel pode fazer dentro de uma instituição (funcionalidade 2).
 // O frontend usa isto só para mostrar ou esconder menus e botões — a
@@ -24,7 +37,34 @@ export type Acao =
   | "ver_relatorios"
   | "ver_auditoria"
   | "pedir_dados"
-  | "gerir_pedidos_dados";
+  | "gerir_pedidos_dados"
+  // Ensino de LGA
+  | "ver_turmas_lga"
+  | "gerir_turmas_lga"
+  | "publicar_aulas"
+  | "rever_respostas"
+  | "responder_aulas"
+  | "propor_gestos"
+  | "validar_gestos"
+  | "praticar"
+  | "publicar_conteudos"
+  | "publicar_na_turma"
+  | "moderar_turma"
+  | "criar_desafios";
+
+/** O que quem ensina LGA (educador ou formador) pode fazer nas suas turmas. */
+const ENSINAR_LGA: Acao[] = [
+  "ver_turmas_lga",
+  "gerir_turmas_lga",
+  "publicar_aulas",
+  "rever_respostas",
+  "propor_gestos",
+  "praticar",
+  "publicar_conteudos",
+  "publicar_na_turma",
+  "moderar_turma",
+  "criar_desafios",
+];
 
 const PERMISSOES: Record<Papel, readonly Acao[]> = {
   administrador: [
@@ -47,8 +87,17 @@ const PERMISSOES: Record<Papel, readonly Acao[]> = {
     "ver_auditoria",
     "pedir_dados",
     "gerir_pedidos_dados",
+    // A administração abre turmas e publica conteúdos, mas não vê os vídeos
+    // das crianças (só o professor da turma e a família).
+    "ver_turmas_lga",
+    "gerir_turmas_lga",
+    "publicar_aulas",
+    "praticar",
+    "publicar_conteudos",
+    "moderar_turma",
+    "criar_desafios",
   ],
-  coordenador: ["ver_painel", "ver_todos_grupos", "ver_avisos", "ver_agenda", "ver_ficheiros", "ver_relatorios"],
+  coordenador: ["ver_painel", "ver_todos_grupos", "ver_avisos", "ver_agenda", "ver_ficheiros", "ver_relatorios", "ver_turmas_lga", "propor_gestos", "validar_gestos", "praticar"],
   educador: [
     "ver_painel",
     "convidar",
@@ -60,12 +109,31 @@ const PERMISSOES: Record<Papel, readonly Acao[]> = {
     "ver_agenda",
     "carregar_ficheiros",
     "ver_ficheiros",
+    ...ENSINAR_LGA,
   ],
-  familia: ["ver_painel", "ver_avisos", "ver_agenda", "ver_ficheiros", "dar_consentimento", "pedir_dados"],
-  aluno: ["ver_painel", "ver_avisos", "ver_agenda", "ver_ficheiros"],
+  // Formador de LGA (de preferência surdo): ensina nas turmas e valida os gestos do gestuário.
+  formador: [
+    "ver_painel",
+    "convidar",
+    "publicar_avisos",
+    "ver_avisos",
+    "criar_eventos",
+    "ver_agenda",
+    "carregar_ficheiros",
+    "ver_ficheiros",
+    ...ENSINAR_LGA,
+    "validar_gestos",
+  ],
+  familia: ["ver_painel", "ver_avisos", "ver_agenda", "ver_ficheiros", "dar_consentimento", "pedir_dados", "ver_turmas_lga", "praticar"],
+  aluno: ["ver_painel", "ver_avisos", "ver_agenda", "ver_ficheiros", "ver_turmas_lga", "responder_aulas", "praticar", "publicar_na_turma"],
   // Observadores só vêem painéis agregados e anonimizados.
   observador: ["ver_painel", "ver_relatorios"],
 };
+
+/** Quem ensina numa turma (vê as respostas em vídeo dos alunos dessa turma). */
+export function ensina(papel: Papel | null | undefined): boolean {
+  return papel === "educador" || papel === "formador";
+}
 
 export function pode(papel: Papel | null | undefined, acao: Acao): boolean {
   if (!papel) return false;
@@ -117,6 +185,7 @@ export const ROTULO_PAPEL: Record<Papel, string> = {
   administrador: "Administrador",
   coordenador: "Coordenador",
   educador: "Educador",
+  formador: "Formador de LGA",
   familia: "Família ou tutor",
   aluno: "Aluno",
   observador: "Observador",
@@ -124,8 +193,9 @@ export const ROTULO_PAPEL: Record<Papel, string> = {
 
 export const DESCRICAO_PAPEL: Record<Papel, string> = {
   administrador: "Gere membros, turmas, definições e relatórios; convida e remove pessoas.",
-  coordenador: "Vê os relatórios das turmas.",
-  educador: "Gere as suas turmas; publica avisos e ficheiros; vê o progresso dos seus alunos.",
+  coordenador: "Vê os relatórios das turmas e valida os gestos do gestuário.",
+  educador: "Gere as suas turmas; publica aulas, avisos e ficheiros; corrige as respostas em vídeo dos seus alunos.",
+  formador: "Ensina LGA nas turmas, corrige as respostas em vídeo e valida os gestos do gestuário.",
   familia: "Vê conteúdos e avisos; vê apenas o que diz respeito à sua criança.",
   aluno: "Acede aos conteúdos adequados.",
   observador: "Vê apenas painéis agregados e anonimizados.",
@@ -149,12 +219,59 @@ export const ROTULO_ESTADO_INSTITUICAO: Record<EstadoInstituicao, string> = {
 
 export const ROTULO_TIPO_GRUPO: Record<TipoGrupo, string> = {
   turma: "Turma",
+  turma_lga: "Turma LGA",
   apoio: "Grupo de apoio",
   familias: "Grupo de famílias",
   outro: "Outro",
 };
 
-export const PAPEIS: Papel[] = ["administrador", "coordenador", "educador", "familia", "aluno", "observador"];
+export const PAPEIS: Papel[] = ["administrador", "coordenador", "educador", "formador", "familia", "aluno", "observador"];
+
+export const ROTULO_PUBLICO_LGA: Record<PublicoTurmaLga, string> = {
+  surdos_l1: "Alunos surdos (LGA como primeira língua)",
+  ouvintes: "Ouvintes a aprender LGA",
+  familias: "Famílias",
+  professores: "Professores em formação",
+};
+
+export const DESCRICAO_PUBLICO_LGA: Record<PublicoTurmaLga, string> = {
+  surdos_l1: "Aulas totalmente em LGA, com vocabulário escolar e leitura e escrita do português como segunda língua.",
+  ouvintes: "Colegas e irmãos que querem comunicar com amigos surdos. Começa pelo alfabeto manual e saudações.",
+  familias: "Pais e tutores de crianças surdas: gestos do dia a dia para usar em casa.",
+  professores: "Docentes que querem ensinar e comunicar em LGA. Conclui com certificado.",
+};
+
+export const ROTULO_NIVEL_LGA: Record<NivelLga, string> = {
+  iniciacao: "Iniciação",
+  intermedio: "Intermédio",
+  avancado: "Avançado",
+};
+
+export const ROTULO_TEMA: Record<TemaGesto, string> = {
+  alfabeto: "Alfabeto manual",
+  numeros: "Números",
+  saudacoes: "Saudações",
+  escola: "Escola",
+  familia: "Família",
+  emocoes: "Emoções",
+  quotidiano: "Quotidiano",
+  frases: "Frases",
+};
+
+export const ROTULO_COMPETENCIA: Record<Competencia, string> = {
+  alfabeto: "Alfabeto manual",
+  numeros: "Números",
+  vocabulario: "Vocabulário",
+  frases: "Frases",
+};
+
+/** Competência a que um tema de gesto pertence. */
+export function competenciaDoTema(tema: TemaGesto): Competencia {
+  if (tema === "alfabeto") return "alfabeto";
+  if (tema === "numeros") return "numeros";
+  if (tema === "frases") return "frases";
+  return "vocabulario";
+}
 
 export const ROTULO_ACAO: Record<AcaoAuditoria, string> = {
   instituicao_criada: "Instituição criada",
@@ -181,4 +298,11 @@ export const ROTULO_ACAO: Record<AcaoAuditoria, string> = {
   dados_eliminacao_pedida: "Pedido de eliminação",
   acesso_equipa_eyk: "Acesso da equipa EYK",
   quotas_alteradas: "Quotas alteradas",
+  turma_criada: "Turma LGA aberta",
+  aula_publicada: "Aula publicada",
+  resposta_revista: "Resposta em vídeo revista",
+  gesto_proposto: "Gesto proposto",
+  gesto_validado: "Gesto validado",
+  conteudo_publicado: "Conteúdo publicado",
+  post_turma_oculto: "Publicação da turma escondida",
 };

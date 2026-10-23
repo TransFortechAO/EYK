@@ -16,7 +16,16 @@ import type {
   PerfilAluno,
   RegistoAuditoria,
   TextoConsentimento,
+  Aula,
+  ConteudoEscola,
+  Desafio,
+  Gesto,
+  PostTurma,
+  ProgressoCompetencia,
+  RegistoPratica,
+  RespostaVideo,
 } from "./tipos";
+import { criarDemoLga } from "./demo-lga";
 
 export type EstadoDemo = {
   instituicoes: Instituicao[];
@@ -34,12 +43,27 @@ export type EstadoDemo = {
   auditoria: RegistoAuditoria[];
   pedidosDados: PedidoDados[];
   preferencias: Record<string, { plataforma: boolean; email: boolean }>;
+  // Ensino de LGA
+  aulas: Aula[];
+  respostasVideo: RespostaVideo[];
+  gestos: Gesto[];
+  progresso: Record<string, Partial<Record<ProgressoCompetenciaChave, ProgressoCompetencia>>>;
+  registosPratica: RegistoPratica[];
+  conteudos: ConteudoEscola[];
+  postsTurma: PostTurma[];
+  desafios: Desafio[];
+  /** Moedas ganhas na escola (prática, respostas certas, desafios) — por membro. */
+  pontosEscola: Record<string, number>;
+  /** Desafios já concluídos (a recompensa só é dada uma vez) — por membro. */
+  desafiosConcluidos: Record<string, string[]>;
   seq: number;
 };
 
+type ProgressoCompetenciaChave = "alfabeto" | "numeros" | "vocabulario" | "frases";
+
 export const TEXTO_CONSENTIMENTO: TextoConsentimento = {
-  versao: "2026-10.1",
-  publicadoEm: "2026-10-15",
+  versao: "2026-10.2",
+  publicadoEm: "2026-10-23",
   resumo: [
     "Recolhemos apenas o nome ou alcunha da criança e a turma.",
     "Servem para a criança usar o EYK e para a escola partilhar avisos e ficheiros com a família.",
@@ -64,6 +88,13 @@ export const TEXTO_CONSENTIMENTO: TextoConsentimento = {
       id: "relatorios",
       titulo: "Relatórios agregados",
       descricao: "A atividade da criança conta, de forma anónima e somada à dos colegas, nos relatórios da escola.",
+      obrigatoria: false,
+    },
+    {
+      id: "respostas_video",
+      titulo: "Respostas em vídeo nas aulas de LGA",
+      descricao:
+        "A criança pode gravar-se a sinalizar para o professor corrigir. Só o professor da turma e a família vêem estes vídeos, e são apagados no fim do ano letivo.",
       obrigatoria: false,
     },
   ],
@@ -97,6 +128,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
       quotas: { armazenamentoMb: 2048, ficheiroMaxMb: 100, utilizadoresMax: 300 },
       aprovarPedidosPorCodigo: true,
       canaisAviso: ["plataforma", "email"],
+      escola: { comunidadePublicaParaAlunos: false, rankingVisivel: true },
     },
     {
       id: "inst-2",
@@ -109,6 +141,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
       quotas: { armazenamentoMb: 1024, ficheiroMaxMb: 50, utilizadoresMax: 100 },
       aprovarPedidosPorCodigo: false,
       canaisAviso: ["plataforma"],
+      escola: { comunidadePublicaParaAlunos: true, rankingVisivel: true },
     },
     {
       id: "inst-3",
@@ -121,6 +154,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
       quotas: { armazenamentoMb: 1024, ficheiroMaxMb: 50, utilizadoresMax: 100 },
       aprovarPedidosPorCodigo: true,
       canaisAviso: ["plataforma", "email"],
+      escola: { comunidadePublicaParaAlunos: false, rankingVisivel: true },
     },
     {
       id: "inst-4",
@@ -133,6 +167,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
       quotas: { armazenamentoMb: 2048, ficheiroMaxMb: 100, utilizadoresMax: 300 },
       aprovarPedidosPorCodigo: true,
       canaisAviso: ["plataforma", "email"],
+      escola: { comunidadePublicaParaAlunos: false, rankingVisivel: true },
     },
   ];
 
@@ -216,6 +251,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
         ["utilizacao", aluno.estado !== "consentimento_retirado"],
         ["fotografias", idx % 3 !== 0],
         ["relatorios", idx % 4 !== 0],
+        ["respostas_video", idx % 5 !== 0],
       ];
       for (const [finalidade, aceite] of decisoes) {
         c += 1;
@@ -384,6 +420,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
     auditoria,
     pedidosDados,
     preferencias: {},
+    ...criarDemoLga(agora, { membros, alunos, convites, grupos }),
     seq: 1000,
   };
 }

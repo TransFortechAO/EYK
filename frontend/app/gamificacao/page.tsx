@@ -23,6 +23,7 @@ import {
   Copy,
 } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
+import { DesafiosEscola } from "@/components/instituicao/escola";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -134,6 +135,9 @@ export default function GamificacaoPage() {
           </div>
         </div>
       </Card>
+
+      {/* Com escola parceira: desafios de prática de LGA da escola e das turmas. */}
+      <DesafiosEscola />
 
       <section className="space-y-4">
         <h2 className="font-serif text-xl font-semibold flex items-center gap-2">

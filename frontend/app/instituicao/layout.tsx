@@ -21,6 +21,10 @@ import {
   Users,
   UsersRound,
   Baby,
+  Hand,
+  Dumbbell,
+  BookA,
+  Library,
   type LucideIcon,
 } from "lucide-react";
 import { EmptyState } from "@/components/eyk";
@@ -37,6 +41,10 @@ type ItemNav = { titulo: string; url: string; icone: LucideIcon; visivel: (p: Pa
 
 const NAV: ItemNav[] = [
   { titulo: "Painel", url: "/instituicao", icone: LayoutDashboard, visivel: (p) => pode(p, "ver_painel") },
+  { titulo: "Turmas LGA", url: "/instituicao/turmas", icone: Hand, visivel: (p) => pode(p, "ver_turmas_lga") },
+  { titulo: "Praticar", url: "/instituicao/praticar", icone: Dumbbell, visivel: (p) => pode(p, "praticar") },
+  { titulo: "Gestuário", url: "/instituicao/gestuario", icone: BookA, visivel: (p) => pode(p, "praticar") || pode(p, "propor_gestos") },
+  { titulo: "Conteúdos", url: "/instituicao/conteudos", icone: Library, visivel: (p) => pode(p, "ver_turmas_lga") },
   { titulo: "Avisos", url: "/instituicao/avisos", icone: Megaphone, visivel: (p) => pode(p, "ver_avisos") },
   { titulo: "Agenda", url: "/instituicao/agenda", icone: CalendarDays, visivel: (p) => pode(p, "ver_agenda") },
   { titulo: "Ficheiros", url: "/instituicao/ficheiros", icone: FolderOpen, visivel: (p) => pode(p, "ver_ficheiros") },
@@ -47,7 +55,7 @@ const NAV: ItemNav[] = [
     icone: Baby,
     visivel: (p) => pode(p, "gerir_alunos") || p === "familia" || (pode(p, "ver_todos_grupos") && p !== "observador"),
   },
-  { titulo: "Membros", url: "/instituicao/membros", icone: Users, visivel: (p) => ["administrador", "coordenador", "educador"].includes(p) },
+  { titulo: "Membros", url: "/instituicao/membros", icone: Users, visivel: (p) => ["administrador", "coordenador", "educador", "formador"].includes(p) },
   { titulo: "Convites", url: "/instituicao/convites", icone: Ticket, visivel: (p) => pode(p, "convidar") },
   { titulo: "Consentimentos", url: "/instituicao/consentimentos", icone: ShieldCheck, visivel: (p) => pode(p, "ver_consentimentos") || pode(p, "dar_consentimento") },
   { titulo: "Relatórios", url: "/instituicao/relatorios", icone: BarChart3, visivel: (p) => pode(p, "ver_relatorios") },

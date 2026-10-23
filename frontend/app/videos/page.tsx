@@ -5,6 +5,7 @@ import { PlayCircle } from "lucide-react";
 import { PageHeader, VideoCard, EmptyState } from "@/components/eyk";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, type Video } from "@/lib/api";
+import { ConteudosComEscola } from "@/components/instituicao/escola";
 
 type Tab = "recent" | "popular" | "short";
 
@@ -28,23 +29,26 @@ export default function VideosPage() {
         description="Conteúdos avulsos de todos os professores da plataforma."
       />
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
-        <TabsList className="bg-surface">
-          <TabsTrigger value="recent">Mais recentes</TabsTrigger>
-          <TabsTrigger value="popular">Mais vistos</TabsTrigger>
-          <TabsTrigger value="short">Curtos (&lt; 6 min)</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Com escola parceira: "Da minha escola" ao lado do catálogo público. */}
+      <ConteudosComEscola tipo="video">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+          <TabsList className="bg-surface">
+            <TabsTrigger value="recent">Mais recentes</TabsTrigger>
+            <TabsTrigger value="popular">Mais vistos</TabsTrigger>
+            <TabsTrigger value="short">Curtos (&lt; 6 min)</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-      {videos.length > 0 ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {videos.map((v) => (
-            <VideoCard key={v.id} video={v} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState icon={PlayCircle} title="Nenhum vídeo disponível." />
-      )}
+        {videos.length > 0 ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {videos.map((v) => (
+              <VideoCard key={v.id} video={v} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState icon={PlayCircle} title="Nenhum vídeo disponível." />
+        )}
+      </ConteudosComEscola>
     </div>
   );
 }

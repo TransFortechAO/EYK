@@ -82,7 +82,7 @@ export default function GruposPage() {
               <Card key={g.id} className="flex flex-col gap-4 p-5 shadow-soft transition-shadow hover:shadow-elevated">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <Link href={`/instituicao/grupos/${g.id}`} className="font-serif text-lg font-semibold hover:underline underline-offset-2">
+                    <Link href={g.tipo === "turma_lga" ? `/instituicao/turmas/${g.id}` : `/instituicao/grupos/${g.id}`} className="font-serif text-lg font-semibold hover:underline underline-offset-2">
                       {g.nome}
                     </Link>
                     <p className="text-xs text-muted-foreground">
@@ -101,7 +101,7 @@ export default function GruposPage() {
                 </div>
                 <div className="mt-auto flex gap-2">
                   <Button asChild variant="outline" size="sm" className="flex-1">
-                    <Link href={`/instituicao/grupos/${g.id}`}>Abrir</Link>
+                    <Link href={g.tipo === "turma_lga" ? `/instituicao/turmas/${g.id}` : `/instituicao/grupos/${g.id}`}>Abrir</Link>
                   </Button>
                   {gerir && (
                     <Button

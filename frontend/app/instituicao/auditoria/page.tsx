@@ -16,6 +16,10 @@ const GRUPOS_ACAO: { rotulo: string; acoes: AcaoAuditoria[] }[] = [
   { rotulo: "Ficheiros", acoes: ["ficheiro_carregado", "ficheiro_aberto", "ficheiro_removido"] },
   { rotulo: "Dados pessoais", acoes: ["dados_exportados", "dados_eliminacao_pedida"] },
   { rotulo: "Comunicação", acoes: ["aviso_publicado", "evento_criado", "evento_cancelado"] },
+  {
+    rotulo: "Ensino de LGA",
+    acoes: ["turma_criada", "aula_publicada", "resposta_revista", "gesto_proposto", "gesto_validado", "conteudo_publicado", "post_turma_oculto"],
+  },
   { rotulo: "Instituição e equipa EYK", acoes: ["instituicao_criada", "instituicao_estado", "quotas_alteradas", "acesso_equipa_eyk", "grupo_criado", "grupo_arquivado"] },
 ];
 

@@ -238,6 +238,7 @@ const TOM_PAPEL: Record<Papel, string> = {
   administrador: "bg-primary/15 text-primary",
   coordenador: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
   educador: "bg-success/15 text-success",
+  formador: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
   familia: "bg-streak/15 text-streak",
   aluno: "bg-secondary text-secondary-foreground",
   observador: "bg-muted text-muted-foreground",

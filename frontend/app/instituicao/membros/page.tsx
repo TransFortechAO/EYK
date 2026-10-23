@@ -33,7 +33,7 @@ export default function MembrosPage() {
       .sort((a, b) => PAPEIS.indexOf(a.papel) - PAPEIS.indexOf(b.papel) || a.nome.localeCompare(b.nome));
   }, [dados, pesquisa, filtroPapel]);
 
-  const permitido = ["administrador", "coordenador", "educador"].includes(papel);
+  const permitido = ["administrador", "coordenador", "educador", "formador"].includes(papel);
 
   const mudarPapel = async (membroId: string, nome: string, novo: Papel) => {
     const ok = await confirmar({

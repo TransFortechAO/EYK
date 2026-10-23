@@ -1,12 +1,11 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { apiInstituicoes, definirPessoaDemo, pessoaDemo, reporDemo } from "@/lib/instituicoes/api";
+import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo } from "@/lib/instituicoes/api";
 import { pode as podeFazer, vePessoais, type Acao } from "@/lib/instituicoes/permissoes";
 import type { Papel, Pertenca } from "@/lib/instituicoes/tipos";
 
-const CHAVE_INSTITUICAO = "eyk-instituicao-atual";
-const CHAVE_PESSOA = "eyk-instituicoes-pessoa-demo";
+export const CHAVE_INSTITUICAO = "eyk-instituicao-atual";
 
 type EstadoInstituicao = {
   aCarregar: boolean;
@@ -46,12 +45,7 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
   const [aCarregar, setACarregar] = useState(true);
   const [pertencas, setPertencas] = useState<Pertenca[]>([]);
   const [atualId, setAtualId] = useState<string | null>(null);
-  const [pessoa, setPessoa] = useState<number>(() => {
-    if (typeof window === "undefined") return pessoaDemo();
-    const guardada = Number(lerLocal(CHAVE_PESSOA));
-    if (guardada) definirPessoaDemo(guardada);
-    return pessoaDemo();
-  });
+  const [pessoa, setPessoa] = useState<number>(() => restaurarPessoaDemo());
 
   const recarregar = useCallback(async () => {
     setACarregar(true);
@@ -79,7 +73,6 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
 
   const mudarPessoa = useCallback((utilizadorId: number) => {
     definirPessoaDemo(utilizadorId);
-    escreverLocal(CHAVE_PESSOA, String(utilizadorId));
     setAtualId(null);
     setPessoa(utilizadorId);
   }, []);
