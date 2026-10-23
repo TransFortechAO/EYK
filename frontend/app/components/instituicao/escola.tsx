@@ -1,9 +1,10 @@
 "use client";
 
 // A escola nas páginas principais da EYK (Início, Cursos, Vídeos, Comunidade,
-// Leaderboard, Gamificação, Biblioteca). Cada componente traz o seu próprio
-// InstituicaoProvider; sem escola (ou com a área desligada) mostra só o
-// conteúdo público, exatamente como antes.
+// Leaderboard, Gamificação, Biblioteca), com o contexto global da escola
+// (components/providers.tsx). Sem escola (ou com a área desligada) mostra só
+// o conteúdo público, exatamente como antes. O aluno de uma escola vê só a
+// escola, a não ser que escolha ver também a plataforma geral.
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -26,7 +27,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SectionHeader } from "@/components/eyk";
-import { InstituicaoProvider, useInstituicao } from "@/components/instituicao/contexto";
+import { useInstituicao, useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { ListaDesafios } from "@/components/instituicao/desafios";
 import { CartaoGesto } from "@/components/instituicao/lga";
 import { ListaClassificacao } from "@/components/instituicao/turma/classificacao";
@@ -38,10 +39,51 @@ import { ROTULO_TEMA } from "@/lib/instituicoes/permissoes";
 import type { ConteudoEscola, Gesto } from "@/lib/instituicoes/tipos";
 import { cn } from "@/lib/utils";
 
-/** Envolve com o contexto da instituição só quando a área está ativa. */
+/** Mostra `children` quando há contexto da escola (área ativa); senão, o conteúdo de sempre. */
 function ComEscola({ children, semEscola = null }: { children: ReactNode; semEscola?: ReactNode }) {
-  if (!INSTITUICOES_ATIVAS) return <>{semEscola}</>;
-  return <InstituicaoProvider>{children}</InstituicaoProvider>;
+  const ctx = useInstituicaoOpcional();
+  if (!INSTITUICOES_ATIVAS || !ctx) return <>{semEscola}</>;
+  return <>{children}</>;
+}
+
+/** Aluno que escolheu ver só a escola (a opção por omissão para alunos de uma escola parceira). */
+function soEscola(ctx: ReturnType<typeof useInstituicao>): boolean {
+  return !!ctx.atual && ctx.atual.membro.papel === "aluno" && !ctx.verGeral;
+}
+
+/** Barra que explica o que o aluno está a ver e deixa mudar. */
+export function AvisoPlataformaGeral() {
+  const ctx = useInstituicaoOpcional();
+  const [aMudar, setAMudar] = useState(false);
+  if (!ctx?.atual || ctx.atual.membro.papel !== "aluno") return null;
+  const mudar = async () => {
+    setAMudar(true);
+    try {
+      await ctx.definirVerGeral(!ctx.verGeral);
+    } finally {
+      setAMudar(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface/60 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <p className="flex items-center gap-2 text-muted-foreground">
+        <Building2 className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+        {ctx.verGeral
+          ? `Estás a ver a ${ctx.atual.instituicao.nome} e a plataforma geral da EYK.`
+          : `Estás a ver só a ${ctx.atual.instituicao.nome}.`}
+      </p>
+      <Button variant="outline" size="sm" disabled={aMudar} onClick={() => void mudar()}>
+        {ctx.verGeral ? "Ver só a minha escola" : "Ver também a plataforma geral"}
+      </Button>
+    </div>
+  );
+}
+
+/** Esconde conteúdo da plataforma geral ao aluno que escolheu ver só a escola. */
+export function SoPlataformaGeral({ children }: { children: ReactNode }) {
+  const ctx = useInstituicaoOpcional();
+  if (ctx && soEscola(ctx)) return null;
+  return <>{children}</>;
 }
 
 // ── Cartão de conteúdo da escola ──
@@ -85,8 +127,9 @@ export function CartaoConteudoEscola({ conteudo: c, turma }: { conteudo: Conteud
 type Origem = "todos" | "escola" | "publico";
 
 function ConteudosComEscolaInterno({ tipo, children }: { tipo: ConteudoEscola["tipo"]; children: ReactNode }) {
-  const { atual, aCarregar } = useInstituicao();
-  const [origem, setOrigem] = useState<Origem>("todos");
+  const ctx = useInstituicao();
+  const { atual, aCarregar } = ctx;
+  const [escolhida, setOrigem] = useState<Origem>("todos");
   const [conteudos, setConteudos] = useState<ConteudoEscola[] | null>(null);
   const [turmas, setTurmas] = useState<TurmaLga[]>([]);
   const instituicaoId = atual?.instituicao.id;
@@ -104,20 +147,27 @@ function ConteudosComEscolaInterno({ tipo, children }: { tipo: ConteudoEscola["t
     };
   }, [instituicaoId, tipo]);
 
-  if (aCarregar || !atual) return <>{children}</>;
+  // Enquanto carrega, não mostra o catálogo geral (o aluno pode ter escolhido ver só a escola).
+  if (aCarregar && !atual) return null;
+  if (!atual) return <>{children}</>;
+  const so = soEscola(ctx);
+  const origem: Origem = so ? "escola" : escolhida;
   const nomeTurma = (c: ConteudoEscola) => (c.ambito.tipo === "turma" ? turmas.find((t) => t.id === (c.ambito as { turmaId: string }).turmaId)?.nome ?? null : null);
 
   return (
     <div className="space-y-8">
-      <Tabs value={origem} onValueChange={(v) => setOrigem(v as Origem)}>
-        <TabsList className="h-auto flex-wrap bg-surface py-1">
-          <TabsTrigger value="todos">Todos</TabsTrigger>
-          <TabsTrigger value="escola" className="gap-1.5">
-            <Building2 className="h-3.5 w-3.5" aria-hidden /> Da minha escola
-          </TabsTrigger>
-          <TabsTrigger value="publico">Públicos</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <AvisoPlataformaGeral />
+      {!so && (
+        <Tabs value={origem} onValueChange={(v) => setOrigem(v as Origem)}>
+          <TabsList className="h-auto flex-wrap bg-surface py-1">
+            <TabsTrigger value="todos">Todos</TabsTrigger>
+            <TabsTrigger value="escola" className="gap-1.5">
+              <Building2 className="h-3.5 w-3.5" aria-hidden /> Da minha escola
+            </TabsTrigger>
+            <TabsTrigger value="publico">Públicos</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
       {origem !== "publico" && (
         <section>
@@ -299,10 +349,35 @@ function InicioEscolaInterno() {
   );
 }
 
+/** No Início do aluno que vê só a escola: os cursos e vídeos da escola no lugar dos do catálogo geral. */
+function ConteudosEscolaInicio() {
+  const ctx = useInstituicao();
+  const [conteudos, setConteudos] = useState<ConteudoEscola[]>([]);
+  const so = soEscola(ctx);
+  const instituicaoId = ctx.atual?.instituicao.id;
+  useEffect(() => {
+    if (!instituicaoId || !so) return;
+    void apiLga.listarConteudos(instituicaoId).then(setConteudos).catch(() => setConteudos([]));
+  }, [instituicaoId, so]);
+  if (!so || conteudos.length === 0) return null;
+  return (
+    <section>
+      <SectionHeader title="Cursos e vídeos da tua escola" href="/cursos" />
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {conteudos.slice(0, 6).map((c) => (
+          <CartaoConteudoEscola key={c.id} conteudo={c} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function InicioEscola() {
   return (
     <ComEscola>
+      <AvisoPlataformaGeral />
       <InicioEscolaInterno />
+      <ConteudosEscolaInicio />
     </ComEscola>
   );
 }
@@ -310,9 +385,10 @@ export function InicioEscola() {
 // ── Comunidade: pública + turma ──
 
 function ComunidadeComEscolaInterno({ children }: { children: ReactNode }) {
-  const { atual, aCarregar } = useInstituicao();
-  const [turmas, setTurmas] = useState<TurmaLga[]>([]);
-  const [vista, setVista] = useState("publica");
+  const ctx = useInstituicao();
+  const { atual, aCarregar } = ctx;
+  const [turmas, setTurmas] = useState<TurmaLga[] | null>(null);
+  const [vista, setVista] = useState<string | null>(null);
   const instituicaoId = atual?.instituicao.id;
 
   useEffect(() => {
@@ -323,15 +399,37 @@ function ComunidadeComEscolaInterno({ children }: { children: ReactNode }) {
       .catch(() => setTurmas([]));
   }, [instituicaoId, atual]);
 
-  if (aCarregar || !atual || turmas.length === 0) return <>{children}</>;
-  const publicaDesligada = atual.membro.papel === "aluno" && !atual.instituicao.escola.comunidadePublicaParaAlunos;
-  const turma = turmas.find((t) => t.id === vista);
+  if (aCarregar && !atual) return null;
+  if (!atual) return <>{children}</>;
+  if (turmas === null) return null;
+  const aluno = atual.membro.papel === "aluno";
+  const publicaDesligada = aluno && !atual.instituicao.escola.comunidadePublicaParaAlunos;
+  const semPublica = publicaDesligada || soEscola(ctx);
+
+  // Sem turmas: a comunidade pública, se o aluno a puder ver.
+  if (turmas.length === 0) {
+    if (!semPublica) return <>{children}</>;
+    return (
+      <div className="space-y-4">
+        <AvisoPlataformaGeral />
+        <Card className="space-y-2 p-6 text-center shadow-soft">
+          <Lock className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden />
+          <p className="font-medium">Ainda não estás em nenhuma turma</p>
+          <p className="text-sm text-muted-foreground">Quando entrares numa turma, a comunidade da turma aparece aqui.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const efetiva = vista ?? (semPublica ? turmas[0].id : "publica");
+  const turma = turmas.find((t) => t.id === efetiva);
 
   return (
     <div className="space-y-6">
-      <Tabs value={vista} onValueChange={setVista}>
+      {aluno && !publicaDesligada && <AvisoPlataformaGeral />}
+      <Tabs value={efetiva} onValueChange={setVista}>
         <TabsList className="h-auto flex-wrap bg-surface py-1">
-          <TabsTrigger value="publica">Comunidade EYK</TabsTrigger>
+          {!semPublica && <TabsTrigger value="publica">Comunidade EYK</TabsTrigger>}
           {turmas.map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="gap-1.5">
               <Hand className="h-3.5 w-3.5" aria-hidden /> {t.nome}
@@ -339,14 +437,13 @@ function ComunidadeComEscolaInterno({ children }: { children: ReactNode }) {
           ))}
         </TabsList>
       </Tabs>
+      {publicaDesligada && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" aria-hidden /> Para proteger os alunos, a {atual.instituicao.nome} usa só a comunidade das turmas.
+        </p>
+      )}
       {turma ? (
         <SeparadorComunidade turmaId={turma.id} ensino={["educador", "formador"].includes(atual.membro.papel) && atual.membro.gruposIds.includes(turma.id)} />
-      ) : publicaDesligada ? (
-        <Card className="space-y-2 p-6 text-center shadow-soft">
-          <Lock className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden />
-          <p className="font-medium">A tua escola usa só a comunidade da turma</p>
-          <p className="text-sm text-muted-foreground">Para proteger os alunos, a {atual.instituicao.nome} desligou a comunidade pública. Escolhe a tua turma acima.</p>
-        </Card>
       ) : (
         children
       )}
@@ -365,9 +462,10 @@ export function ComunidadeComEscola({ children }: { children: ReactNode }) {
 // ── Leaderboard: nacional, escola, turma ──
 
 function LeaderboardComEscolaInterno({ children }: { children: ReactNode }) {
-  const { atual, aCarregar } = useInstituicao();
+  const ctx = useInstituicao();
+  const { atual, aCarregar } = ctx;
   const [turmas, setTurmas] = useState<TurmaLga[]>([]);
-  const [vista, setVista] = useState("nacional");
+  const [vista, setVista] = useState<string | null>(null);
   const instituicaoId = atual?.instituicao.id;
 
   useEffect(() => {
@@ -378,13 +476,18 @@ function LeaderboardComEscolaInterno({ children }: { children: ReactNode }) {
       .catch(() => setTurmas([]));
   }, [instituicaoId, atual]);
 
-  if (aCarregar || !atual || !atual.instituicao.escola.rankingVisivel) return <>{children}</>;
+  if (aCarregar && !atual) return null;
+  if (!atual || !atual.instituicao.escola.rankingVisivel) return <>{children}</>;
+  // O aluno que vê só a escola não vê a classificação nacional.
+  const so = soEscola(ctx);
+  const efetiva = vista ?? (so ? "escola" : "nacional");
 
   return (
     <div className="space-y-6">
-      <Tabs value={vista} onValueChange={setVista}>
+      <AvisoPlataformaGeral />
+      <Tabs value={efetiva} onValueChange={setVista}>
         <TabsList className="h-auto flex-wrap bg-surface py-1">
-          <TabsTrigger value="nacional">Nacional</TabsTrigger>
+          {!so && <TabsTrigger value="nacional">Nacional</TabsTrigger>}
           <TabsTrigger value="escola" className="gap-1.5">
             <Building2 className="h-3.5 w-3.5" aria-hidden /> A minha escola
           </TabsTrigger>
@@ -395,14 +498,14 @@ function LeaderboardComEscolaInterno({ children }: { children: ReactNode }) {
           ))}
         </TabsList>
       </Tabs>
-      {vista === "nacional" ? (
+      {efetiva === "nacional" && !so ? (
         children
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Moedas ganhas na escola: prática de LGA, respostas certas e desafios. Só aparece o primeiro nome.
           </p>
-          <ListaClassificacao key={vista} ambito={vista === "escola" ? "escola" : { turmaId: vista }} />
+          <ListaClassificacao key={efetiva} ambito={efetiva === "escola" || efetiva === "nacional" ? "escola" : { turmaId: efetiva }} />
         </div>
       )}
     </div>

@@ -15,7 +15,6 @@ import {
   LayoutDashboard,
   LogOut,
   MoreHorizontal,
-  PlayCircle,
   Settings,
   ShieldAlert,
   ShieldCheck,
@@ -23,7 +22,6 @@ import {
   TrendingUp,
   Trophy,
   UserCog,
-  Users,
   Video,
   type LucideIcon,
 } from "lucide-react";
@@ -32,24 +30,24 @@ import { useAuth } from "@/components/auth-gate";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
+import { abasTelemovel, restoParaMais, type ItemNav } from "@/lib/instituicoes/navegacao";
+import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
+import { ICONE_NAV } from "@/components/instituicao/icones-nav";
 
-type Item = { title: string; url: string; icon: LucideIcon };
+type Item = { title: string; url: string; icon: LucideIcon; contador?: number };
 
 // As mesmas rotas da barra lateral (app-sidebar.tsx), repartidas entre as
-// abas de baixo e o painel "Mais".
-const ABAS: Item[] = [
-  { title: "Início", url: "/inicio", icon: Home },
-  { title: "Cursos", url: "/cursos", icon: BookOpen },
-  { title: "Vídeos", url: "/videos", icon: PlayCircle },
-  { title: "Comunidade", url: "/comunidade", icon: Users },
-];
+// abas de baixo e o painel "Mais". As abas dependem do papel na escola
+// (lib/instituicoes/navegacao.ts); sem escola: Início, Cursos, Vídeos, Comunidade.
+function paraItem(i: ItemNav): Item {
+  return { title: i.titulo, url: i.url, icon: ICONE_NAV[i.icone], contador: i.contador };
+}
 
 const MAIS: Item[] = [
   { title: "Novidades", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
-  ...(INSTITUICOES_ATIVAS ? [{ title: "Instituição", url: "/instituicao", icon: Building2 }] : []),
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
@@ -60,7 +58,7 @@ const PROFESSOR: Item[] = [
 ];
 
 const ADMINISTRACAO: Item[] = [
-  ...(INSTITUICOES_ATIVAS ? [{ title: "Instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
+  ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
@@ -101,6 +99,9 @@ function Grupo({ titulo, icone: Icone, itens, ativo, aoNavegar }: {
                 <item.icon className="h-5 w-5" aria-hidden />
               </span>
               <span className="flex-1 text-base font-medium text-foreground">{item.title}</span>
+              {!!item.contador && (
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">{item.contador}</span>
+              )}
               <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden />
             </Link>
           </li>
@@ -120,7 +121,21 @@ export function BottomNav() {
   const ativo = (url: string) =>
     url === "/inicio" ? pathname === "/inicio" : pathname === url || pathname.startsWith(url + "/");
 
+  const escola = useInstituicaoOpcional();
+  const papel = escola?.atual?.membro.papel ?? null;
+  const contadores = escola?.contadores ?? { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
+  const abas = abasTelemovel(papel, contadores).map(paraItem);
+  const resto = restoParaMais(papel, contadores);
+  const daEscola: Item[] = escola?.atual
+    ? resto.escola.map(paraItem)
+    : escola && !escola.aCarregar
+      ? [{ title: "Entrar numa escola", url: "/instituicao/aderir", icon: Building2 }]
+      : [];
+  const geralNoMais = resto.geral.map(paraItem);
+
   const itensMais = [
+    ...daEscola,
+    ...geralNoMais,
     ...MAIS,
     ...(user?.isTeacher ? PROFESSOR : []),
     ...(user?.isStaff ? ADMINISTRACAO : []),
@@ -151,22 +166,31 @@ export function BottomNav() {
         className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden pointer-events-none"
       >
         <ul className="pointer-events-auto mx-auto flex max-w-xl items-end justify-between rounded-[1.75rem] border border-border bg-card/95 px-2 py-2 shadow-elevated backdrop-blur-md">
-          {ABAS.map((aba) => {
-            const activa = ativo(aba.url) && !maisAberto;
+          {abas.map((aba) => {
+            // "/instituicao" (painel) não fica ativo nas subpáginas que têm aba própria.
+            const activa =
+              !maisAberto &&
+              (aba.url === "/instituicao" ? pathname === "/instituicao" : ativo(aba.url));
             return (
               <li key={aba.url} className="flex-1">
                 <Link
                   href={aba.url}
                   aria-current={activa ? "page" : undefined}
+                  aria-label={aba.contador ? `${aba.title} (${aba.contador} por ver)` : undefined}
                   className="flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-medium text-muted-foreground transition-colors"
                 >
                   <span
                     className={cn(
-                      "grid h-9 w-9 place-items-center rounded-full transition-colors",
+                      "relative grid h-9 w-9 place-items-center rounded-full transition-colors",
                       activa && "bg-primary text-primary-foreground shadow-soft",
                     )}
                   >
                     <aba.icon className="h-5 w-5" aria-hidden />
+                    {!!aba.contador && (
+                      <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold tabular-nums text-primary-foreground ring-2 ring-card" aria-hidden>
+                        {aba.contador > 9 ? "9+" : aba.contador}
+                      </span>
+                    )}
                   </span>
                   <span className={cn(activa && "text-primary")}>{aba.title}</span>
                 </Link>
@@ -207,7 +231,19 @@ export function BottomNav() {
             <SheetDescription className="sr-only">Outras páginas da plataforma EYK.</SheetDescription>
           </SheetHeader>
 
-          <Grupo itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
+          {daEscola.length > 0 && (
+            <Grupo
+              titulo={escola?.atual ? escola.atual.instituicao.nome : "Escola"}
+              icone={Building2}
+              itens={daEscola}
+              ativo={ativo}
+              aoNavegar={() => setMaisAberto(false)}
+            />
+          )}
+          {geralNoMais.length > 0 && (
+            <Grupo titulo="Plataforma EYK" icone={Home} itens={geralNoMais} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
+          )}
+          <Grupo titulo={daEscola.length || geralNoMais.length ? "Mais" : undefined} itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           {user?.isTeacher && (
             <Grupo titulo="Professor" icone={LayoutDashboard} itens={PROFESSOR} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           )}

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Copy, Printer } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Copy, Printer, UserMinus, UserPlus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
-import { dataCurta, EtiquetaPapel } from "@/components/instituicao/ui";
+import { acao, dataCurta, EtiquetaPapel, Seletor } from "@/components/instituicao/ui";
+import { apiInstituicoes } from "@/lib/instituicoes/api";
 import type { apiLga } from "@/lib/instituicoes/lga";
-import { ROTULO_PAPEL, ROTULO_PUBLICO_LGA } from "@/lib/instituicoes/permissoes";
+import { PAPEIS, ROTULO_PAPEL, ROTULO_PUBLICO_LGA } from "@/lib/instituicoes/permissoes";
 import type { Convite, Membro } from "@/lib/instituicoes/tipos";
 
 type DadosTurma = Awaited<ReturnType<typeof apiLga.obterTurma>>;
@@ -70,7 +71,7 @@ function CartaoCodigo({ titulo, convite, turmaNome }: { titulo: string; convite:
   );
 }
 
-function ListaPessoas({ titulo, pessoas }: { titulo: string; pessoas: Membro[] }) {
+function ListaPessoas({ titulo, pessoas, aoRetirar }: { titulo: string; pessoas: Membro[]; aoRetirar?: (m: Membro) => void }) {
   return (
     <Card className="p-5 shadow-soft">
       <p className="mb-2 font-medium">
@@ -82,8 +83,15 @@ function ListaPessoas({ titulo, pessoas }: { titulo: string; pessoas: Membro[] }
         <ul className="divide-y divide-border">
           {pessoas.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-2 py-2 text-sm">
-              <span>{p.nome}</span>
-              <EtiquetaPapel papel={p.papel} />
+              <span className="min-w-0 truncate">{p.nome}</span>
+              <span className="flex shrink-0 items-center gap-1">
+                <EtiquetaPapel papel={p.papel} />
+                {aoRetirar && (
+                  <Button variant="ghost" size="icon" aria-label={`Retirar ${p.nome} da turma`} className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => aoRetirar(p)}>
+                    <UserMinus className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -92,11 +100,64 @@ function ListaPessoas({ titulo, pessoas }: { titulo: string; pessoas: Membro[] }
   );
 }
 
-export function SeparadorPessoas({ dados }: { dados: DadosTurma }) {
+/** A administração (e quem gere grupos) põe professores, alunos e famílias da escola nesta turma. */
+function AdicionarATurma({ turmaId, jaNaTurma, aoMudar }: { turmaId: string; jaNaTurma: Set<string>; aoMudar: () => void }) {
+  const { instituicaoId } = useInstituicaoAtual();
+  const [membros, setMembros] = useState<Membro[]>([]);
+  const [escolhido, setEscolhido] = useState("");
+
+  useEffect(() => {
+    void apiInstituicoes
+      .listarMembros(instituicaoId)
+      .then((m) => setMembros(m.filter((x) => x.estado === "ativo" && x.papel !== "observador")))
+      .catch(() => setMembros([]));
+  }, [instituicaoId]);
+
+  const disponiveis = membros.filter((m) => !jaNaTurma.has(m.id)).sort((a, b) => PAPEIS.indexOf(a.papel) - PAPEIS.indexOf(b.papel) || a.nome.localeCompare(b.nome));
+  const adicionar = async () => {
+    if (await acao(() => apiInstituicoes.definirMembroNoGrupo(instituicaoId, turmaId, escolhido, true), "Adicionado à turma.")) {
+      setEscolhido("");
+      aoMudar();
+    }
+  };
+
+  return (
+    <Card className="space-y-3 p-5 shadow-soft">
+      <p className="flex items-center gap-2 font-medium">
+        <UserPlus className="h-4 w-4 text-primary" aria-hidden /> Adicionar à turma
+      </p>
+      <p className="text-xs text-muted-foreground">Escolhe quem leciona (educadores e formadores) ou quem aprende. Para pessoas que ainda não estão na escola, usa os códigos.</p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Seletor aria-label="Pessoa a adicionar" value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
+          <option value="">Escolhe uma pessoa da escola…</option>
+          {disponiveis.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nome} · {ROTULO_PAPEL[m.papel]}
+            </option>
+          ))}
+        </Seletor>
+        <Button disabled={!escolhido} onClick={() => void adicionar()} className="gap-1.5">
+          <UserPlus className="h-4 w-4" /> Adicionar
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+export function SeparadorPessoas({ dados, aoMudar }: { dados: DadosTurma; aoMudar: () => void }) {
+  const { instituicaoId, pode } = useInstituicaoAtual();
   const { turma, professores, aprendizes, familias, codigos } = dados;
   const publico = turma.lga.publico;
+  const gerir = pode("gerir_grupos");
+  const naTurma = new Set([...professores, ...aprendizes, ...familias].map((m) => m.id));
+
+  const retirar = async (m: Membro) => {
+    if (await acao(() => apiInstituicoes.definirMembroNoGrupo(instituicaoId, turma.id, m.id, false), `${m.nome} saiu da turma.`)) aoMudar();
+  };
+
   return (
     <div className="space-y-6">
+      {gerir && <AdicionarATurma turmaId={turma.id} jaNaTurma={naTurma} aoMudar={aoMudar} />}
       {(codigos.alunos || codigos.familias) && (
         <div className="grid gap-4 md:grid-cols-2">
           <CartaoCodigo titulo={publico === "professores" ? "Código para professores" : "Código para alunos"} convite={codigos.alunos} turmaNome={turma.nome} />
@@ -107,9 +168,15 @@ export function SeparadorPessoas({ dados }: { dados: DadosTurma }) {
         Quem entra com o código fica nesta turma ({ROTULO_PUBLICO_LGA[publico]}). Se a escola aprovar pedidos por código, aparecem em Convites → Pedidos de adesão.
       </p>
       <div className="grid gap-4 lg:grid-cols-3">
-        <ListaPessoas titulo="Quem ensina" pessoas={professores} />
-        <ListaPessoas titulo={publico === "familias" ? "Famílias" : publico === "professores" ? "Professores em formação" : "Alunos"} pessoas={aprendizes} />
-        {publico !== "familias" && publico !== "professores" && <ListaPessoas titulo="Famílias que acompanham" pessoas={familias} />}
+        <ListaPessoas titulo="Quem ensina" pessoas={professores} aoRetirar={gerir ? retirar : undefined} />
+        <ListaPessoas
+          titulo={publico === "familias" ? "Famílias" : publico === "professores" ? "Professores em formação" : "Alunos"}
+          pessoas={aprendizes}
+          aoRetirar={gerir ? retirar : undefined}
+        />
+        {publico !== "familias" && publico !== "professores" && (
+          <ListaPessoas titulo="Famílias que acompanham" pessoas={familias} aoRetirar={gerir ? retirar : undefined} />
+        )}
       </div>
     </div>
   );

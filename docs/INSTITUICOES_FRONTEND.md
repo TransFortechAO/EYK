@@ -159,6 +159,38 @@ Com a área ativa e uma escola, as páginas principais mostram o que é da escol
 As moedas da escola (prática, respostas certas, desafios) estão, na demonstração, numa conta à parte; com o backend,
 devem entrar na carteira única do aluno.
 
+## Quem cria o quê
+
+| Quem | O quê | Onde |
+|---|---|---|
+| Equipa EYK (`isStaff`) | Cria as escolas e instituições; o responsável recebe o convite de administrador. Ativa, suspende, ajusta quotas. Aprova o que as escolas querem publicar na plataforma geral | Administração → Escolas e instituições |
+| Administração da escola | Abre Turmas LGA e põe nelas os professores que lecionam e os alunos (Turma → Pessoas e códigos → Adicionar à turma), ou entrega os códigos | A minha escola → Turmas LGA |
+| Educador / formador | Publica cursos e vídeos para as suas turmas ou para toda a escola, sem aprovação; se quiser, marca "Publicar também na plataforma geral" (aprovado pela equipa EYK) | A minha escola → Cursos e vídeos da escola |
+| Aluno de uma escola | Vê só o que a escola publicou. Pode escolher "Ver também a plataforma geral" a qualquer momento (barra no topo de Início, Cursos, Vídeos, Comunidade e Leaderboard) | — |
+
+A escolha do aluno é por pessoa e fica guardada; os outros papéis vêem sempre a plataforma geral. Se a escola desligou a
+Comunidade pública para alunos, essa definição prevalece.
+
+## Navegação por papel
+
+Com a área ativa, o contexto da escola é montado para toda a app (`components/providers.tsx` → `EscolaGlobal`), e a
+barra lateral e o menu de baixo mostram as funcionalidades do papel atual (`lib/instituicoes/navegacao.ts`, com testes).
+
+| Papel | Barra lateral — "A minha escola" | Abas do telemóvel |
+|---|---|---|
+| Aluno | As minhas turmas, Praticar LGA, Gestuário, Avisos, Agenda, Ficheiros | Início, Turmas, Praticar, Comunidade |
+| Família | As minhas crianças, Turmas LGA, Praticar, Avisos, Agenda, Consentimentos, Os meus dados | Início, Crianças, Avisos, Agenda |
+| Educador | As minhas turmas, Respostas por rever, Cursos e vídeos da escola, Gestuário, Alunos, Avisos, Agenda, Ficheiros, Convites | Início, Turmas, Respostas, Conteúdos |
+| Formador | As minhas turmas, Respostas por rever, Gestuário (validar), Cursos e vídeos, Avisos, Agenda | Início, Turmas, Respostas, Conteúdos |
+| Coordenação | Turmas LGA, Gestuário (validar), Relatórios, Alunos, Membros, Avisos, Agenda | Início, Turmas, Gestuário, Relatórios |
+| Administração da escola | Painel da escola, Turmas LGA, Membros, Convites, Cursos e vídeos, Avisos, Relatórios, Definições | Início, Escola, Turmas, Membros |
+| Observador | Relatórios | Início, Relatórios, Cursos, Comunidade |
+| Sem escola | "Entrar numa escola" (código) | Início, Cursos, Vídeos, Comunidade (como antes) |
+
+O que não cabe nas abas fica no painel "Mais", agrupado em "escola", "Plataforma EYK" e o resto. Os números ao lado
+(respostas por rever, trabalhos por fazer, avisos por ler) atualizam-se ao mudar de página e depois de corrigir uma
+resposta. As páginas com todas as secções da escola continuam em `/instituicao` (submenu no topo).
+
 ## Ligar ao backend
 
 Cada função de `apiInstituicoes` corresponde a um endpoint (o comentário de algumas indica o caminho sugerido, ex:

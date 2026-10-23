@@ -1,11 +1,17 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo } from "@/lib/instituicoes/api";
+import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
+import { apiLga } from "@/lib/instituicoes/lga";
 import { pode as podeFazer, vePessoais, type Acao } from "@/lib/instituicoes/permissoes";
 import type { Papel, Pertenca } from "@/lib/instituicoes/tipos";
 
 export const CHAVE_INSTITUICAO = "eyk-instituicao-atual";
+
+/** Números para o menu (barra lateral e menu de baixo). */
+export type ContadoresEscola = { porRever: number; trabalhos: number; avisosPorLer: number };
 
 type EstadoInstituicao = {
   aCarregar: boolean;
@@ -17,6 +23,12 @@ type EstadoInstituicao = {
   vePessoais: boolean;
   escolher: (instituicaoId: string) => void;
   recarregar: () => Promise<void>;
+  /** O aluno escolheu ver também a plataforma geral? (sempre true para os outros papéis e para quem não tem escola) */
+  verGeral: boolean;
+  definirVerGeral: (ver: boolean) => Promise<void>;
+  contadores: ContadoresEscola;
+  /** Recalcula os números do menu (ex: depois de corrigir uma resposta). */
+  atualizarContadores: () => void;
   // Só para a demonstração (sem backend).
   pessoa: number;
   mudarPessoa: (utilizadorId: number) => void;
@@ -24,6 +36,7 @@ type EstadoInstituicao = {
 };
 
 const Contexto = createContext<EstadoInstituicao | null>(null);
+const SEM_CONTADORES: ContadoresEscola = { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
 
 function lerLocal(chave: string): string | null {
   try {
@@ -41,11 +54,21 @@ function escreverLocal(chave: string, valor: string) {
   }
 }
 
+/**
+ * Contexto da escola para toda a app (montado em components/providers.tsx):
+ * a barra lateral, o menu de baixo, as páginas principais e a área
+ * Instituição partilham a mesma instituição atual e o mesmo papel.
+ */
 export function InstituicaoProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [aCarregar, setACarregar] = useState(true);
   const [pertencas, setPertencas] = useState<Pertenca[]>([]);
   const [atualId, setAtualId] = useState<string | null>(null);
   const [pessoa, setPessoa] = useState<number>(() => restaurarPessoaDemo());
+  const [verGeral, setVerGeral] = useState(true);
+  const [contadores, setContadores] = useState<ContadoresEscola>(SEM_CONTADORES);
+  const [versaoContadores, setVersaoContadores] = useState(0);
+  const atualizarContadores = useCallback(() => setVersaoContadores((v) => v + 1), []);
 
   const recarregar = useCallback(async () => {
     setACarregar(true);
@@ -66,9 +89,38 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
     void recarregar();
   }, [recarregar, pessoa]);
 
-  const escolher = useCallback((instituicaoId: string) => {
-    setAtualId(instituicaoId);
-    escreverLocal(CHAVE_INSTITUICAO, instituicaoId);
+  const atual = pertencas.find((p) => p.instituicao.id === atualId) ?? null;
+  const instituicaoId = atual?.instituicao.id ?? null;
+  const membroId = atual?.membro.id ?? null;
+
+  // Preferência do aluno (ver também a plataforma geral).
+  useEffect(() => {
+    if (!instituicaoId) {
+      setVerGeral(true);
+      return;
+    }
+    void apiLga.verPlataformaGeral(instituicaoId).then(setVerGeral).catch(() => setVerGeral(true));
+  }, [instituicaoId, membroId]);
+
+  // Contadores do menu: recalculados ao mudar de página (respostas corrigidas, avisos lidos…).
+  useEffect(() => {
+    if (!instituicaoId) {
+      setContadores(SEM_CONTADORES);
+      return;
+    }
+    let vivo = true;
+    void apiLga
+      .resumoEscola(instituicaoId)
+      .then((r) => vivo && setContadores({ porRever: r.porRever, trabalhos: r.tarefas.length, avisosPorLer: r.avisosPorLer }))
+      .catch(() => vivo && setContadores(SEM_CONTADORES));
+    return () => {
+      vivo = false;
+    };
+  }, [instituicaoId, membroId, pathname, versaoContadores]);
+
+  const escolher = useCallback((id: string) => {
+    setAtualId(id);
+    escreverLocal(CHAVE_INSTITUICAO, id);
   }, []);
 
   const mudarPessoa = useCallback((utilizadorId: number) => {
@@ -83,8 +135,16 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
     void recarregar();
   }, [recarregar]);
 
+  const definirVerGeral = useCallback(
+    async (ver: boolean) => {
+      if (!instituicaoId) return;
+      await apiLga.definirVerPlataformaGeral(instituicaoId, ver);
+      setVerGeral(ver);
+    },
+    [instituicaoId],
+  );
+
   const valor = useMemo<EstadoInstituicao>(() => {
-    const atual = pertencas.find((p) => p.instituicao.id === atualId) ?? null;
     const papel = atual?.membro.papel ?? null;
     return {
       aCarregar,
@@ -95,19 +155,34 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
       vePessoais: vePessoais(papel),
       escolher,
       recarregar,
+      verGeral,
+      definirVerGeral,
+      contadores,
+      atualizarContadores,
       pessoa,
       mudarPessoa,
       reporDados,
     };
-  }, [aCarregar, pertencas, atualId, escolher, recarregar, pessoa, mudarPessoa, reporDados]);
+  }, [aCarregar, pertencas, atual, escolher, recarregar, verGeral, definirVerGeral, contadores, atualizarContadores, pessoa, mudarPessoa, reporDados]);
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
+}
+
+/** Só monta o contexto quando a área Instituição está ativa (senão a app fica exatamente como antes). */
+export function EscolaGlobal({ children }: { children: ReactNode }) {
+  if (!INSTITUICOES_ATIVAS) return <>{children}</>;
+  return <InstituicaoProvider>{children}</InstituicaoProvider>;
 }
 
 export function useInstituicao(): EstadoInstituicao {
   const v = useContext(Contexto);
   if (!v) throw new Error("useInstituicao fora de <InstituicaoProvider>");
   return v;
+}
+
+/** Para o menu e as páginas principais: null quando a área está desligada. */
+export function useInstituicaoOpcional(): EstadoInstituicao | null {
+  return useContext(Contexto);
 }
 
 /** Mostra o conteúdo só se o papel o permitir (quem abre o endereço diretamente vê um aviso). */

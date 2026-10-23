@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, FlaskConical, HardDrive, History, Plus, ShieldAlert, SlidersHorizontal, Users } from "lucide-react";
+import { Building2, Check, FlaskConical, Globe, HardDrive, History, Plus, ShieldAlert, SlidersHorizontal, Users, X } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useConfirm } from "@/components/confirm-dialog";
 import { acao, Barra, Campo, Carregando, celula, dataHora, ErroCarregar, erroTexto, Etiqueta, haQuanto, Seletor, Tabela, tamanho, useCarregar } from "@/components/instituicao/ui";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
+import { apiLga } from "@/lib/instituicoes/lga";
 import { ROTULO_ACAO, ROTULO_ESTADO_INSTITUICAO, ROTULO_TIPO_INSTITUICAO } from "@/lib/instituicoes/permissoes";
 import type { EstadoInstituicao, Instituicao, RegistoAuditoria, TipoInstituicao } from "@/lib/instituicoes/tipos";
 
@@ -59,7 +60,10 @@ export default function AdminInstituicoesPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Instituições" description="Escolas, centros e organizações parceiras: criar, ativar, suspender e ajustar quotas.">
+      <PageHeader
+        title="Escolas e instituições"
+        description="Criar escolas, centros e organizações parceiras (o responsável recebe o convite de administrador), ativar, suspender, ajustar quotas e aprovar o que as escolas querem publicar na plataforma geral."
+      >
         <Button className="gap-1.5" onClick={() => setNova(true)}>
           <Plus className="h-4 w-4" /> Nova instituição
         </Button>
@@ -141,6 +145,8 @@ export default function AdminInstituicoesPage() {
         </>
       )}
 
+      <PropostasPlataformaGeral />
+
       <NovaInstituicao
         aberto={nova}
         aoFechar={() => setNova(false)}
@@ -159,6 +165,47 @@ export default function AdminInstituicoesPage() {
       />
       <AuditoriaEyk instituicao={auditoriaDe} aoFechar={() => setAuditoriaDe(null)} />
     </div>
+  );
+}
+
+/** Cursos e vídeos que os professores das escolas quiseram publicar também na plataforma geral. */
+function PropostasPlataformaGeral() {
+  const { dados, recarregar } = useCarregar(() => apiLga.listarPropostasPublicas(), []);
+  if (!dados || dados.length === 0) return null;
+  const decidir = async (id: string, aceitar: boolean) => {
+    if (await acao(() => apiLga.decidirPropostaPublica(id, aceitar), aceitar ? "Publicado na plataforma geral." : "Proposta recusada.")) await recarregar();
+  };
+  return (
+    <section className="space-y-3">
+      <h2 className="flex items-center gap-2 font-serif text-xl font-semibold">
+        <Globe className="h-5 w-5 text-primary" aria-hidden /> Propostas para a plataforma geral ({dados.length})
+      </h2>
+      <p className="text-sm text-muted-foreground">
+        Conteúdos que os professores publicaram para a escola e querem partilhar com toda a EYK. Confirma a qualidade, a acessibilidade (legendas, LGA) e os direitos antes de aceitar.
+      </p>
+      <Card className="divide-y divide-border shadow-soft">
+        {dados.map((c) => (
+          <div key={c.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-medium">{c.titulo}</p>
+              <p className="text-xs text-muted-foreground">
+                {c.tipo === "curso" ? `Curso · ${c.aulas} lições` : "Vídeo"} · {c.duracaoMin} min · {c.autor} · {c.escola}
+                {c.emLga ? " · em LGA" : ""}
+                {c.temLegendas ? " · legendas PT" : " · sem legendas"}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void decidir(c.id, false)}>
+                <X className="h-4 w-4" /> Recusar
+              </Button>
+              <Button size="sm" className="gap-1.5" onClick={() => void decidir(c.id, true)}>
+                <Check className="h-4 w-4" /> Aceitar
+              </Button>
+            </div>
+          </div>
+        ))}
+      </Card>
+    </section>
   );
 }
 

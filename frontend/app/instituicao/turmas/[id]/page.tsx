@@ -94,7 +94,7 @@ function TurmaLga() {
           <SeparadorClassificacao turmaId={turma.id} />
         </TabsContent>
         <TabsContent value="pessoas" className="mt-6">
-          <SeparadorPessoas dados={dados} />
+          <SeparadorPessoas dados={dados} aoMudar={() => void recarregar()} />
         </TabsContent>
       </Tabs>
     </div>

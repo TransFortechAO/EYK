@@ -70,7 +70,7 @@ export function CartaoResposta({
   ensino: boolean;
   aoMudar: () => void;
 }) {
-  const { instituicaoId } = useInstituicaoAtual();
+  const { instituicaoId, atualizarContadores } = useInstituicaoAtual();
   const [texto, setTexto] = useState("");
   const [videoFeedback, setVideoFeedback] = useState<VideoAnexo | null>(null);
   const [aEnviar, setAEnviar] = useState(false);
@@ -82,7 +82,10 @@ export function CartaoResposta({
       estado === "correto" ? "Marcado como correto." : "Pedido para repetir enviado.",
     );
     setAEnviar(false);
-    if (ok) aoMudar();
+    if (ok) {
+      atualizarContadores();
+      aoMudar();
+    }
   };
 
   return (

@@ -25,11 +25,12 @@ import {
   Dumbbell,
   BookA,
   Library,
+  Video,
   type LucideIcon,
 } from "lucide-react";
 import { EmptyState } from "@/components/eyk";
 import { Button } from "@/components/ui/button";
-import { InstituicaoProvider, useInstituicao } from "@/components/instituicao/contexto";
+import { useInstituicao } from "@/components/instituicao/contexto";
 import { Carregando, EtiquetaPapel, Seletor } from "@/components/instituicao/ui";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { PESSOAS_DEMO } from "@/lib/instituicoes/api";
@@ -42,6 +43,7 @@ type ItemNav = { titulo: string; url: string; icone: LucideIcon; visivel: (p: Pa
 const NAV: ItemNav[] = [
   { titulo: "Painel", url: "/instituicao", icone: LayoutDashboard, visivel: (p) => pode(p, "ver_painel") },
   { titulo: "Turmas LGA", url: "/instituicao/turmas", icone: Hand, visivel: (p) => pode(p, "ver_turmas_lga") },
+  { titulo: "Respostas", url: "/instituicao/respostas", icone: Video, visivel: (p) => pode(p, "rever_respostas") },
   { titulo: "Praticar", url: "/instituicao/praticar", icone: Dumbbell, visivel: (p) => pode(p, "praticar") },
   { titulo: "Gestuário", url: "/instituicao/gestuario", icone: BookA, visivel: (p) => pode(p, "praticar") || pode(p, "propor_gestos") },
   { titulo: "Conteúdos", url: "/instituicao/conteudos", icone: Library, visivel: (p) => pode(p, "ver_turmas_lga") },
@@ -227,9 +229,6 @@ export default function InstituicaoLayout({ children }: { children: ReactNode })
 
   if (!INSTITUICOES_ATIVAS) return null;
 
-  return (
-    <InstituicaoProvider>
-      <Moldura>{children}</Moldura>
-    </InstituicaoProvider>
-  );
+  // O contexto da escola vem de components/providers.tsx (partilhado com os menus).
+  return <Moldura>{children}</Moldura>;
 }

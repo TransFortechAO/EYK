@@ -27,6 +27,9 @@ import { useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
+import { navegacaoEscola } from "@/lib/instituicoes/navegacao";
+import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
+import { ICONE_NAV } from "@/components/instituicao/icones-nav";
 
 import {
   Sidebar,
@@ -54,18 +57,75 @@ const secondary = [
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
-  ...(INSTITUICOES_ATIVAS ? [{ title: "Instituição", url: "/instituicao", icon: Building2 }] : []),
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 const administracao = [
-  ...(INSTITUICOES_ATIVAS ? [{ title: "Instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
+  ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },
   { title: "Utilizadores", url: "/configuracoes/administracao/utilizadores", icon: UserCog },
 ];
+
+/**
+ * "A minha escola": as funcionalidades da escola do papel atual (aluno, família,
+ * educador, formador, coordenação, administração, observador).
+ */
+function GrupoEscola({ isActive, aoNavegar }: { isActive: (url: string) => boolean; aoNavegar: () => void }) {
+  const escola = useInstituicaoOpcional();
+  if (!escola || escola.aCarregar) return null;
+  const { atual, contadores } = escola;
+  const itens = atual
+    ? navegacaoEscola(atual.membro.papel, contadores)
+    : [{ id: "entrar", titulo: "Entrar numa escola", url: "/instituicao/aderir", icone: "escola" as const }];
+  const ativo = (url: string) => (url === "/instituicao" ? isActive(url) && !itens.some((i) => i.url !== url && isActive(i.url)) : isActive(url));
+
+  return (
+    <>
+      <SidebarSeparator />
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton disabled tooltip={atual?.instituicao.nome ?? "Escola"} className="opacity-60 cursor-default hover:bg-transparent">
+                <Building2 />
+                <span className="truncate">{atual ? atual.instituicao.nome : "Escola"}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {itens.map((item) => {
+              const Icone = ICONE_NAV[item.icone];
+              return (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={ativo(item.url)}
+                    tooltip={item.contador ? `${item.titulo} (${item.contador})` : item.titulo}
+                    className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
+                  >
+                    <Link href={item.url} onClick={aoNavegar}>
+                      <span className="relative grid shrink-0 place-items-center">
+                        <Icone className="size-4" />
+                        {!!item.contador && <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-sidebar" aria-hidden />}
+                      </span>
+                      <span className="flex-1 truncate">{item.titulo}</span>
+                      {!!item.contador && (
+                        <span className="rounded-full bg-primary/15 px-1.5 text-[11px] font-semibold tabular-nums text-primary" aria-label={`${item.contador} por ver`}>
+                          {item.contador}
+                        </span>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
+  );
+}
 
 const professorNav = [
   { title: "Painel", url: "/professor", icon: LayoutDashboard },
@@ -128,6 +188,8 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <GrupoEscola isActive={isActive} aoNavegar={closeOnNavigate} />
 
         <SidebarSeparator />
 

@@ -118,13 +118,14 @@ function PublicarConteudo({ aberto, turmas, aoFechar, aoPublicar }: { aberto: bo
   const [duracaoMin, setDuracaoMin] = useState(5);
   const [legendas, setLegendas] = useState(true);
   const [emLga, setEmLga] = useState(true);
+  const [tambemGeral, setTambemGeral] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const submeter = async (e: FormEvent) => {
     e.preventDefault();
     setErro(null);
     try {
-      await apiLga.publicarConteudo(instituicaoId, {
+      const publicado = await apiLga.publicarConteudo(instituicaoId, {
         tipo,
         titulo,
         descricao,
@@ -135,6 +136,9 @@ function PublicarConteudo({ aberto, turmas, aoFechar, aoPublicar }: { aberto: bo
         emLga,
         video: tipo === "video" ? video : null,
       });
+      // Também na plataforma geral: fica já na escola e segue como proposta para a equipa EYK aprovar.
+      if (tambemGeral) await apiLga.proporPublico(instituicaoId, publicado.id);
+      setTambemGeral(false);
       setTitulo("");
       setDescricao("");
       setVideo(null);
@@ -149,8 +153,8 @@ function PublicarConteudo({ aberto, turmas, aoFechar, aoPublicar }: { aberto: bo
       <DialogContent>
         <DialogHeader>
           <div>
-            <DialogTitle>Publicar para a escola</DialogTitle>
-            <DialogDescription>Não precisa de aprovação da EYK: fica visível só dentro da escola ou da turma.</DialogDescription>
+            <DialogTitle>Publicar curso ou vídeo</DialogTitle>
+            <DialogDescription>Para as tuas turmas ou para toda a escola, sem aprovação. Se quiseres, também para a plataforma geral.</DialogDescription>
           </div>
         </DialogHeader>
         <form onSubmit={submeter} className="flex min-h-0 flex-col">
@@ -201,6 +205,14 @@ function PublicarConteudo({ aberto, turmas, aoFechar, aoPublicar }: { aberto: bo
                 Com legendas em português
               </Caixa>
             </div>
+            <Caixa
+              id="pc-geral"
+              checked={tambemGeral}
+              onChange={setTambemGeral}
+              descricao="Fica já disponível para a escola ou turma. Na plataforma geral aparece a todos os utilizadores da EYK depois de a equipa EYK aprovar."
+            >
+              Publicar também na plataforma geral
+            </Caixa>
             {erro && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{erro}</p>}
           </div>
           <DialogFooter className="flex justify-end gap-2 space-y-0">

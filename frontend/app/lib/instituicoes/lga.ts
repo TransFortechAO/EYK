@@ -599,6 +599,24 @@ export const apiLga = {
     return c;
   },
 
+  /** Equipa EYK (isStaff): propostas de conteúdos das escolas para a plataforma geral. */
+  async listarPropostasPublicas(): Promise<(ConteudoEscola & { escola: string })[]> {
+    await esperar();
+    const e = carregar();
+    return e.conteudos
+      .filter((c) => c.propostaPublica === "pendente")
+      .map((c) => ({ ...c, escola: e.instituicoes.find((i) => i.id === c.instituicaoId)?.nome ?? "" }));
+  },
+
+  async decidirPropostaPublica(conteudoId: string, aceitar: boolean): Promise<void> {
+    await esperar();
+    const c = carregar().conteudos.find((x) => x.id === conteudoId);
+    if (!c || c.propostaPublica !== "pendente") throw new ErroInstituicao("Proposta não encontrada ou já decidida.");
+    c.propostaPublica = aceitar ? "aceite" : "recusada";
+    auditar(c.instituicaoId, "conteudo_publicado", `«${c.titulo}» ${aceitar ? "aceite" : "recusado"} para a plataforma geral.`, "Equipa EYK", "equipa_eyk");
+    guardar();
+  },
+
   // ── Comunidade da turma ──
 
   async listarPostsTurma(instituicaoId: string, turmaId: string): Promise<PostTurma[]> {
@@ -726,6 +744,27 @@ export const apiLga = {
     carregar().desafios.push(d);
     guardar();
     return d;
+  },
+
+  // ── Plataforma geral (só para alunos) ──
+
+  /**
+   * O aluno de uma escola vê só o que a escola publicou, a não ser que escolha ver
+   * também a plataforma geral. Professores, famílias e administração vêem sempre.
+   */
+  async verPlataformaGeral(instituicaoId: string): Promise<boolean> {
+    const m = eu(instituicaoId);
+    if (m.papel !== "aluno") return true;
+    return carregar().verGeral?.[m.id] ?? false;
+  },
+
+  async definirVerPlataformaGeral(instituicaoId: string, ver: boolean): Promise<void> {
+    await esperar();
+    const m = eu(instituicaoId);
+    if (m.papel !== "aluno") throw new ErroInstituicao("Esta opção é só para alunos.");
+    const e = carregar();
+    (e.verGeral ??= {})[m.id] = ver;
+    guardar();
   },
 
   // ── Resumo para o Início ──

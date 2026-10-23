@@ -56,6 +56,8 @@ export type EstadoDemo = {
   pontosEscola: Record<string, number>;
   /** Desafios já concluídos (a recompensa só é dada uma vez) — por membro. */
   desafiosConcluidos: Record<string, string[]>;
+  /** Alunos que escolheram ver também a plataforma geral (por omissão vêem só a escola) — por membro. */
+  verGeral: Record<string, boolean>;
   seq: number;
 };
 

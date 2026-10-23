@@ -415,5 +415,7 @@ export function criarDemoLga(
   ];
 
   const desafiosConcluidos: Record<string, string[]> = {};
-  return { aulas, respostasVideo, gestos, progresso, registosPratica, conteudos, postsTurma, desafios, pontosEscola, desafiosConcluidos };
+  // A Nzinga escolheu ver também a plataforma geral; os outros alunos vêem só a escola.
+  const verGeral: Record<string, boolean> = { "m-a-2": true };
+  return { aulas, respostasVideo, gestos, progresso, registosPratica, conteudos, postsTurma, desafios, pontosEscola, desafiosConcluidos, verGeral };
 }
