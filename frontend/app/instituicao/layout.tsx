@@ -35,6 +35,7 @@ import { Carregando, EtiquetaPapel, Seletor } from "@/components/instituicao/ui"
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { PESSOAS_DEMO } from "@/lib/instituicoes/api";
 import { acessoBloqueado, pode, ROTULO_ESTADO_INSTITUICAO, ROTULO_TIPO_INSTITUICAO } from "@/lib/instituicoes/permissoes";
+import { urlsNoMenu } from "@/lib/instituicoes/navegacao";
 import type { Papel } from "@/lib/instituicoes/tipos";
 import { cn } from "@/lib/utils";
 
@@ -145,7 +146,10 @@ function Moldura({ children }: { children: ReactNode }) {
   }
 
   const { instituicao, membro } = atual;
-  const itens = NAV.filter((i) => i.visivel(membro.papel));
+  // Só as secções que NÃO estão no menu deste papel (barra lateral / menu de baixo):
+  // cada funcionalidade fica num só lugar.
+  const noMenu = urlsNoMenu(membro.papel);
+  const itens = NAV.filter((i) => i.visivel(membro.papel) && !noMenu.has(i.url));
 
   return (
     <div className="space-y-6">
@@ -190,18 +194,19 @@ function Moldura({ children }: { children: ReactNode }) {
         />
       ) : (
         <>
-          <nav aria-label="Secções da instituição" className="-mx-4 overflow-x-auto px-4 md:-mx-8 md:px-8">
-            <ul className="flex w-max gap-1.5 border-b border-border pb-2">
-              {itens.map((item) => {
-                const a = ativo(pathname, item.url);
-                return (
-                  <li key={item.url}>
-                    <Link
-                      href={item.url}
-                      aria-current={a ? "page" : undefined}
-                      className={cn(
-                        "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors pointer-coarse:min-h-11",
-                        a ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+          {itens.length > 0 && (
+            <nav aria-label="Outras secções da escola" className="-mx-4 overflow-x-auto px-4 md:-mx-8 md:px-8">
+              <ul className="flex w-max gap-1.5 border-b border-border pb-2">
+                {itens.map((item) => {
+                  const a = ativo(pathname, item.url);
+                  return (
+                    <li key={item.url}>
+                      <Link
+                        href={item.url}
+                        aria-current={a ? "page" : undefined}
+                        className={cn(
+                          "inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors pointer-coarse:min-h-11",
+                          a ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                       )}
                     >
                       <item.icone className="h-4 w-4" aria-hidden />
@@ -212,6 +217,7 @@ function Moldura({ children }: { children: ReactNode }) {
               })}
             </ul>
           </nav>
+          )}
           {/* key: ao mudar de instituição ou de pessoa, as páginas recarregam do zero. */}
           <div key={`${instituicao.id}:${membro.id}`}>{children}</div>
         </>

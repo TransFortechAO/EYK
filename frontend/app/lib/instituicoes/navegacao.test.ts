@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { apiInstituicoes, definirPessoaDemo, reporDemo } from "./api";
 import { apiLga } from "./lga";
-import { abasTelemovel, navegacaoEscola, restoParaMais } from "./navegacao";
+import { abasTelemovel, navegacaoEscola, restoParaMais, urlsNoMenu } from "./navegacao";
 import { PAPEIS } from "./permissoes";
 
 const nada = { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
@@ -38,6 +38,17 @@ describe("navegação por papel", () => {
     expect(urls(abasTelemovel(null, nada))).toEqual(["/inicio", "/cursos", "/videos", "/comunidade"]);
     expect(urls(abasTelemovel("aluno", nada))).toEqual(["/inicio", "/instituicao/turmas", "/instituicao/praticar", "/comunidade"]);
     expect(abasTelemovel("formador", { ...nada, porRever: 4 }).find((a) => a.url === "/instituicao/respostas")?.contador).toBe(4);
+  });
+
+  it("o que está no menu de cada papel não se repete nos separadores da página da escola", () => {
+    for (const papel of PAPEIS) {
+      const menu = urlsNoMenu(papel);
+      // Tudo o que a barra lateral e o menu de baixo mostram conta como "no menu".
+      for (const i of [...navegacaoEscola(papel, nada), ...abasTelemovel(papel, nada)]) expect(menu.has(i.url)).toBe(true);
+    }
+    expect(urlsNoMenu("aluno").has("/instituicao/turmas")).toBe(true);
+    expect(urlsNoMenu("aluno").has("/instituicao/conteudos")).toBe(false); // fica na página
+    expect(urlsNoMenu("administrador").has("/instituicao/auditoria")).toBe(false); // fica na página
   });
 
   it("o que não cabe nas abas vai para o painel Mais, sem repetir", () => {

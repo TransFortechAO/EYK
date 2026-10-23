@@ -189,7 +189,12 @@ barra lateral e o menu de baixo mostram as funcionalidades do papel atual (`lib/
 
 O que não cabe nas abas fica no painel "Mais", agrupado em "escola", "Plataforma EYK" e o resto. Os números ao lado
 (respostas por rever, trabalhos por fazer, avisos por ler) atualizam-se ao mudar de página e depois de corrigir uma
-resposta. As páginas com todas as secções da escola continuam em `/instituicao` (submenu no topo).
+resposta.
+
+**Cada funcionalidade fica num só lugar:** os separadores no topo da página `/instituicao` mostram só as secções que
+não estão no menu desse papel (`urlsNoMenu` em `navegacao.ts`). Ex: o aluno tem Turmas, Praticar, Gestuário, Avisos,
+Agenda e Ficheiros no menu, e na página fica só Painel e Conteúdos; a administração tem na página Praticar, Gestuário,
+Agenda, Ficheiros, Grupos, Alunos, Consentimentos, Auditoria e Os meus dados.
 
 ## Ligar ao backend
 

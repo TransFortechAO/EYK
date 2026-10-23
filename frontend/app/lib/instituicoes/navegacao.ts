@@ -105,6 +105,16 @@ export function abasTelemovel(papel: Papel | null, c: Contadores): ItemNav[] {
   }
 }
 
+/**
+ * Endereços que já estão no menu deste papel (barra lateral no computador e
+ * tablet; abas + "Mais" no telemóvel). A página da instituição não os repete
+ * nos seus separadores: cada funcionalidade fica num só lugar.
+ */
+export function urlsNoMenu(papel: Papel): Set<string> {
+  const zero: Contadores = { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
+  return new Set([...abasTelemovel(papel, zero), ...navegacaoEscola(papel, zero)].map((i) => i.url));
+}
+
 /** O que não coube nas abas: vai para o painel "Mais". */
 export function restoParaMais(papel: Papel | null, c: Contadores): { escola: ItemNav[]; geral: ItemNav[] } {
   const abas = new Set(abasTelemovel(papel, c).map((a) => a.url));
