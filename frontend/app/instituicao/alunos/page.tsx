@@ -38,7 +38,7 @@ export default function AlunosPage() {
   }, [instituicaoId, papel]);
 
   const atuais = useMemo(() => consentimentosAtuais(dados?.consentimentos ?? []), [dados]);
-  const permitido = pode("gerir_alunos") || papel === "familia" || (pode("ver_todos_grupos") && papel !== "observador");
+  const permitido = pode("gerir_alunos") || papel === "familia" || pode("ver_todos_grupos");
 
   const desfazer = async (aluno: PerfilAluno, tutorId: string, tutorNome: string) => {
     const ok = await confirmar({

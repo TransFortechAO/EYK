@@ -17,8 +17,8 @@ chamadas à API estão prontos para ligar à `eyk-api`.
 1. `cd frontend && npm run dev` e entra com qualquer conta.
 2. Na barra lateral, abre **Instituição**. Os membros da equipa (`isStaff`) vêem também **Administração → Instituições**.
 3. No topo da área há uma faixa **Demonstração** com:
-   - **Ver como:** muda a pessoa com que vês a instituição (administradora, coordenador, educadora, formador de LGA,
-     família, alunos, observador). A Ana Domingos pertence a duas instituições com papéis diferentes — usa o seletor ao
+   - **Ver como:** muda a pessoa com que vês a instituição (administradora, coordenador, educadores,
+     família, alunos). A Ana Domingos pertence a duas instituições com papéis diferentes — usa o seletor ao
      lado do papel. A pessoa escolhida vale também nas páginas principais (Início, Cursos, Comunidade…).
    - **Repor:** volta aos dados iniciais.
 4. Para experimentar a adesão: **Instituição → Convites** (copia um código) ou abre `/instituicao/aderir` e usa
@@ -26,7 +26,7 @@ chamadas à API estão prontos para ligar à `eyk-api`.
 5. Para o ensino de LGA, sugestão de percurso:
    - **Kiesse Lopes** (aluno): Início → "Da tua escola" → grava a resposta da aula "Saudações"; depois Praticar.
    - **Maria Kiala** (educadora): Turmas LGA → LGA Iniciação — 3.ª Classe A → Respostas → corrige; Nova aula.
-   - **Domingos Sapalo** (formador): Gestuário → Por validar.
+   - **Domingos Sapalo** (educador surdo): Gestuário → Por validar.
    - **Rosa Lopes** (família): vê as respostas e o feedback do Kiesse; Consentimentos.
    - **Wezo Sebastião** (aluno): a família não autorizou as respostas em vídeo — a gravação fica bloqueada.
 
@@ -70,11 +70,11 @@ utilizadores antes de existir backend. `NEXT_PUBLIC_INSTITUICOES=0` desliga-a ta
 | `/instituicao/aderir` | Aderir com um código, com consentimento para famílias (3, 9) | Qualquer utilizador autenticado |
 | `/instituicao/grupos`, `/instituicao/grupos/[id]` | Turmas e grupos; arquivo no fim do ano (4) | Administrador, coordenador, educador |
 | `/instituicao/alunos` | Perfis de crianças e vínculos com tutores (5) | Administrador, coordenador, educador; família vê só as suas |
-| `/instituicao/avisos` | Avisos, "li e confirmo", preferências de aviso (6) | Todos menos observador |
-| `/instituicao/agenda` | Calendário, presenças, repetição, lembretes (7) | Todos menos observador |
-| `/instituicao/ficheiros` | Ficheiros com visibilidade, quota e verificação (8) | Todos menos observador |
+| `/instituicao/avisos` | Avisos, "li e confirmo", preferências de aviso (6) | Todos |
+| `/instituicao/agenda` | Calendário, presenças, repetição, lembretes (7) | Todos |
+| `/instituicao/ficheiros` | Ficheiros com visibilidade, quota e verificação (8) | Todos |
 | `/instituicao/consentimentos` | Família decide por finalidade; administração vê o registo (9) | Família, administrador |
-| `/instituicao/relatorios` | Relatório básico agregado (10) | Administrador, coordenador, observador |
+| `/instituicao/relatorios` | Relatório básico agregado (10) | Administrador, coordenador |
 | `/instituicao/auditoria` | Registo de ações sensíveis (11) | Administrador |
 | `/instituicao/dados` | Pedidos de exportação e eliminação (12) | Administrador, família |
 | `/instituicao/definicoes` | Aprovação por código, canais de aviso, quotas (leitura) | Administrador |
@@ -87,7 +87,6 @@ As regras estão em `api.ts` e cobertas por testes:
 
 - Nenhum dado de uma instituição é visível a outra; instituição suspensa ou encerrada bloqueia o acesso sem apagar dados.
 - A instituição tem sempre pelo menos um administrador (mudar papel ou remover é recusado).
-- Observadores nunca recebem dados pessoais (membros, alunos).
 - Educadores só vêem e convidam para os seus grupos, e só convidam famílias e alunos; só a administração escreve para
   toda a instituição.
 - Convites expiram (14 dias por omissão), podem ser cancelados e os códigos têm um máximo de utilizações; com
@@ -114,18 +113,19 @@ famílias, conforme o público), válidos até ao fim do ano letivo, com botão 
 
 | Rota | O quê | Quem vê |
 |---|---|---|
-| `/instituicao/turmas` | As Turmas LGA; abrir turma | Todos menos observador (cada um vê as suas) |
+| `/instituicao/turmas` | As Turmas LGA; abrir turma | Todos (cada um vê as suas) |
 | `/instituicao/turmas/[id]` | Separadores: Aulas, Respostas, Progresso, Comunidade, Classificação, Pessoas e códigos | Membros da turma; administração e coordenação |
 | `/instituicao/turmas/[id]/aulas/[aulaId]` | Vídeo sinalizado, gestos da aula, recursos, conteúdo atribuído; gravar e corrigir respostas | Membros da turma |
-| `/instituicao/gestuario` | Gestos por tema e variante regional; propor e validar | Todos menos observador |
-| `/instituicao/praticar` | Exercícios por competência, mestria, desafios | Alunos, famílias, educadores, formadores, coordenação, administração |
+| `/instituicao/gestuario` | Gestos por tema e variante regional; propor e validar | Todos |
+| `/instituicao/praticar` | Exercícios por competência, mestria, desafios | Alunos, famílias, educadores, coordenação, administração |
 | `/instituicao/conteudos`, `/instituicao/conteudos/[id]` | Cursos e vídeos publicados só para a escola ou uma turma; propor ao catálogo público | Membros (conforme o âmbito) |
 
-Papel novo: **Formador de LGA** (de preferência surdo) — ensina nas turmas, corrige respostas e valida gestos.
+Quem ensina LGA é o **Educador** (de preferência surdo): ensina nas turmas, corrige respostas e valida gestos. (Os papéis
+"Formador de LGA" e "Observador" foram removidos: as funcionalidades passaram para o Educador e para a Administração.)
 
 ### Regras do ensino de LGA (cobertas por `lga.test.ts`)
 
-- **Aulas:** só quem ensina na turma (educador ou formador membro dela) ou a administração publica. Uma aula
+- **Aulas:** só quem ensina na turma (educador membro dela) ou a administração publica. Uma aula
   sinalizada exige o vídeo; uma atribuição exige o curso ou vídeo (da escola ou do catálogo público).
 - **Respostas em vídeo:** só as vêem quem ensina na turma, o próprio aluno e a sua família — **não** a administração
   nem a coordenação. Enviar exige o consentimento novo **"Respostas em vídeo nas aulas de LGA"** (texto versão
@@ -165,7 +165,7 @@ devem entrar na carteira única do aluno.
 |---|---|---|
 | Equipa EYK (`isStaff`) | Cria as escolas e instituições; o responsável recebe o convite de administrador. Ativa, suspende, ajusta quotas. Aprova o que as escolas querem publicar na plataforma geral | Administração → Escolas e instituições |
 | Administração da escola | Abre Turmas LGA e põe nelas os professores que lecionam e os alunos (Turma → Pessoas e códigos → Adicionar à turma), ou entrega os códigos | A minha escola → Turmas LGA |
-| Educador / formador | Publica cursos e vídeos para as suas turmas ou para toda a escola, sem aprovação; se quiser, marca "Publicar também na plataforma geral" (aprovado pela equipa EYK) | A minha escola → Cursos e vídeos da escola |
+| Educador | Publica cursos e vídeos para as suas turmas ou para toda a escola, sem aprovação; se quiser, marca "Publicar também na plataforma geral" (aprovado pela equipa EYK) | A minha escola → Cursos e vídeos da escola |
 | Aluno de uma escola | Vê só o que a escola publicou. Pode escolher "Ver também a plataforma geral" a qualquer momento (barra no topo de Início, Cursos, Vídeos, Comunidade e Leaderboard) | — |
 
 A escolha do aluno é por pessoa e fica guardada; os outros papéis vêem sempre a plataforma geral. Se a escola desligou a
@@ -181,10 +181,8 @@ barra lateral e o menu de baixo mostram as funcionalidades do papel atual (`lib/
 | Aluno | As minhas turmas, Praticar LGA, Gestuário, Avisos, Agenda, Ficheiros | Início, Turmas, Praticar, Comunidade |
 | Família | As minhas crianças, Turmas LGA, Praticar, Avisos, Agenda, Consentimentos, Os meus dados | Início, Crianças, Avisos, Agenda |
 | Educador | As minhas turmas, Respostas por rever, Cursos e vídeos da escola, Gestuário, Alunos, Avisos, Agenda, Ficheiros, Convites | Início, Turmas, Respostas, Conteúdos |
-| Formador | As minhas turmas, Respostas por rever, Gestuário (validar), Cursos e vídeos, Avisos, Agenda | Início, Turmas, Respostas, Conteúdos |
 | Coordenação | Turmas LGA, Gestuário (validar), Relatórios, Alunos, Membros, Avisos, Agenda | Início, Turmas, Gestuário, Relatórios |
 | Administração da escola | Painel da escola, Turmas LGA, Membros, Convites, Cursos e vídeos, Avisos, Relatórios, Definições | Início, Escola, Turmas, Membros |
-| Observador | Relatórios | Início, Relatórios, Cursos, Comunidade |
 | Sem escola | "Entrar numa escola" (código) | Início, Cursos, Vídeos, Comunidade (como antes) |
 
 O que não cabe nas abas fica no painel "Mais", agrupado em "escola", "Plataforma EYK" e o resto. Os números ao lado

@@ -38,7 +38,7 @@ export default function GrupoPage() {
 
   const { grupo } = dados;
   const noGrupo = dados.membros.filter((m) => m.estado === "ativo" && m.gruposIds.includes(grupo.id));
-  const foraDoGrupo = dados.membros.filter((m) => m.estado === "ativo" && !m.gruposIds.includes(grupo.id) && m.papel !== "observador");
+  const foraDoGrupo = dados.membros.filter((m) => m.estado === "ativo" && !m.gruposIds.includes(grupo.id));
   const criancas = dados.alunos.filter((a) => a.grupoId === grupo.id);
 
   const mudar = async (membroId: string, dentro: boolean) => {

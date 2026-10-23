@@ -7,7 +7,6 @@ import type { Grupo, Membro } from "./tipos";
 const ANA = 1001; // administradora na inst-1, educadora na inst-2
 const PAULO = 1002; // coordenador
 const MARIA = 1003; // educadora (g-1, g-3)
-const OBSERVADOR = 1005;
 const ROSA = 1008; // família, tutora de Kiesse (a-1)
 const GASPAR = 1023; // administrador da inst-4 (suspensa)
 
@@ -23,7 +22,10 @@ describe("permissões", () => {
     expect(pode("educador", "publicar_avisos")).toBe(true);
     expect(pode("familia", "publicar_avisos")).toBe(false);
     expect(pode("coordenador", "ver_relatorios")).toBe(true);
-    expect(pode("observador", "ver_avisos")).toBe(false);
+    // As funcionalidades do antigo observador (relatórios) ficaram na administração.
+    expect(pode("administrador", "ver_relatorios")).toBe(true);
+    // As do antigo formador (validar gestos) ficaram no educador.
+    expect(pode("educador", "validar_gestos")).toBe(true);
     expect(pode(null, "ver_painel")).toBe(false);
   });
 
@@ -81,12 +83,6 @@ describe("espaço da instituição e papéis", () => {
       return api.listarAuditoria("inst-1");
     })();
     expect(registos[0].acao).toBe("papel_alterado");
-  });
-
-  it("observadores nunca vêem dados pessoais", async () => {
-    definirPessoaDemo(OBSERVADOR);
-    await expect(api.listarMembros("inst-1")).rejects.toThrow(/dados pessoais/);
-    expect(await api.listarAlunos("inst-1")).toEqual([]);
   });
 });
 

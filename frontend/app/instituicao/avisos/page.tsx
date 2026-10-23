@@ -127,7 +127,7 @@ export default function AvisosPage() {
             await recarregar();
           }}
           grupos={dados.grupos.filter((g) => !g.arquivado)}
-          membros={dados.membros.filter((m) => m.estado === "ativo" && m.id !== eu && m.papel !== "observador")}
+          membros={dados.membros.filter((m) => m.estado === "ativo" && m.id !== eu)}
           ficheiros={dados.ficheiros.filter((f) => f.estado === "disponivel")}
         />
       )}

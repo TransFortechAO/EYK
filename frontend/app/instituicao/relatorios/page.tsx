@@ -169,7 +169,7 @@ export default function RelatoriosPage() {
             </Tabela>
           </Card>
 
-          {papel !== "observador" && (
+          {papel === "administrador" && (
             <Card className="flex items-center justify-between gap-4 p-5 shadow-soft">
               <div>
                 <label htmlFor="resumo-email" className="flex items-center gap-2 text-sm font-medium">

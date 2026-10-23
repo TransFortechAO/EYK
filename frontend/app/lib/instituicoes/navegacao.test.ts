@@ -18,7 +18,7 @@ describe("navegação por papel", () => {
     expect(urls(navegacaoEscola("administrador", nada))).toEqual(expect.arrayContaining(["/instituicao/membros", "/instituicao/definicoes"]));
     // A administração não corrige as respostas em vídeo das crianças.
     expect(urls(navegacaoEscola("administrador", nada))).not.toContain("/instituicao/respostas");
-    expect(urls(navegacaoEscola("observador", nada))).toEqual(["/instituicao/relatorios"]);
+    expect(urls(navegacaoEscola("administrador", nada))).toContain("/instituicao/relatorios");
   });
 
   it("os contadores aparecem só onde há algo por ver", () => {
@@ -37,7 +37,7 @@ describe("navegação por papel", () => {
     }
     expect(urls(abasTelemovel(null, nada))).toEqual(["/inicio", "/cursos", "/videos", "/comunidade"]);
     expect(urls(abasTelemovel("aluno", nada))).toEqual(["/inicio", "/instituicao/turmas", "/instituicao/praticar", "/comunidade"]);
-    expect(abasTelemovel("formador", { ...nada, porRever: 4 }).find((a) => a.url === "/instituicao/respostas")?.contador).toBe(4);
+    expect(abasTelemovel("educador", { ...nada, porRever: 4 }).find((a) => a.url === "/instituicao/respostas")?.contador).toBe(4);
   });
 
   it("o que está no menu de cada papel não se repete nos separadores da página da escola", () => {

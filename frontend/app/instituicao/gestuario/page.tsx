@@ -52,7 +52,7 @@ export default function GestuarioPage() {
           <div>
             <h2 className="font-serif text-2xl font-semibold">Gestuário</h2>
             <p className="text-sm text-muted-foreground">
-              Os gestos da LGA em vídeo, por tema e com as variantes de cada província. Cada gesto é validado por um formador surdo ou
+              Os gestos da LGA em vídeo, por tema e com as variantes de cada província. Cada gesto é validado por um educador (de preferência surdo) ou
               pela coordenação antes de ficar visível a todos — e passa a servir também a Biblioteca LGA.
             </p>
           </div>
@@ -181,7 +181,7 @@ function ProporGesto({ aberto, aoFechar, aoPropor }: { aberto: boolean; aoFechar
         <DialogHeader>
           <div>
             <DialogTitle>Propor um gesto</DialogTitle>
-            <DialogDescription>Outra pessoa (formador surdo ou coordenação) valida antes de ficar visível a todos.</DialogDescription>
+            <DialogDescription>Outra pessoa (um educador, de preferência surdo, ou a coordenação) valida antes de ficar visível a todos.</DialogDescription>
           </div>
         </DialogHeader>
         <form onSubmit={submeter} className="flex min-h-0 flex-col">

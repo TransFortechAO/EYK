@@ -67,15 +67,11 @@ export function navegacaoEscola(papel: Papel, c: Contadores): ItemNav[] {
     case "familia":
       return [I.criancas, I.turmas, I.praticar, comContador(I.avisos, c.avisosPorLer), I.agenda, I.consentimentos, I.dados];
     case "educador":
-      return [I.minhasTurmas, comContador(I.respostas, c.porRever), I.conteudos, I.gestuario, I.alunos, comContador(I.avisos, c.avisosPorLer), I.agenda, I.ficheiros, I.convites];
-    case "formador":
-      return [I.minhasTurmas, comContador(I.respostas, c.porRever), { ...I.gestuario, titulo: "Gestuário (validar)" }, I.conteudos, comContador(I.avisos, c.avisosPorLer), I.agenda];
+      return [I.minhasTurmas, comContador(I.respostas, c.porRever), I.conteudos, { ...I.gestuario, titulo: "Gestuário (validar)" }, I.alunos, comContador(I.avisos, c.avisosPorLer), I.agenda, I.ficheiros, I.convites];
     case "coordenador":
       return [I.turmas, { ...I.gestuario, titulo: "Gestuário (validar)" }, I.relatorios, I.alunos, I.membros, comContador(I.avisos, c.avisosPorLer), I.agenda];
     case "administrador":
       return [I.painel, I.turmas, I.membros, I.convites, I.conteudos, comContador(I.avisos, c.avisosPorLer), I.relatorios, I.definicoes];
-    case "observador":
-      return [I.relatorios];
   }
 }
 
@@ -92,14 +88,11 @@ export function abasTelemovel(papel: Papel | null, c: Contadores): ItemNav[] {
     case "familia":
       return [inicio, { ...I.criancas, titulo: "Crianças" }, com(I.avisos, c.avisosPorLer), I.agenda];
     case "educador":
-    case "formador":
       return [inicio, { ...I.minhasTurmas, titulo: "Turmas" }, com({ ...I.respostas, titulo: "Respostas" }, c.porRever), { ...I.conteudos, titulo: "Conteúdos" }];
     case "coordenador":
       return [inicio, { ...I.turmas, titulo: "Turmas" }, I.gestuario, I.relatorios];
     case "administrador":
       return [inicio, { ...I.painel, titulo: "Escola" }, { ...I.turmas, titulo: "Turmas" }, { ...I.membros, titulo: "Membros" }];
-    case "observador":
-      return [inicio, I.relatorios, cursos, comunidade];
     default:
       return [inicio, cursos, videos, comunidade];
   }

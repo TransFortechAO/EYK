@@ -52,7 +52,7 @@ export type Acao =
   | "moderar_turma"
   | "criar_desafios";
 
-/** O que quem ensina LGA (educador ou formador) pode fazer nas suas turmas. */
+/** O que quem ensina LGA (o educador) pode fazer nas suas turmas. */
 const ENSINAR_LGA: Acao[] = [
   "ver_turmas_lga",
   "gerir_turmas_lga",
@@ -110,29 +110,16 @@ const PERMISSOES: Record<Papel, readonly Acao[]> = {
     "carregar_ficheiros",
     "ver_ficheiros",
     ...ENSINAR_LGA,
-  ],
-  // Formador de LGA (de preferência surdo): ensina nas turmas e valida os gestos do gestuário.
-  formador: [
-    "ver_painel",
-    "convidar",
-    "publicar_avisos",
-    "ver_avisos",
-    "criar_eventos",
-    "ver_agenda",
-    "carregar_ficheiros",
-    "ver_ficheiros",
-    ...ENSINAR_LGA,
+    // Valida os gestos do gestuário (propostos por outra pessoa).
     "validar_gestos",
   ],
   familia: ["ver_painel", "ver_avisos", "ver_agenda", "ver_ficheiros", "dar_consentimento", "pedir_dados", "ver_turmas_lga", "praticar"],
   aluno: ["ver_painel", "ver_avisos", "ver_agenda", "ver_ficheiros", "ver_turmas_lga", "responder_aulas", "praticar", "publicar_na_turma"],
-  // Observadores só vêem painéis agregados e anonimizados.
-  observador: ["ver_painel", "ver_relatorios"],
 };
 
 /** Quem ensina numa turma (vê as respostas em vídeo dos alunos dessa turma). */
 export function ensina(papel: Papel | null | undefined): boolean {
-  return papel === "educador" || papel === "formador";
+  return papel === "educador";
 }
 
 export function pode(papel: Papel | null | undefined, acao: Acao): boolean {
@@ -140,9 +127,9 @@ export function pode(papel: Papel | null | undefined, acao: Acao): boolean {
   return PERMISSOES[papel].includes(acao);
 }
 
-/** Observadores nunca vêem dados pessoais (nomes, emails, fotografias). */
+/** Todos os papéis com pertença vêem dados pessoais (cada um dentro do que o seu papel permite). */
 export function vePessoais(papel: Papel | null | undefined): boolean {
-  return !!papel && papel !== "observador";
+  return !!papel;
 }
 
 /**
@@ -156,7 +143,7 @@ export function gruposVisiveis(grupos: Grupo[], membro: Pick<Membro, "papel" | "
 
 /** Um membro é destinatário de um aviso, evento ou ficheiro? */
 export function eDestinatario(dest: Destinatarios, membro: Pick<Membro, "id" | "papel" | "gruposIds">): boolean {
-  if (pode(membro.papel, "ver_todos_grupos") && membro.papel !== "observador") return true;
+  if (pode(membro.papel, "ver_todos_grupos")) return true;
   if (dest.tipo === "instituicao") return true;
   if (dest.tipo === "grupo") return membro.gruposIds.includes(dest.grupoId);
   return dest.membroId === membro.id;
@@ -185,20 +172,16 @@ export const ROTULO_PAPEL: Record<Papel, string> = {
   administrador: "Administrador",
   coordenador: "Coordenador",
   educador: "Educador",
-  formador: "Formador de LGA",
   familia: "Família ou tutor",
   aluno: "Aluno",
-  observador: "Observador",
 };
 
 export const DESCRICAO_PAPEL: Record<Papel, string> = {
-  administrador: "Gere membros, turmas, definições e relatórios; convida e remove pessoas.",
+  administrador: "Gere membros, turmas, definições e relatórios (incluindo os indicadores agregados); convida e remove pessoas.",
   coordenador: "Vê os relatórios das turmas e valida os gestos do gestuário.",
-  educador: "Gere as suas turmas; publica aulas, avisos e ficheiros; corrige as respostas em vídeo dos seus alunos.",
-  formador: "Ensina LGA nas turmas, corrige as respostas em vídeo e valida os gestos do gestuário.",
+  educador: "Gere as suas turmas; publica aulas, avisos e ficheiros; corrige as respostas em vídeo dos seus alunos e valida os gestos do gestuário.",
   familia: "Vê conteúdos e avisos; vê apenas o que diz respeito à sua criança.",
   aluno: "Acede aos conteúdos adequados.",
-  observador: "Vê apenas painéis agregados e anonimizados.",
 };
 
 export const ROTULO_TIPO_INSTITUICAO: Record<TipoInstituicao, string> = {
@@ -225,7 +208,7 @@ export const ROTULO_TIPO_GRUPO: Record<TipoGrupo, string> = {
   outro: "Outro",
 };
 
-export const PAPEIS: Papel[] = ["administrador", "coordenador", "educador", "formador", "familia", "aluno", "observador"];
+export const PAPEIS: Papel[] = ["administrador", "coordenador", "educador", "familia", "aluno"];
 
 export const ROTULO_PUBLICO_LGA: Record<PublicoTurmaLga, string> = {
   surdos_l1: "Alunos surdos (LGA como primeira língua)",

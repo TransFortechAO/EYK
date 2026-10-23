@@ -61,7 +61,7 @@ export default function BibliotecaPage() {
         />
       )}
 
-      {/* Gestos validados por formadores surdos nas escolas parceiras (com variantes regionais). */}
+      {/* Gestos validados nas escolas parceiras (com variantes regionais). */}
       <GestosValidadosBiblioteca pesquisa={q} />
     </div>
   );

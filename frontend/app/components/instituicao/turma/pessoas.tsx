@@ -109,7 +109,7 @@ function AdicionarATurma({ turmaId, jaNaTurma, aoMudar }: { turmaId: string; jaN
   useEffect(() => {
     void apiInstituicoes
       .listarMembros(instituicaoId)
-      .then((m) => setMembros(m.filter((x) => x.estado === "ativo" && x.papel !== "observador")))
+      .then((m) => setMembros(m.filter((x) => x.estado === "ativo")))
       .catch(() => setMembros([]));
   }, [instituicaoId]);
 
@@ -126,7 +126,7 @@ function AdicionarATurma({ turmaId, jaNaTurma, aoMudar }: { turmaId: string; jaN
       <p className="flex items-center gap-2 font-medium">
         <UserPlus className="h-4 w-4 text-primary" aria-hidden /> Adicionar à turma
       </p>
-      <p className="text-xs text-muted-foreground">Escolhe quem leciona (educadores e formadores) ou quem aprende. Para pessoas que ainda não estão na escola, usa os códigos.</p>
+      <p className="text-xs text-muted-foreground">Escolhe quem leciona (educadores) ou quem aprende. Para pessoas que ainda não estão na escola, usa os códigos.</p>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Seletor aria-label="Pessoa a adicionar" value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
           <option value="">Escolhe uma pessoa da escola…</option>

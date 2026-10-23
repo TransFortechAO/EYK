@@ -49,7 +49,7 @@ export const VALIDADE_CONVITE_DIAS = 14;
 export const DEFINICAO_ATIVO = "Pelo menos um acesso nos últimos 30 dias.";
 
 const DIA = 24 * 60 * 60 * 1000;
-const CHAVE_LOCAL = "eyk-instituicoes-demo-v2";
+const CHAVE_LOCAL = "eyk-instituicoes-demo-v3";
 const ATRASO_MS = 120;
 
 export class ErroInstituicao extends Error {}
@@ -166,7 +166,6 @@ function destinatariosDe(instituicaoId: string, d: Destinatarios): Membro[] {
     (m) =>
       m.instituicaoId === instituicaoId &&
       m.estado === "ativo" &&
-      m.papel !== "observador" &&
       (d.tipo === "instituicao" || (d.tipo === "grupo" ? m.gruposIds.includes(d.grupoId) : m.id === d.membroId)),
   );
 }
@@ -197,11 +196,10 @@ export const PESSOAS_DEMO: PessoaDemo[] = [
   { utilizadorId: 1001, nome: "Ana Domingos", descricao: "Administradora na Escola 123 · educadora na Associação" },
   { utilizadorId: 1002, nome: "Paulo Neto", descricao: "Coordenador" },
   { utilizadorId: 1003, nome: "Maria Kiala", descricao: "Educadora — turmas LGA da 3.ª A, famílias e professores" },
-  { utilizadorId: 1030, nome: "Domingos Sapalo", descricao: "Formador de LGA (surdo) — valida o gestuário" },
+  { utilizadorId: 1030, nome: "Domingos Sapalo", descricao: "Educador surdo — ensina LGA e valida o gestuário" },
   { utilizadorId: 1008, nome: "Rosa Lopes", descricao: "Família — tutora de Kiesse" },
   { utilizadorId: 1006, nome: "Kiesse Lopes", descricao: "Aluno da Turma LGA da 3.ª A" },
   { utilizadorId: 1105, nome: "Wezo Sebastião", descricao: "Aluno sem consentimento para respostas em vídeo" },
-  { utilizadorId: 1005, nome: "Direção Provincial de Educação", descricao: "Observador" },
 ];
 
 const CHAVE_PESSOA = "eyk-instituicoes-pessoa-demo";
@@ -301,7 +299,7 @@ export const apiInstituicoes = {
     const todos = carregar().membros.filter((x) => x.instituicaoId === instituicaoId && x.estado !== "removido");
     if (pode(m.papel, "gerir_membros") || pode(m.papel, "ver_todos_grupos")) return todos;
     // Educadores: só quem partilha grupos com eles.
-    if (m.papel === "educador" || m.papel === "formador") return todos.filter((x) => x.id === m.id || x.gruposIds.some((g) => m.gruposIds.includes(g)));
+    if (m.papel === "educador") return todos.filter((x) => x.id === m.id || x.gruposIds.some((g) => m.gruposIds.includes(g)));
     return [m];
   },
 

@@ -35,7 +35,7 @@ export type DefinicoesEscolares = {
 };
 
 // ── 2. Papéis ──
-export type Papel = "administrador" | "coordenador" | "educador" | "formador" | "familia" | "aluno" | "observador";
+export type Papel = "administrador" | "coordenador" | "educador" | "familia" | "aluno";
 
 export type Membro = {
   id: string;

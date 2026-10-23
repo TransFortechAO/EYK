@@ -213,7 +213,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
   membro("inst-1", "Paulo Neto", "coordenador", []);
   membro("inst-1", "Maria Kiala", "educador", ["g-1", "g-3"]);
   membro("inst-1", "João Mateus", "educador", ["g-2"]);
-  membro("inst-1", "Direção Provincial de Educação", "observador", [], { email: "observador@gov.exemplo.ao" });
+  n += 1; // m-5 fica reservado (era o antigo papel de observador): mantém os ids seguintes estáveis.
   membro("inst-1", "Kiesse Lopes", "aluno", ["g-1"]);
   membro("inst-1", "Isabel Cardoso", "educador", ["g-1"], { estado: "pendente", ultimoAcesso: null });
 

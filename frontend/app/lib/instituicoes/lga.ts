@@ -53,7 +53,7 @@ function acedeTurma(m: Membro, turmaId: string): boolean {
   return m.gruposIds.includes(turmaId) || pode(m.papel, "ver_todos_grupos");
 }
 
-/** Ensina nesta turma: educador ou formador que é membro dela. */
+/** Ensina nesta turma: educador que é membro dela. */
 function ensinaNaTurma(m: Membro, turmaId: string): boolean {
   return ensina(m.papel) && m.gruposIds.includes(turmaId);
 }
@@ -177,7 +177,7 @@ export const apiLga = {
     const convite = (id: string | null) => (podeCodigos && id ? e.convites.find((c) => c.id === id) ?? null : null);
     return {
       turma,
-      professores: membros.filter((x) => (ensina(x.papel) || x.papel === "formador") && !ids.has(x.id)),
+      professores: membros.filter((x) => ensina(x.papel) && !ids.has(x.id)),
       aprendizes: m.papel === "aluno" || m.papel === "familia" ? [] : lista,
       familias: m.papel === "aluno" ? [] : membros.filter((x) => x.papel === "familia" && !ids.has(x.id)),
       codigos: { alunos: convite(turma.lga.conviteAlunosId), familias: convite(turma.lga.conviteFamiliasId) },

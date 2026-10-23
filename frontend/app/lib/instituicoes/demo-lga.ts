@@ -3,7 +3,7 @@
 // turma e desafios. Determinísticos (sem Math.random).
 //
 // Recebe as listas base (membros, perfis de alunos, convites, grupos) e
-// acrescenta-lhes o que as turmas precisam: um formador, contas de aluno
+// acrescenta-lhes o que as turmas precisam: um educador surdo, contas de aluno
 // ligadas aos perfis das crianças, os grupos das turmas e os seus códigos.
 import { lgaAlphabet, lgaWords, type LgaWord } from "@/lib/lga-data";
 import type {
@@ -70,14 +70,14 @@ export function criarDemoLga(
   const fimAno = fimAnoLetivo(agora);
   const membro = (id: string) => membros.find((m) => m.id === id)!;
 
-  // ── Pessoas: um formador de LGA e contas de aluno ligadas aos perfis ──
+  // ── Pessoas: um educador surdo (ensina LGA e valida o gestuário) e contas de aluno ligadas aos perfis ──
   membros.push({
     id: "m-f1",
     instituicaoId: "inst-1",
     utilizadorId: 1030,
     nome: "Domingos Sapalo",
     email: "domingos.sapalo@exemplo.ao",
-    papel: "formador",
+    papel: "educador",
     estado: "ativo",
     desde: iso(agora - 40 * DIA),
     ultimoAcesso: iso(agora - 3 * 60 * 60 * 1000),
@@ -188,7 +188,7 @@ export function criarDemoLga(
     m.gruposIds = Array.from(new Set([...m.gruposIds, ...ids]));
   };
   juntar("m-3", "g-lga1", "g-lga2", "g-lga3"); // Maria Kiala, educadora
-  juntar("m-f1", "g-lga1", "g-lga2", "g-lga3"); // Domingos Sapalo, formador
+  juntar("m-f1", "g-lga1", "g-lga2", "g-lga3"); // Domingos Sapalo, educador surdo
   juntar("m-4", "g-lga3"); // João Mateus em formação
   for (const id of contasAlunos) juntar(id, "g-lga1");
   for (const id of tutoresTurma) juntar(id, "g-lga1", "g-lga2");
@@ -204,7 +204,7 @@ export function criarDemoLga(
       instituicaoId: null,
       propostoPor: "Equipa EYK",
       propostoEm: iso(agora - 90 * DIA),
-      validacao: { por: "Domingos Sapalo (formador surdo)", em: iso(agora - 85 * DIA), nota: "" },
+      validacao: { por: "Domingos Sapalo (educador surdo)", em: iso(agora - 85 * DIA), nota: "" },
       ...g,
     });
   };

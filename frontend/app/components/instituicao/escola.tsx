@@ -443,7 +443,7 @@ function ComunidadeComEscolaInterno({ children }: { children: ReactNode }) {
         </p>
       )}
       {turma ? (
-        <SeparadorComunidade turmaId={turma.id} ensino={["educador", "formador"].includes(atual.membro.papel) && atual.membro.gruposIds.includes(turma.id)} />
+        <SeparadorComunidade turmaId={turma.id} ensino={atual.membro.papel === "educador" && atual.membro.gruposIds.includes(turma.id)} />
       ) : (
         children
       )}
@@ -567,7 +567,7 @@ export function GestosValidadosBiblioteca({ pesquisa }: { pesquisa: string }) {
           <BadgeCheck className="h-5 w-5 text-primary" aria-hidden /> Gestuário validado
         </h2>
         <p className="text-sm text-muted-foreground">
-          Números, frases e contributos das escolas parceiras, validados por formadores surdos. Inclui variantes regionais.
+          Números, frases e contributos das escolas parceiras, validados por educadores surdos e pela coordenação. Inclui variantes regionais.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

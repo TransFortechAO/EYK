@@ -241,7 +241,7 @@ function NovoConvite({
   const { instituicaoId, pode } = useInstituicaoAtual();
   const podeTodos = pode("gerir_membros");
   const papeisPossiveis: Papel[] = podeTodos
-    ? ["familia", "aluno", "educador", "formador", "coordenador", "administrador", "observador"]
+    ? ["familia", "aluno", "educador", "coordenador", "administrador"]
     : ["familia", "aluno"];
   const [canal, setCanal] = useState<CanalConvite>("codigo");
   const [destino, setDestino] = useState("");

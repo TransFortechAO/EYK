@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BarChart3, Baby, CalendarDays, HardDrive, Megaphone, Ticket, UserCheck, Users, UsersRound } from "lucide-react";
+import { ArrowRight, Baby, CalendarDays, HardDrive, Megaphone, Ticket, UserCheck, Users, UsersRound } from "lucide-react";
 import { SectionHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { Barra, Carregando, dataHora, diaLuanda, ErroCarregar, Etiqueta, FUSO, haQuanto, tamanho, useCarregar } from "@/components/instituicao/ui";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
@@ -28,26 +27,6 @@ export default function PainelInstituicaoPage() {
 
   if (aCarregar && !dados) return <Carregando />;
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
-
-  if (papel === "observador") {
-    return (
-      <Card className="flex flex-col items-start gap-3 p-6 shadow-soft">
-        <BarChart3 className="h-6 w-6 text-primary" aria-hidden />
-        <div>
-          <p className="font-serif text-lg font-semibold">Acompanhamento agregado</p>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Como observador, vês apenas indicadores agregados e anonimizados de {atual.instituicao.nome}: nenhum nome,
-            fotografia ou dado pessoal.
-          </p>
-        </div>
-        <Button asChild className="gap-1.5">
-          <Link href="/instituicao/relatorios">
-            Ver relatório de utilização <ArrowRight className="h-4 w-4" />
-          </Link>
-        </Button>
-      </Card>
-    );
-  }
 
   const agora = Date.now();
   const proximos = dados.eventos.filter((e) => !e.cancelado && new Date(e.inicio).getTime() >= agora).slice(0, 4);
