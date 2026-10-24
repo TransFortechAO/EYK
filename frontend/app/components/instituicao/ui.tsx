@@ -261,6 +261,36 @@ export function Etiqueta({ tom = "neutro", children }: { tom?: "neutro" | "suces
   return <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium", tons[tom])}>{children}</span>;
 }
 
+/**
+ * O link do convite (o que segue por email/SMS): quem o abre, com sessão
+ * iniciada, fica membro da escola com esta conta.
+ */
+export function LinkConvite({ codigo }: { codigo: string }) {
+  const [copiado, setCopiado] = useState(false);
+  const link = typeof window === "undefined" ? `/instituicao/aderir?codigo=${codigo}` : `${window.location.origin}/instituicao/aderir?codigo=${codigo}`;
+  return (
+    <div className="flex items-center gap-2 rounded-lg bg-surface p-2 text-left">
+      <code className="min-w-0 flex-1 truncate text-xs">{link}</code>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(link);
+            setCopiado(true);
+            setTimeout(() => setCopiado(false), 1500);
+          } catch {
+            /* o link está visível */
+          }
+        }}
+      >
+        {copiado ? "Copiado" : "Copiar link"}
+      </Button>
+    </div>
+  );
+}
+
 /** Barra simples de proporção (armazenamento, leituras). */
 export function Barra({ valor, max, rotulo }: { valor: number; max: number; rotulo: string }) {
   const pct = max > 0 ? Math.min(100, Math.round((valor / max) * 100)) : 0;

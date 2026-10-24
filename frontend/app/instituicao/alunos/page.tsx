@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState } from "@/components/eyk";
 import { useConfirm } from "@/components/confirm-dialog";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
-import { acao, Campo, Carregando, celula, ErroCarregar, erroTexto, Etiqueta, haQuanto, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
+import { acao, Campo, Carregando, celula, ErroCarregar, erroTexto, Etiqueta, haQuanto, LinkConvite, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
 import { apiInstituicoes as api, consentimentosAtuais } from "@/lib/instituicoes/api";
 import type { CanalConvite, Convite, Grupo, PerfilAluno } from "@/lib/instituicoes/tipos";
 
@@ -310,6 +310,7 @@ function ConvidarTutor({ aluno, aoFechar }: { aluno: PerfilAluno | null; aoFecha
         {criado ? (
           <div className="space-y-4 p-5 text-center">
             <p className="font-mono text-4xl font-bold tracking-[0.3em] text-primary">{criado.codigo}</p>
+            <LinkConvite codigo={criado.codigo} />
             <p className="text-sm text-muted-foreground">
               {criado.canal === "codigo" ? "Entrega este código ao tutor (em papel ou por mensagem)." : `Enviado para ${criado.destino}.`}
             </p>

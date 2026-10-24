@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { apiInstituicoes as api, categoriaDoMime, definirPessoaDemo, LIMITE_ANONIMATO, reporDemo, _interno } from "./api";
+import { apiInstituicoes as api, categoriaDoMime, definirPessoaDemo, LIMITE_ANONIMATO, reporDemo, temPertenca, _interno } from "./api";
 import { deixaSemAdministrador, eDestinatario, gruposVisiveis, pode } from "./permissoes";
 import type { Grupo, Membro } from "./tipos";
 
@@ -83,6 +83,34 @@ describe("espaço da instituição e papéis", () => {
       return api.listarAuditoria("inst-1");
     })();
     expect(registos[0].acao).toBe("papel_alterado");
+  });
+});
+
+describe("contas normais e contas registadas pela escola", () => {
+  const CONTA_NORMAL = 7; // aluno ou professor que se registou na plataforma
+
+  it("uma conta criada de forma normal não pertence a nenhuma escola", () => {
+    expect(temPertenca(CONTA_NORMAL)).toBe(false);
+    expect(temPertenca(MARIA)).toBe(true); // registada pela escola (demonstração)
+  });
+
+  it("quem abre o link do convite fica na escola com a sua própria conta", async () => {
+    const c = await api.criarConvite("inst-1", { canal: "email", destino: "aluna@exemplo.ao", papel: "aluno", grupoId: "g-1", alunoId: null, usosMax: 1 });
+    definirPessoaDemo(ROSA); // a pessoa da pré-visualização não conta: conta é a que tem sessão
+    const r = await api.aderir(c.codigo, { nome: "Aluna Nova", email: "aluna@exemplo.ao", utilizadorId: CONTA_NORMAL });
+    expect(r.resultado).toBe("membro");
+    expect(temPertenca(CONTA_NORMAL)).toBe(true);
+    definirPessoaDemo(CONTA_NORMAL);
+    expect((await api.minhasPertencas()).map((p) => [p.instituicao.id, p.membro.papel])).toEqual([["inst-1", "aluno"]]);
+  });
+
+  it("com aprovação, a conta que pediu é a que fica membro quando aprovada", async () => {
+    await api.aderir("TURMA3A", { nome: "Pai Novo", email: "pai@exemplo.ao", utilizadorId: CONTA_NORMAL + 1 });
+    expect(temPertenca(CONTA_NORMAL + 1)).toBe(false);
+    definirPessoaDemo(ANA);
+    const pedido = (await api.listarPedidosAdesao("inst-1")).find((p) => p.nome === "Pai Novo")!;
+    await api.decidirPedido("inst-1", pedido.id, true);
+    expect(temPertenca(CONTA_NORMAL + 1)).toBe(true);
   });
 });
 

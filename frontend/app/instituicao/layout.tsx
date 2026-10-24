@@ -76,42 +76,45 @@ function ativo(pathname: string, url: string) {
 }
 
 function FaixaDemo() {
-  const { pessoa, mudarPessoa, reporDados } = useInstituicao();
+  const { pessoa, mudarPessoa, reporDados, podeVerComo } = useInstituicao();
   const { user } = useAuth();
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <p className="flex items-start gap-2 text-muted-foreground">
         <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-        {user?.isStaff ? (
+        {podeVerComo ? (
           <span>
-            <span className="font-medium text-foreground">Pré-visualização.</span> A tua conta da equipa EYK não pertence a
-            nenhuma escola: aqui vês o espaço como o membro escolhido. O menu continua o da plataforma.{" "}
-            <Link href="/configuracoes/administracao/instituicoes" className="font-medium text-primary hover:underline">
-              Voltar a Escolas e instituições
+            <span className="font-medium text-foreground">Pré-visualização.</span>{" "}
+            {user?.isStaff ? "A tua conta da equipa EYK" : "A tua conta"} não pertence a nenhuma escola: aqui vês o espaço como o
+            membro escolhido, só nesta área. O menu continua o da plataforma.{" "}
+            <Link href={user?.isStaff ? "/configuracoes/administracao/instituicoes" : "/inicio"} className="font-medium text-primary hover:underline">
+              Sair da pré-visualização
             </Link>
           </span>
         ) : (
           <span>
-            <span className="font-medium text-foreground">Demonstração.</span> Os dados são fictícios e ficam só neste
+            <span className="font-medium text-foreground">Demonstração.</span> Os dados da escola são fictícios e ficam só neste
             browser, até a eyk-api estar pronta.
           </span>
         )}
       </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <label htmlFor="ver-como" className="text-xs font-medium text-muted-foreground">
-          Ver como
-        </label>
-        <Seletor id="ver-como" className="h-8 w-auto min-w-52 text-xs" value={pessoa} onChange={(e) => mudarPessoa(Number(e.target.value))}>
-          {PESSOAS_DEMO.map((p) => (
-            <option key={p.utilizadorId} value={p.utilizadorId}>
-              {p.nome} — {p.descricao}
-            </option>
-          ))}
-        </Seletor>
-        <Button variant="ghost" size="sm" className="gap-1.5" onClick={reporDados} title="Voltar aos dados iniciais">
-          <RotateCcw className="h-3.5 w-3.5" /> Repor
-        </Button>
-      </div>
+      {podeVerComo && (
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="ver-como" className="text-xs font-medium text-muted-foreground">
+            Ver como
+          </label>
+          <Seletor id="ver-como" className="h-8 w-auto min-w-52 text-xs" value={pessoa} onChange={(e) => mudarPessoa(Number(e.target.value))}>
+            {PESSOAS_DEMO.map((p) => (
+              <option key={p.utilizadorId} value={p.utilizadorId}>
+                {p.nome} — {p.descricao}
+              </option>
+            ))}
+          </Seletor>
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={reporDados} title="Voltar aos dados iniciais">
+            <RotateCcw className="h-3.5 w-3.5" /> Repor
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -249,7 +252,8 @@ export default function InstituicaoLayout({ children }: { children: ReactNode })
   if (!INSTITUICOES_ATIVAS) return null;
 
   // O contexto da escola vem de components/providers.tsx (partilhado com os menus).
-  // A equipa EYK não o tem (não pertence a escolas): aqui monta-se um só para a
+  // Quem não pertence a nenhuma escola (contas normais e equipa EYK) não o tem:
+  // aqui monta-se um só para a
   // pré-visualização, sem mexer na barra lateral nem no menu de baixo.
   if (!global) {
     return (

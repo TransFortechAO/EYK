@@ -89,6 +89,8 @@ export type PedidoAdesao = {
   grupoId: string | null;
   pedidoEm: string;
   estado: "pendente" | "aprovado" | "rejeitado";
+  /** Conta que fez o pedido (fica membro com esta conta quando aprovado). */
+  utilizadorId?: number;
 };
 
 // ── 4. Turmas e grupos ──

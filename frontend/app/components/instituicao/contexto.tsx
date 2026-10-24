@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth-gate";
-import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo } from "@/lib/instituicoes/api";
+import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo, temPertenca } from "@/lib/instituicoes/api";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { apiLga } from "@/lib/instituicoes/lga";
 import { pode as podeFazer, vePessoais, type Acao } from "@/lib/instituicoes/permissoes";
@@ -30,6 +30,8 @@ type EstadoInstituicao = {
   contadores: ContadoresEscola;
   /** Recalcula os números do menu (ex: depois de corrigir uma resposta). */
   atualizarContadores: () => void;
+  /** Pré-visualização ("Ver como"): só quando o contexto não está preso à conta real. */
+  podeVerComo: boolean;
   // Só para a demonstração (sem backend).
   pessoa: number;
   mudarPessoa: (utilizadorId: number) => void;
@@ -60,12 +62,20 @@ function escreverLocal(chave: string, valor: string) {
  * a barra lateral, o menu de baixo, as páginas principais e a área
  * Instituição partilham a mesma instituição atual e o mesmo papel.
  */
-export function InstituicaoProvider({ children }: { children: ReactNode }) {
+export function InstituicaoProvider({ children, identidadeFixa }: { children: ReactNode; identidadeFixa?: number }) {
   const pathname = usePathname();
   const [aCarregar, setACarregar] = useState(true);
   const [pertencas, setPertencas] = useState<Pertenca[]>([]);
   const [atualId, setAtualId] = useState<string | null>(null);
-  const [pessoa, setPessoa] = useState<number>(() => restaurarPessoaDemo());
+  // Com identidade fixa (conta real que pertence a uma escola) não há "Ver como";
+  // sem ela, é a pré-visualização em /instituicao com a pessoa escolhida.
+  const [pessoa, setPessoa] = useState<number>(() => {
+    if (identidadeFixa !== undefined) {
+      definirPessoaDemo(identidadeFixa, false);
+      return identidadeFixa;
+    }
+    return restaurarPessoaDemo();
+  });
   const [verGeral, setVerGeral] = useState(true);
   const [contadores, setContadores] = useState<ContadoresEscola>(SEM_CONTADORES);
   const [versaoContadores, setVersaoContadores] = useState(0);
@@ -124,11 +134,15 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
     escreverLocal(CHAVE_INSTITUICAO, id);
   }, []);
 
-  const mudarPessoa = useCallback((utilizadorId: number) => {
-    definirPessoaDemo(utilizadorId);
-    setAtualId(null);
-    setPessoa(utilizadorId);
-  }, []);
+  const mudarPessoa = useCallback(
+    (utilizadorId: number) => {
+      if (identidadeFixa !== undefined) return;
+      definirPessoaDemo(utilizadorId);
+      setAtualId(null);
+      setPessoa(utilizadorId);
+    },
+    [identidadeFixa],
+  );
 
   const reporDados = useCallback(() => {
     reporDemo();
@@ -160,26 +174,29 @@ export function InstituicaoProvider({ children }: { children: ReactNode }) {
       definirVerGeral,
       contadores,
       atualizarContadores,
+      podeVerComo: identidadeFixa === undefined,
       pessoa,
       mudarPessoa,
       reporDados,
     };
-  }, [aCarregar, pertencas, atual, escolher, recarregar, verGeral, definirVerGeral, contadores, atualizarContadores, pessoa, mudarPessoa, reporDados]);
+  }, [aCarregar, pertencas, atual, escolher, recarregar, verGeral, definirVerGeral, contadores, atualizarContadores, identidadeFixa, pessoa, mudarPessoa, reporDados]);
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
 
 /**
- * Só monta o contexto quando a área Instituição está ativa (senão a app fica
- * exatamente como antes). A equipa EYK (superadmin/staff) não pertence a
- * nenhuma escola: fica sempre com a navegação da plataforma e da
- * Administração. Pode pré-visualizar o espaço de uma escola em /instituicao,
- * que monta o seu próprio contexto só para essa área.
+ * O contexto da escola em toda a app (menus e páginas principais) só existe para
+ * contas que pertencem a uma escola — quem a escola registou e entrou pelo link
+ * do convite (email) ou pelo código. Contas criadas de forma normal (alunos e
+ * professores da plataforma) e a equipa EYK vêem a plataforma pública, sem
+ * funcionalidades de escola. Fica preso à conta com sessão iniciada.
+ * A pré-visualização ("Ver como") existe só dentro de /instituicao.
  */
 export function EscolaGlobal({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  if (!INSTITUICOES_ATIVAS || user?.isStaff) return <>{children}</>;
-  return <InstituicaoProvider>{children}</InstituicaoProvider>;
+  const membro = useMemo(() => !!user && !user.isStaff && INSTITUICOES_ATIVAS && temPertenca(user.id), [user]);
+  if (!membro || !user) return <>{children}</>;
+  return <InstituicaoProvider identidadeFixa={user.id}>{children}</InstituicaoProvider>;
 }
 
 export function useInstituicao(): EstadoInstituicao {

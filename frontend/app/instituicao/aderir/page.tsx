@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth-gate";
-import { useInstituicao } from "@/components/instituicao/contexto";
+import { CHAVE_INSTITUICAO } from "@/components/instituicao/contexto";
 import { Caixa, Campo, erroTexto, EtiquetaPapel } from "@/components/instituicao/ui";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
 import type { FinalidadeConsentimento } from "@/lib/instituicoes/tipos";
@@ -27,7 +27,6 @@ function Aderir() {
   const router = useRouter();
   const params = useSearchParams();
   const { user } = useAuth();
-  const { recarregar, escolher } = useInstituicao();
   const [codigo, setCodigo] = useState(params.get("codigo") ?? "");
   const [info, setInfo] = useState<Info | null>(null);
   const [nome, setNome] = useState(user?.name ?? "");
@@ -44,7 +43,7 @@ function Aderir() {
     setErro(null);
     setAEnviar(true);
     try {
-      setInfo(await api.consultarCodigo(codigo));
+      setInfo(await api.consultarCodigo(codigo, user?.id));
     } catch (err) {
       setErro(erroTexto(err));
     } finally {
@@ -57,11 +56,15 @@ function Aderir() {
     setErro(null);
     setAEnviar(true);
     try {
-      const r = await api.aderir(codigo, { nome: nome.trim(), email: email.trim(), consentimentos: decisoes, comApoio });
+      // A conta com sessão iniciada é a que fica na escola (é assim que a escola "regista" o aluno ou o professor).
+      const r = await api.aderir(codigo, { nome: nome.trim(), email: email.trim(), consentimentos: decisoes, comApoio, utilizadorId: user?.id });
       setResultado({ tipo: r.resultado, instituicaoId: r.instituicaoId });
       if (r.resultado === "membro") {
-        await recarregar();
-        escolher(r.instituicaoId);
+        try {
+          window.localStorage.setItem(CHAVE_INSTITUICAO, r.instituicaoId);
+        } catch {
+          /* sem localStorage: escolhe a primeira escola */
+        }
       }
     } catch (err) {
       setErro(erroTexto(err));
@@ -87,7 +90,8 @@ function Aderir() {
                 <h1 className="font-serif text-2xl font-semibold">Bem-vindo à {info?.instituicao}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">Já fazes parte da instituição como {info && <EtiquetaPapel papel={info.papel} />}.</p>
               </div>
-              <Button onClick={() => router.push("/instituicao")}>Abrir a instituição</Button>
+              {/* Recarrega a app: os menus passam a mostrar as funcionalidades da escola desta conta. */}
+              <Button onClick={() => window.location.assign("/instituicao")}>Abrir a escola</Button>
             </>
           ) : (
             <>

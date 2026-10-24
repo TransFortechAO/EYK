@@ -204,9 +204,13 @@ export const PESSOAS_DEMO: PessoaDemo[] = [
 
 const CHAVE_PESSOA = "eyk-instituicoes-pessoa-demo";
 
-export function definirPessoaDemo(utilizadorId: number) {
+/**
+ * Quem está a usar a área: a conta real (pertenças verdadeiras, sem guardar) ou,
+ * na pré-visualização, a pessoa escolhida em "Ver como" (guardada no browser).
+ */
+export function definirPessoaDemo(utilizadorId: number, persistir = true) {
   utilizadorDemo = utilizadorId;
-  if (typeof window === "undefined") return;
+  if (!persistir || typeof window === "undefined") return;
   try {
     window.localStorage.setItem(CHAVE_PESSOA, String(utilizadorId));
   } catch {
@@ -214,7 +218,19 @@ export function definirPessoaDemo(utilizadorId: number) {
   }
 }
 
-/** Repõe a pessoa escolhida em "ver como" (partilhada entre a área Instituição e as páginas principais). */
+/**
+ * Esta conta pertence a alguma escola? Só quem foi registado pela escola (convite
+ * por email/código aceite) tem as funcionalidades de escola; as contas criadas
+ * de forma normal vêem a plataforma pública.
+ */
+export function temPertenca(utilizadorId: number): boolean {
+  const e = carregar();
+  return e.membros.some(
+    (m) => m.utilizadorId === utilizadorId && m.estado === "ativo" && e.instituicoes.some((i) => i.id === m.instituicaoId && i.estado !== "preparacao"),
+  );
+}
+
+/** Repõe a pessoa escolhida em "Ver como" (só para a pré-visualização em /instituicao). */
 export function restaurarPessoaDemo(): number {
   if (typeof window === "undefined") return utilizadorDemo;
   try {
@@ -436,7 +452,7 @@ export const apiInstituicoes = {
       e.membros.push({
         id: novoId("m"),
         instituicaoId,
-        utilizadorId: 5000 + e.seq,
+        utilizadorId: p.utilizadorId ?? 5000 + e.seq,
         nome: p.nome,
         email: p.email,
         papel: p.papel,
@@ -451,7 +467,7 @@ export const apiInstituicoes = {
   },
 
   /** GET /api/instituicoes/aderir/:codigo/ — o que o código dá, antes de aderir. */
-  async consultarCodigo(codigo: string): Promise<{
+  async consultarCodigo(codigo: string, utilizadorId: number = utilizadorDemo): Promise<{
     instituicao: string;
     papel: Papel;
     grupo: string | null;
@@ -478,16 +494,24 @@ export const apiInstituicoes = {
       aluno: aluno ? { id: aluno.id, nome: aluno.nome } : null,
       requerAprovacao: c.canal === "codigo" && inst.aprovarPedidosPorCodigo,
       pedeConsentimento: c.papel === "familia" && !!aluno,
-      jaMembro: e.membros.some((m) => m.instituicaoId === inst.id && m.utilizadorId === utilizadorDemo && m.estado === "ativo"),
+      jaMembro: e.membros.some((m) => m.instituicaoId === inst.id && m.utilizadorId === utilizadorId && m.estado === "ativo"),
     };
   },
 
   /** POST /api/instituicoes/aderir/:codigo/ */
   async aderir(
     codigo: string,
-    dados: { nome: string; email: string; consentimentos?: Partial<Record<FinalidadeConsentimento, boolean>>; comApoio?: boolean },
+    dados: {
+      nome: string;
+      email: string;
+      consentimentos?: Partial<Record<FinalidadeConsentimento, boolean>>;
+      comApoio?: boolean;
+      /** A conta que adere (a conta com sessão iniciada); por omissão, a pessoa atual. */
+      utilizadorId?: number;
+    },
   ): Promise<{ resultado: "membro" | "pendente"; instituicaoId: string }> {
-    const info = await apiInstituicoes.consultarCodigo(codigo);
+    const quem = dados.utilizadorId ?? utilizadorDemo;
+    const info = await apiInstituicoes.consultarCodigo(codigo, quem);
     const e = carregar();
     const c = e.convites.find((x) => x.codigo.toUpperCase() === codigo.trim().toUpperCase())!;
     if (info.pedeConsentimento) {
@@ -510,17 +534,18 @@ export const apiInstituicoes = {
         grupoId: c.grupoId,
         pedidoEm: new Date().toISOString(),
         estado: "pendente",
+        utilizadorId: quem,
       });
       guardar();
       return { resultado: "pendente", instituicaoId: c.instituicaoId };
     }
 
-    let membro = e.membros.find((m) => m.instituicaoId === c.instituicaoId && m.utilizadorId === utilizadorDemo);
+    let membro = e.membros.find((m) => m.instituicaoId === c.instituicaoId && m.utilizadorId === quem);
     if (!membro) {
       membro = {
         id: novoId("m"),
         instituicaoId: c.instituicaoId,
-        utilizadorId: utilizadorDemo,
+        utilizadorId: quem,
         nome: dados.nome,
         email: dados.email,
         papel: c.papel,

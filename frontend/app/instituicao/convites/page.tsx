@@ -23,6 +23,7 @@ import {
   Seletor,
   Tabela,
   useCarregar,
+  LinkConvite,
 } from "@/components/instituicao/ui";
 import { apiInstituicoes as api, VALIDADE_CONVITE_DIAS } from "@/lib/instituicoes/api";
 import { ROTULO_PAPEL } from "@/lib/instituicoes/permissoes";
@@ -300,6 +301,7 @@ function NovoConvite({
         {criado ? (
           <div className="space-y-4 p-5 text-center">
             <p className="font-mono text-4xl font-bold tracking-[0.3em] text-primary">{criado.codigo}</p>
+            <LinkConvite codigo={criado.codigo} />
             <p className="text-sm text-muted-foreground">
               {criado.canal === "email"
                 ? `Enviámos o convite para ${criado.destino}.`
