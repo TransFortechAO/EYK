@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { consumirDestino } from "@/lib/destino";
 import { useAuth } from "@/components/auth-gate";
 
 const EYK_GOLD = "#d4a24a";
@@ -58,7 +59,7 @@ export default function PersonalizarPerfilPage() {
           await api.perfil.atualizarAluno(bio.trim(), foto);
         }
         await api.perfil.completar();
-        window.location.assign("/inicio");
+        window.location.assign(consumirDestino());
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Erro ao guardar o perfil.");
       }
@@ -73,7 +74,7 @@ export default function PersonalizarPerfilPage() {
       } catch {
         /* mesmo que falhe, não bloqueia o acesso à plataforma */
       }
-      window.location.assign("/inicio");
+      window.location.assign(consumirDestino());
     });
   };
 

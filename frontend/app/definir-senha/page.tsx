@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth-gate";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { consumirDestino } from "@/lib/destino";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
@@ -37,7 +38,7 @@ export default function DefinirSenhaPage() {
     try {
       const res = await api.seguranca.alterarSenha(atual, nova);
       if (!res?.ok) throw new Error(res?.error || "Não foi possível alterar a senha.");
-      window.location.assign("/inicio");
+      window.location.assign(consumirDestino());
     } catch (err) {
       const data = (err as { data?: { error?: string } })?.data;
       setErro(data?.error || (err instanceof Error ? err.message : "Erro ao alterar a senha."));

@@ -3,6 +3,7 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { api, type AuthUser } from "@/lib/api";
 import { aplicarPreferenciasVisuais } from "@/lib/preferencias-visuais";
+import { guardarDestino, loginComDestino } from "@/lib/destino";
 
 type AuthState = {
   loading: boolean;
@@ -38,10 +39,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         user: authenticated ? (res.user as AuthUser) : null,
       }));
       if (!authenticated) {
-        window.location.assign("/login");
+        // Volta aqui depois de entrar (ex: o link do convite da escola).
+        const aqui = window.location.pathname + window.location.search;
+        guardarDestino(aqui);
+        window.location.assign(loginComDestino(aqui));
       } else if (res.user?.deveAlterarSenha && window.location.pathname !== "/definir-senha") {
         // Conta criada por um administrador com senha temporária: tem de
         // escolher uma senha própria antes de usar a plataforma.
+        guardarDestino(window.location.pathname + window.location.search);
         window.location.assign("/definir-senha");
       } else if (res.user?.preferencias) {
         // As preferências guardadas na conta mandam (podem ter sido mudadas
@@ -50,7 +55,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }
     } catch {
       setState((prev) => ({ ...prev, loading: false, authenticated: false, user: null }));
-      window.location.assign("/login");
+      const aqui = window.location.pathname + window.location.search;
+      guardarDestino(aqui);
+      window.location.assign(loginComDestino(aqui));
     }
   };
 

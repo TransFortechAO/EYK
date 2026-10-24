@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, LogIn, Hand, BookOpen, Users, Trophy, User, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
+import { consumirDestino, guardarDestinoDoEndereco } from "@/lib/destino";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
@@ -103,6 +104,9 @@ function OtpInput({
 }
 
 export default function LoginPage() {
+  // Quem chegou aqui a partir de um link (ex: convite da escola) volta lá depois de entrar,
+  // mesmo que passe primeiro pelo registo.
+  useEffect(() => guardarDestinoDoEndereco(), []);
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
@@ -131,7 +135,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Credenciais inválidas. Tenta novamente.");
           return;
         }
-        window.location.assign("/inicio");
+        window.location.assign(consumirDestino());
       } catch (err) {
         const sancaoConta = sancaoDoErro(err);
         if (sancaoConta) {
@@ -163,7 +167,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Código inválido. Tenta novamente.");
           return;
         }
-        window.location.assign("/inicio");
+        window.location.assign(consumirDestino());
       } catch (err) {
         const sancaoConta = sancaoDoErro(err);
         if (sancaoConta) {

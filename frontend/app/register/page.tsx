@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState, useTransition } from "react";
+import { Suspense, useEffect, useMemo, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
+import { guardarDestinoDoEndereco } from "@/lib/destino";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
@@ -55,6 +56,8 @@ const NIVEIS_FORCA = [
 ];
 
 function RegisterConteudo() {
+  // Depois do registo e do perfil, volta ao link de onde veio (ex: convite da escola).
+  useEffect(() => guardarDestinoDoEndereco(), []);
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref") || undefined;
   const [isPending, startTransition] = useTransition();
