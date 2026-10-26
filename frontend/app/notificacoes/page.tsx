@@ -45,7 +45,7 @@ export default function NotificacoesPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Notificações" description="Mantém-te a par das novidades da tua jornada EYK.">
+      <PageHeader title="Novidades" description="Mantém-te a par das novidades da tua jornada EYK.">
         <Button variant="outline" size="sm" onClick={() => void markAll()} className="gap-2">
           <CheckCheck className="h-4 w-4" />
           Marcar todas como lidas
@@ -102,7 +102,7 @@ export default function NotificacoesPage() {
       ) : (
         <EmptyState
           icon={Bell}
-          title="Sem notificações novas."
+          title="Não há novidades."
           description="Vê aqui atualizações sobre cursos, comunidade e gamificação."
         />
       )}
