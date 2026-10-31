@@ -98,7 +98,7 @@ export function Sidebar({
       data-variant={variant}
       data-collapsible={collapsible}
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col max-lg:hidden text-sidebar-foreground transition-[width] duration-200 ease-linear",
+        "sticky top-0 flex h-screen shrink-0 flex-col movel:hidden text-sidebar-foreground transition-[width] duration-200 ease-linear",
         collapsed ? "w-[3.5rem]" : "w-64",
         variant === "floating"
           ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar shadow-soft"
@@ -153,6 +153,18 @@ export function SidebarGroup({ className, ...props }: React.ComponentProps<"div"
   return <div className={cn("relative flex w-full min-w-0 flex-col p-2", className)} {...props} />;
 }
 
+/** Título de um grupo (ex: "Professor"). Esconde-se com a barra recolhida. */
+export function SidebarGroupLabel({ className, ...props }: React.ComponentProps<"p">) {
+  const { state, isMobile } = useSidebar();
+  if (!isMobile && state === "collapsed") return null;
+  return (
+    <p
+      className={cn("px-3 pb-1.5 text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/60", className)}
+      {...props}
+    />
+  );
+}
+
 export function SidebarGroupContent({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("w-full", className)} {...props} />;
 }
@@ -182,7 +194,10 @@ export const SidebarMenuButton = React.forwardRef<
       data-active={isActive}
       title={!isMobile && state === "collapsed" ? tooltip : undefined}
       className={cn(
-        "flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm text-sidebar-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex w-full items-center overflow-hidden rounded-lg text-left text-sidebar-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:shrink-0",
+        !isMobile && state === "collapsed"
+          ? "gap-2 p-2 text-sm [&>svg]:size-4"
+          : "gap-3 px-3 py-2.5 text-[0.9375rem] [&>svg]:size-[1.125rem]",
         className,
       )}
       {...props}

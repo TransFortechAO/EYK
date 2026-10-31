@@ -72,7 +72,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <OfflineBanner />
                 <EmailVerificationBanner />
                 <Topbar />
-                <main className="flex-1 p-4 sm:p-6 md:p-8 max-lg:pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
+                <main className="flex-1 p-4 sm:p-6 md:p-8 movel:pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
                   <PageTransition routeKey={pathname}>
                     {children}
                   </PageTransition>

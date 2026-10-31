@@ -37,6 +37,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -53,7 +54,7 @@ const primary = [
 ];
 
 const secondary = [
-  { title: "Novidades", url: "/notificacoes", icon: Bell },
+  { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
@@ -119,7 +120,7 @@ function GrupoNav({
                   >
                     <Link href={item.url} onClick={aoNavegar}>
                       <span className="relative grid shrink-0 place-items-center">
-                        <Icone className="size-4" />
+                        <Icone className="size-[1.125rem]" />
                         {!!item.contador && <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-sidebar" aria-hidden />}
                       </span>
                       <span className="flex-1 truncate">{item.titulo}</span>
@@ -187,11 +188,39 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Professor: as suas ferramentas primeiro, para saber logo que entrou como professor. */}
+        {user?.isTeacher && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Professor</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {professorNav.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                      className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
+                    >
+                      <Link href={item.url} onClick={closeOnNavigate}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+        {user?.isTeacher && <SidebarSeparator />}
+
         {principais ? (
           // Com escola: as mesmas entradas principais das abas do telemóvel, por papel.
           <GrupoNav itens={principais} isActive={isActive} pathname={pathname} aoNavegar={closeOnNavigate} separador={false} />
         ) : (
           <SidebarGroup>
+            {user?.isTeacher && <SidebarGroupLabel>Explorar</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
                 {primary.map((item) => (
@@ -250,39 +279,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {user?.isTeacher && (
-          <>
-            <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton disabled tooltip="Professor" className="opacity-60 cursor-default hover:bg-transparent">
-                      <LayoutDashboard />
-                      <span>Professor</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {professorNav.map((item) => (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        tooltip={item.title}
-                        className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
-                      >
-                        <Link href={item.url} onClick={closeOnNavigate}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
 
         {user?.isStaff && (
           <>

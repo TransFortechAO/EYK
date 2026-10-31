@@ -44,7 +44,7 @@ function paraItem(i: ItemNav): Item {
 }
 
 const MAIS: Item[] = [
-  { title: "Novidades", url: "/notificacoes", icon: Bell },
+  { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
@@ -163,7 +163,7 @@ export function BottomNav() {
     <>
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden pointer-events-none"
+        className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] computador:hidden pointer-events-none"
       >
         <ul className="pointer-events-auto mx-auto flex max-w-xl items-end justify-between rounded-[1.75rem] border border-border bg-card/95 px-2 py-2 shadow-elevated backdrop-blur-md">
           {abas.map((aba) => {
@@ -223,7 +223,7 @@ export function BottomNav() {
         {/* O painel sobe por cima do conteúdo mas deixa a barra de baixo visível. */}
         <SheetContent
           side="bottom"
-          className="inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[55] max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-3xl border bg-card px-4 pb-2 shadow-elevated outline-none focus:outline-none focus-visible:ring-0 lg:hidden [&>button]:hidden"
+          className="inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[55] max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-3xl border bg-card px-4 pb-2 shadow-elevated outline-none focus:outline-none focus-visible:ring-0 computador:hidden [&>button]:hidden"
         >
           <div aria-hidden className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted-foreground/30" />
           <SheetHeader className="px-2 pt-3 text-left">
@@ -231,6 +231,9 @@ export function BottomNav() {
             <SheetDescription className="sr-only">Outras páginas da plataforma EYK.</SheetDescription>
           </SheetHeader>
 
+          {user?.isTeacher && (
+            <Grupo titulo="Professor" icone={LayoutDashboard} itens={PROFESSOR} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
+          )}
           {daEscola.length > 0 && (
             <Grupo
               titulo={escola?.atual ? escola.atual.instituicao.nome : "Escola"}
@@ -243,10 +246,7 @@ export function BottomNav() {
           {geralNoMais.length > 0 && (
             <Grupo titulo="Plataforma EYK" icone={Home} itens={geralNoMais} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           )}
-          <Grupo titulo={daEscola.length || geralNoMais.length ? "Mais" : undefined} itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          {user?.isTeacher && (
-            <Grupo titulo="Professor" icone={LayoutDashboard} itens={PROFESSOR} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          )}
+          <Grupo titulo={daEscola.length || geralNoMais.length || user?.isTeacher ? "Mais" : undefined} itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           {user?.isStaff && (
             <Grupo titulo="Administração" icone={ShieldCheck} itens={ADMINISTRACAO} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           )}

@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { CartaoGamificacao, CartaoLeaderboard } from "@/components/inicio-cartoes";
 import { InicioEscola, SoPlataformaGeral } from "@/components/instituicao/escola";
 import { cn } from "@/lib/utils";
+import { BoasVindasProfessor } from "@/components/boas-vindas-professor";
 
 export default function InicioPage() {
   const { user } = useAuth();
@@ -73,6 +74,7 @@ export default function InicioPage() {
 
   return (
     <div className="space-y-10">
+      <BoasVindasProfessor />
       <PageHeader
         title={`Olá, ${firstName}`}
         description="Continua de onde ficaste ou explora novos conteúdos."

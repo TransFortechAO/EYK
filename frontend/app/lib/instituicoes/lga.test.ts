@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiInstituicoes, definirPessoaDemo, reporDemo, _interno } from "./api";
 import { apiLga, PONTOS_RESPOSTA_CORRETA } from "./lga";
 import { gerarExercicio, JANELA_MESTRIA, mestria, nivelMestria, paraSoletrar, registarNoProgresso } from "./exercicios";
@@ -28,9 +28,19 @@ function lcg(seed: number) {
 
 const video = (seg = 20) => ({ nome: "resposta.webm", tamanhoBytes: seg * 1000, duracaoSeg: seg });
 
+// O relógio fica fixo no dia dos dados de demonstração: os prazos (desafios, tarefas)
+// são relativos a esse dia e o teste não pode depender da data em que corre.
+const DIA_DEMO = Date.UTC(2026, 9, 23, 10);
+
 beforeEach(() => {
-  reporDemo(Date.UTC(2026, 9, 23, 10));
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(DIA_DEMO);
+  reporDemo(DIA_DEMO);
   definirPessoaDemo(ANA);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("Turmas LGA", () => {

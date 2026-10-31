@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, Coins, Flame, Sun, Moon, BookOpen, GraduationCap, X } from "lucide-react";
+import { Search, Coins, Flame, Sun, Moon, BookOpen, GraduationCap, X } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ProfileMenu } from "@/components/profile-menu";
+import { SinoNotificacoes } from "@/components/sino-notificacoes";
 import { InstallAppButton } from "@/components/pwa";
 import { api, type LeaderRow, type Course, type UtilizadorPesquisa } from "@/lib/api";
 
@@ -126,10 +127,10 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center gap-3 border-b border-border bg-background/80 px-3 pt-[env(safe-area-inset-top)] backdrop-blur md:px-6">
       {/* Menu de baixo (< lg): o logótipo ocupa o canto superior esquerdo. */}
-      <Link href="/inicio" aria-label="EYK — Início" className="shrink-0 lg:hidden">
+      <Link href="/inicio" aria-label="EYK — Início" className="shrink-0 computador:hidden">
         <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt="EYK" className="h-14 w-auto object-contain" />
       </Link>
-      <SidebarTrigger className="hidden shrink-0 lg:inline-flex" />
+      <SidebarTrigger className="hidden shrink-0 computador:inline-flex" />
 
       <div
         ref={searchWrapRef}
@@ -276,25 +277,7 @@ export function Topbar() {
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        <Button
-          asChild
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full"
-          aria-label={naoLidas > 0 ? `Notificações (${naoLidas} por ler)` : "Notificações"}
-        >
-          <Link href="/notificacoes">
-            <Bell className="h-5 w-5" />
-            {naoLidas > 0 && (
-              <span
-                className="absolute -right-0.5 -top-0.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-background tabular-nums"
-                aria-hidden
-              >
-                {naoLidas > 9 ? "9+" : naoLidas}
-              </span>
-            )}
-          </Link>
-        </Button>
+        <SinoNotificacoes naoLidas={naoLidas} />
 
         <ProfileMenu />
       </div>

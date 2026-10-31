@@ -4,6 +4,24 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * Navegação: telemóveis e tablets (ecrãs tácteis até 1366px, incluindo o iPad
+ * deitado) usam o menu de baixo; computadores usam a barra lateral.
+ */
+@custom-variant movel {
+  @media (max-width: 1023.98px) {
+    @slot;
+  }
+  @media (pointer: coarse) and (max-width: 1366px) {
+    @slot;
+  }
+}
+@custom-variant computador {
+  @media (min-width: 1024px) and (pointer: fine), (min-width: 1367px) {
+    @slot;
+  }
+}
+
+/*
  * EYK Design System — cream + gold, serif titles, sans body.
  * Tokens are semantic and defined in oklch. Never hard-code colors in components.
  */
