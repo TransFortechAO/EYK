@@ -157,7 +157,7 @@ export function ConteudoProfessor({ perfil }: { perfil: PerfilPublico }) {
       <section>
         <SectionHeader title="Vídeos" />
         {perfil.videos.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ainda sem vídeos avulsos.</p>
+          <p className="text-sm text-muted-foreground">Ainda sem vídeos publicados.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {perfil.videos.map((v) => (

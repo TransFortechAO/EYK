@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiInstituicoes, definirPessoaDemo, reporDemo } from "./api";
 import { apiLga } from "./lga";
 import { abasTelemovel, navegacaoEscola, restoParaMais, urlsNoMenu } from "./navegacao";
@@ -61,9 +61,16 @@ describe("navegação por papel", () => {
 });
 
 describe("plataforma geral, turmas e publicação", () => {
+  // Relógio fixo no dia dos dados de demonstração (os prazos são relativos a esse dia).
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.UTC(2026, 9, 23, 10));
     reporDemo(Date.UTC(2026, 9, 23, 10));
     definirPessoaDemo(1001);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("os alunos vêem só a escola até escolherem a plataforma geral", async () => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiInstituicoes as api, categoriaDoMime, definirPessoaDemo, LIMITE_ANONIMATO, reporDemo, temPertenca, _interno } from "./api";
 import { deixaSemAdministrador, eDestinatario, gruposVisiveis, pode } from "./permissoes";
 import type { Grupo, Membro } from "./tipos";
@@ -10,9 +10,19 @@ const MARIA = 1003; // educadora (g-1, g-3)
 const ROSA = 1008; // família, tutora de Kiesse (a-1)
 const GASPAR = 1023; // administrador da inst-4 (suspensa)
 
+// O relógio fica fixo no dia dos dados de demonstração: os prazos (convites,
+// pedidos) são relativos a esse dia e o teste não pode depender da data em que corre.
+const DIA_DEMO = Date.UTC(2026, 9, 22, 10);
+
 beforeEach(() => {
-  reporDemo(Date.UTC(2026, 9, 22, 10));
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(DIA_DEMO);
+  reporDemo(DIA_DEMO);
   definirPessoaDemo(ANA);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("permissões", () => {

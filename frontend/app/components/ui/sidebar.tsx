@@ -72,8 +72,27 @@ export function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
+  const ctx = useSidebar();
+  const { state, isMobile, openMobile, setOpenMobile } = ctx;
   const collapsed = collapsible === "icon" && state === "collapsed";
+
+  // Recolhida: abre ao passar o cursor (ou ao navegar com o teclado), por cima
+  // do conteúdo, sem o empurrar; fecha ao sair.
+  const [espreitar, setEspreitar] = React.useState(false);
+  const atrasoRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abrir = () => {
+    if (!collapsed) return;
+    if (atrasoRef.current) clearTimeout(atrasoRef.current);
+    atrasoRef.current = setTimeout(() => setEspreitar(true), 120);
+  };
+  const fechar = () => {
+    if (atrasoRef.current) clearTimeout(atrasoRef.current);
+    setEspreitar(false);
+  };
+  React.useEffect(() => {
+    if (!collapsed) setEspreitar(false);
+  }, [collapsed]);
+  const estreita = collapsed && !espreitar;
 
   if (isMobile) {
     return (
@@ -92,28 +111,49 @@ export function Sidebar({
     );
   }
 
+
   return (
-    <aside
-      data-state={state}
-      data-variant={variant}
-      data-collapsible={collapsible}
+    // Ocupa sempre a largura da barra no estado real (recolhida ou aberta).
+    <div
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col movel:hidden text-sidebar-foreground transition-[width] duration-200 ease-linear",
-        collapsed ? "w-[3.5rem]" : "w-64",
+        "shrink-0 movel:hidden transition-[width] duration-200 ease-linear",
         variant === "floating"
-          ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar shadow-soft"
-          : "border-r border-sidebar-border bg-sidebar",
-        className,
+          ? collapsed ? "w-[4.5rem]" : "w-[17rem]"
+          : collapsed ? "w-[3.5rem]" : "w-64",
       )}
-      {...props}
     >
-      <div className="flex h-full w-full flex-col overflow-hidden">{children}</div>
-    </aside>
+      <aside
+        data-state={estreita ? "collapsed" : "expanded"}
+        data-variant={variant}
+        data-collapsible={collapsible}
+        onMouseEnter={abrir}
+        onMouseLeave={fechar}
+        onFocusCapture={abrir}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) fechar();
+        }}
+        className={cn(
+          "sticky top-0 z-40 flex h-screen flex-col text-sidebar-foreground transition-[width] duration-200 ease-linear",
+          estreita ? "w-[3.5rem]" : "w-64",
+          variant === "floating"
+            ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar shadow-soft"
+            : "border-r border-sidebar-border bg-sidebar",
+          espreitar && "shadow-elevated",
+          className,
+        )}
+        {...props}
+      >
+        <SidebarContext.Provider value={{ ...ctx, state: estreita ? "collapsed" : "expanded" }}>
+          <div className="flex h-full w-full flex-col overflow-hidden">{children}</div>
+        </SidebarContext.Provider>
+      </aside>
+    </div>
   );
 }
 
 export function SidebarTrigger({ className, ...props }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, state, isMobile } = useSidebar();
+  if (!isMobile && state === "collapsed") return null;
   return (
     <Button
       variant="ghost"

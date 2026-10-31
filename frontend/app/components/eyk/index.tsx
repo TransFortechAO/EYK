@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Calendar,
@@ -157,6 +158,32 @@ export function StatCard({
   );
 }
 
+/**
+ * Link dentro de um cartão que já é um link (um <a> não pode estar dentro de
+ * outro): navega ao clicar ou com Enter, sem abrir o cartão.
+ */
+function LinkDentroDeCartao({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
+  const router = useRouter();
+  const ir = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(href);
+  };
+  return (
+    <span
+      role="link"
+      tabIndex={0}
+      className={cn("cursor-pointer", className)}
+      onClick={ir}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") ir(e);
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
 /* ---------- Course card ---------- */
 export function CourseCard({ course }: { course: Course }) {
   return (
@@ -219,12 +246,12 @@ export function CourseCard({ course }: { course: Course }) {
                 className="text-[10px]"
               />
               {course.teacherUserId ? (
-                <Link
+                <LinkDentroDeCartao
                   href={`/perfil/${course.teacherUserId}`}
                   className="hit truncate text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
                 >
                   {course.teacher}
-                </Link>
+                </LinkDentroDeCartao>
               ) : (
                 <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>
               )}
@@ -294,12 +321,12 @@ export function VideoCard({ video }: { video: Video }) {
           </h3>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             {video.teacherUserId ? (
-              <Link
+              <LinkDentroDeCartao
                 href={`/perfil/${video.teacherUserId}`}
                 className="hit truncate hover:text-foreground hover:underline underline-offset-2 transition-colors"
               >
                 {video.teacher}
-              </Link>
+              </LinkDentroDeCartao>
             ) : (
               <span className="truncate">{video.teacher}</span>
             )}
