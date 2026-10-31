@@ -35,6 +35,8 @@ class Curso(models.Model):
 
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+    # Preenchido quando o autor edita o conteúdo (mostra "editado" na plataforma).
+    editado_em = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.titulo

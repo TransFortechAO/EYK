@@ -274,7 +274,10 @@ export default function CoursePlayerPage() {
               ) : (
                 <p className="text-sm font-medium">{curso.teacher}</p>
               )}
-              <p className="text-xs text-muted-foreground">Professor EYK</p>
+              <p className="text-xs text-muted-foreground">
+                Professor EYK
+                {curso.editadoEm && " · editado"}
+              </p>
             </div>
           </div>
 

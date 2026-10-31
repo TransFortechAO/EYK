@@ -75,12 +75,12 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
         model = Curso
         fields = [
             'id', 'titulo', 'descricao', 'categoria', 'categoria_nome', 'preco',
-            'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em',
+            'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em', 'editado_em',
             'total_inscritos', 'total_visualizacoes', 'conclusao_media', 'duracao_total_segundos',
             'videos', 'recursos', 'oculto',
         ]
         read_only_fields = [
-            'id', 'criado_em', 'atualizado_em', 'total_inscritos', 'total_visualizacoes',
+            'id', 'criado_em', 'atualizado_em', 'editado_em', 'total_inscritos', 'total_visualizacoes',
             'conclusao_media', 'duracao_total_segundos', 'videos', 'recursos', 'oculto',
         ]
 
@@ -132,12 +132,12 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
         model = Video
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail',
-            'criado_em', 'atualizado_em', 'ativo', 'ordem', 'duracao_segundos',
+            'criado_em', 'atualizado_em', 'editado_em', 'ativo', 'ordem', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
             'oculto', 'tem_legenda',
         ]
         read_only_fields = [
-            'id', 'criado_em', 'atualizado_em', 'duracao_segundos',
+            'id', 'criado_em', 'atualizado_em', 'editado_em', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
             'oculto', 'tem_legenda',
         ]

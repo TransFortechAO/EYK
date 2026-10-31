@@ -82,6 +82,29 @@ def post_list(request):
     return Response(serializer.data)
 
 
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def post_detail(request, post_id):
+    """O autor edita o texto da sua publicação; fica marcada como editada."""
+    post = get_object_or_404(Post, pk=post_id)
+    if post.autor_id != request.user.id:
+        return Response({'detail': 'Sem permissão para editar esta publicação.'}, status=status.HTTP_403_FORBIDDEN)
+    conteudo = (request.data.get('conteudo') or '').strip()
+    if not conteudo:
+        return Response({'detail': 'O conteúdo do post é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        # 'bio' = só o filtro de palavras (editar não conta para os limites de frequência).
+        termos = verificar_publicacao(request.user, conteudo, 'bio')
+    except ConteudoRecusado as erro:
+        return Response({'detail': erro.mensagem}, status=erro.status)
+    if conteudo != post.conteudo:
+        post.conteudo = conteudo
+        post.editado_em = timezone.now()
+        post.save(update_fields=['conteudo', 'editado_em'])
+        sinalizar_se_necessario('post', post, termos)
+    return Response(PostSerializer(post, context=_contexto(request)).data)
+
+
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def post_react(request, post_id):

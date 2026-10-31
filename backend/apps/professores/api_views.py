@@ -3,6 +3,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -22,6 +23,27 @@ from .serializers import (
 from .video_processing import atualizar_duracao
 
 TAMANHO_MAX_LEGENDA_BYTES = 1024 * 1024  # 1MB — uma legenda de 2h tem ~150KB
+
+# Ao editar, o professor muda o texto, a capa e os recursos, mas não troca o vídeo
+# (nem as aulas de um curso): quem já viu ou comentou continua a ver o mesmo vídeo.
+MSG_NAO_TROCAR_VIDEO = 'Ao editar não é possível trocar o vídeo. Para outro vídeo, publica-o como novo.'
+MSG_NAO_TROCAR_AULAS = (
+    'Ao editar um curso não é possível trocar, acrescentar ou apagar aulas. '
+    'Muda o título, a descrição, a capa ou os recursos.'
+)
+CAMPOS_CONTEUDO_VIDEO = ('titulo', 'descricao', 'thumbnail')
+CAMPOS_CONTEUDO_CURSO = ('titulo', 'descricao', 'categoria_id', 'preco', 'duracao', 'thumbnail')
+
+
+def _estado(obj, campos):
+    return {c: str(getattr(obj, c) or '') for c in campos}
+
+
+def _marcar_editado(obj, antes, campos, houve_ficheiros=False):
+    """Marca "editado" só quando muda o conteúdo (não ao publicar ou esconder)."""
+    if houve_ficheiros or _estado(obj, campos) != antes:
+        obj.editado_em = timezone.now()
+        obj.save(update_fields=['editado_em'])
 
 
 def _get_professor(request):
@@ -197,21 +219,21 @@ def professor_curso_detail(request, curso_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     if request.method == 'PATCH':
+        if request.FILES.getlist('videos'):
+            return Response({'detail': MSG_NAO_TROCAR_AULAS}, status=status.HTTP_400_BAD_REQUEST)
+        antes = _estado(curso, CAMPOS_CONTEUDO_CURSO)
         serializer = ProfessorCursoSerializer(curso, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
+        novos_recursos = request.FILES.getlist('recursos')
         try:
             with transaction.atomic():
                 curso = serializer.save()
-                arquivos = request.FILES.getlist('videos')
-                if arquivos:
-                    ordem_inicial = curso.videos.count()
-                    _criar_videos_curso(professor, curso, arquivos, ordem_inicial)
-                novos_recursos = request.FILES.getlist('recursos')
                 if novos_recursos:
                     _criar_recursos(RecursoCurso, 'curso', curso, novos_recursos)
         except ValueError as erro:
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
 
+        _marcar_editado(curso, antes, CAMPOS_CONTEUDO_CURSO, houve_ficheiros=bool(novos_recursos))
         curso.refresh_from_db()
         return Response(ProfessorCursoSerializer(curso, context={'request': request}).data)
 
@@ -227,9 +249,9 @@ def professor_curso_video_delete(request, curso_id, video_id):
         return _professor_required_response()
 
     curso = get_object_or_404(Curso, id=curso_id, professor=professor)
-    video = get_object_or_404(Video, id=video_id, curso=curso)
-    video.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    get_object_or_404(Video, id=video_id, curso=curso)
+    # As aulas de um curso não se trocam nem se apagam ao editar.
+    return Response({'detail': MSG_NAO_TROCAR_AULAS}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -361,19 +383,22 @@ def professor_video_detail(request, video_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     if request.method == 'PATCH':
+        url_nova = request.data.get('url_externa')
+        troca_link = url_nova is not None and (url_nova or '') != (video.url_externa or '')
+        if request.FILES.get('arquivo') or troca_link:
+            return Response({'detail': MSG_NAO_TROCAR_VIDEO}, status=status.HTTP_400_BAD_REQUEST)
+        antes = _estado(video, CAMPOS_CONTEUDO_VIDEO)
         serializer = ProfessorVideoSerializer(video, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
+        novos_recursos = request.FILES.getlist('recursos')
         try:
-            _validar_tamanho_video(request.FILES.get('arquivo'))
             with transaction.atomic():
                 video = serializer.save()
-                novos_recursos = request.FILES.getlist('recursos')
                 if novos_recursos:
                     _criar_recursos(RecursoVideo, 'video', video, novos_recursos)
         except ValueError as erro:
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
-        if 'arquivo' in request.data:
-            atualizar_duracao(video)
+        _marcar_editado(video, antes, CAMPOS_CONTEUDO_VIDEO, houve_ficheiros=bool(novos_recursos))
         return Response(ProfessorVideoSerializer(video, context={'request': request}).data)
 
     serializer = ProfessorVideoSerializer(video, context={'request': request})

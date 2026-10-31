@@ -227,7 +227,10 @@ export default function VideoPlayerPage() {
                 ) : (
                   <p className="truncate text-sm font-medium">{video.teacher}</p>
                 )}
-                <p className="text-xs text-muted-foreground">Professor EYK</p>
+                <p className="text-xs text-muted-foreground">
+                  Professor EYK
+                  {video.editadoEm && " · editado"}
+                </p>
               </div>
             </div>
             <Button

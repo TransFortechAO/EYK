@@ -62,6 +62,8 @@ class Video(models.Model):
     )
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+    # Preenchido quando o autor edita o conteúdo (mostra "editado" na plataforma).
+    editado_em = models.DateTimeField(null=True, blank=True)
     # Índice de propósito: `ativo=True` (combinado com `curso__isnull`) é o
     # filtro de TODAS as listagens públicas de vídeos — ver nota em Curso.ativo.
     ativo = models.BooleanField(default=True, db_index=True)

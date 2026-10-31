@@ -15,15 +15,19 @@ import {
   Link as LinkIcon,
   Star,
   EyeOff,
+  Pencil,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UserAvatar } from "@/components/UserAvatar";
-import { api, formatarDataCurta, type Course, type Video, type Post } from "@/lib/api";
+import { api, formatarDataCurta, mensagemDeErro, type Course, type Video, type Post } from "@/lib/api";
+import { useAuth } from "@/components/auth-gate";
+import { toast } from "sonner";
 import { PostComments } from "@/components/eyk/post-comments";
 import { MenuModeracao } from "@/components/moderacao/denunciar";
 
@@ -336,6 +340,35 @@ export function PostCard({
 }) {
   const [liked, setLiked] = useState(post.liked || false);
   const [likes, setLikes] = useState(post.likes);
+  const { user } = useAuth();
+  const souAutor = user?.id != null && post.authorId != null && String(user.id) === String(post.authorId);
+  const [conteudo, setConteudo] = useState(post.content);
+  const [editadoEm, setEditadoEm] = useState(post.editadoEm);
+  const [aEditar, setAEditar] = useState(false);
+  const [texto, setTexto] = useState(post.content);
+  const [aGuardar, setAGuardar] = useState(false);
+
+  useEffect(() => {
+    setConteudo(post.content);
+    setEditadoEm(post.editadoEm);
+  }, [post.content, post.editadoEm]);
+
+  const guardarEdicao = async () => {
+    const novo = texto.trim();
+    if (!novo) return;
+    setAGuardar(true);
+    try {
+      const atualizado = await api.editarPost(post.id, novo);
+      setConteudo(atualizado.content);
+      setEditadoEm(atualizado.editadoEm);
+      setAEditar(false);
+      toast.success("Publicação editada.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível editar a publicação."));
+    } finally {
+      setAGuardar(false);
+    }
+  };
 
   useEffect(() => {
     setLiked(post.liked || false);
@@ -379,10 +412,27 @@ export function PostCard({
               ) : (
                 <p className="font-medium text-sm">{post.author}</p>
               )}
-              <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
+              <p className="text-xs text-muted-foreground">
+                {post.timeAgo}
+                {editadoEm && " · editado"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {souAutor && !aEditar && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => {
+                  setTexto(conteudo);
+                  setAEditar(true);
+                }}
+                aria-label="Editar publicação"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
             <ShareButton url={`/comunidade?post=${post.id}`} titulo="Publicação na comunidade EYK" />
             <MenuModeracao
               tipo="post"
@@ -394,7 +444,21 @@ export function PostCard({
           </div>
         </div>
         {post.oculto && <AvisoOculto />}
-        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{post.content}</p>
+        {aEditar ? (
+          <div className="space-y-2">
+            <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} className="text-sm" />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setAEditar(false)} disabled={aGuardar}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={() => void guardarEdicao()} disabled={aGuardar || !texto.trim()}>
+                Guardar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{conteudo}</p>
+        )}
         <div className="flex items-center gap-4 pt-2">
           <Button
             variant="ghost"

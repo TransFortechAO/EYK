@@ -47,7 +47,7 @@ class CursoVideoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail', 'ordem',
             'duracao_segundos', 'total_likes', 'assistido', 'recursos',
-            'posicao_segundos', 'posicao_atualizada_em', 'tem_legenda',
+            'posicao_segundos', 'posicao_atualizada_em', 'tem_legenda', 'editado_em',
         ]
 
     def get_tem_legenda(self, obj):

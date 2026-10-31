@@ -118,12 +118,13 @@ class TestProfessorCursoDetail:
 
 @pytest.mark.django_db
 class TestProfessorCursoVideoDelete:
-    def test_apaga_video_do_curso(self, client, professor_user, professor, curso):
+    def test_nao_apaga_aulas_ao_editar_o_curso(self, client, professor_user, professor, curso):
+        # As aulas de um curso não se trocam nem se apagam ao editar.
         video = Video.objects.create(professor=professor, curso=curso, titulo="Aula 1", ativo=True)
         client.force_login(professor_user)
         response = client.delete(reverse("api-professor-curso-video-delete", args=[curso.id, video.id]))
-        assert response.status_code == 204
-        assert not Video.objects.filter(id=video.id).exists()
+        assert response.status_code == 400
+        assert Video.objects.filter(id=video.id).exists()
 
     def test_outro_professor_nao_pode_apagar(self, client, professor, curso):
         from apps.accounts.models import User as U

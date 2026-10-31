@@ -30,7 +30,7 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = [
             'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto',
-            'conteudo', 'imagem', 'criado_em', 'time_ago',
+            'conteudo', 'imagem', 'criado_em', 'editado_em', 'time_ago',
             'likes', 'comentarios', 'liked', 'oculto',
         ]
 

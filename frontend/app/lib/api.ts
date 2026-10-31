@@ -203,6 +203,8 @@ export type Course = {
   ratingCount: number;
   /** O aluno autenticado concluiu o curso e pode descarregar o certificado. */
   certificadoDisponivel: boolean;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
 };
 
 export type Video = {
@@ -216,6 +218,8 @@ export type Video = {
   daysAgo: number;
   thumbnail: string;
   publishedAt: string | null;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
 };
 
 export type VideoDetail = {
@@ -237,6 +241,8 @@ export type VideoDetail = {
   durationLabel: string;
   recursos: CursoRecurso[];
   temLegenda: boolean;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
 };
 
 export type VideoComment = {
@@ -491,6 +497,8 @@ export type Post = {
   comments: number;
   liked?: boolean;
   oculto?: boolean;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
 };
 
 export type Comentario = {
@@ -902,6 +910,7 @@ type RawProfessor = { nome_publico?: string };
 
 type RawCourse = {
   id?: number | string;
+  editado_em?: string | null;
   titulo?: string | null;
   professor_nome?: string | null;
   professor?: RawProfessor | null;
@@ -924,6 +933,7 @@ type RawCourse = {
 
 type RawVideo = {
   id?: number | string;
+  editado_em?: string | null;
   titulo?: string | null;
   professor_nome?: string | null;
   professor_user_id?: number | null;
@@ -1007,6 +1017,7 @@ type RawCourseDetail = RawCourse & {
 
 type RawPost = {
   id?: number | string;
+  editado_em?: string | null;
   autor?: number | null;
   autor_nome?: string | null;
   autor_initials?: string | null;
@@ -1215,8 +1226,8 @@ import { limparCacheApiOffline } from "@/lib/offline";
 // Os mocks de Video/Post (usados só como fallback antes de a BD ter dados)
 // não têm foto de professor/autor — completa com `null` para bater com os
 // tipos normalizados da API.
-const mockVideosComFoto: Video[] = mockVideos.map((v) => ({ ...v, teacherFoto: null }));
-const mockPostsComFoto: Post[] = mockPosts.map((p) => ({ ...p, authorFoto: null }));
+const mockVideosComFoto: Video[] = mockVideos.map((v) => ({ ...v, teacherFoto: null, editadoEm: null }));
+const mockPostsComFoto: Post[] = mockPosts.map((p) => ({ ...p, authorFoto: null, editadoEm: null }));
 
 // --- Normalizadores API → UI ----------------------------------------------------------
 
@@ -1243,6 +1254,7 @@ function normalizeCourse(raw: RawCourse): Course {
     rating: typeof raw?.media_avaliacoes === "number" ? raw.media_avaliacoes : null,
     ratingCount: Number(raw?.total_avaliacoes ?? 0) || 0,
     certificadoDisponivel: Boolean(raw?.certificado_disponivel),
+    editadoEm: raw?.editado_em || null,
   };
 }
 
@@ -1259,6 +1271,7 @@ function normalizeVideo(raw: RawVideo): Video {
     daysAgo: daysAgo(raw?.criado_em),
     thumbnail: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
     publishedAt: raw?.criado_em || null,
+    editadoEm: raw?.editado_em || null,
   };
 }
 
@@ -1284,6 +1297,7 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     durationLabel: formatarDuracaoCurta(durationSeconds),
     recursos: (raw?.recursos || []).map(normalizeCursoRecurso),
     temLegenda: Boolean(raw?.tem_legenda),
+    editadoEm: raw?.editado_em || null,
   };
 }
 
@@ -1398,6 +1412,7 @@ function normalizePost(raw: RawPost): Post {
     comments: Number(raw?.comentarios ?? 0),
     liked: Boolean(raw?.liked),
     oculto: Boolean(raw?.oculto),
+    editadoEm: raw?.editado_em || null,
   };
 }
 
@@ -1657,6 +1672,13 @@ export const api = {
   createPost: async (conteudo: string): Promise<Post> => {
     const res = await fetchAPI<RawPost>('/api/comunidade/posts/', {
       method: 'POST',
+      body: JSON.stringify({ conteudo }),
+    });
+    return normalizePost(res);
+  },
+  editarPost: async (postId: string | number, conteudo: string): Promise<Post> => {
+    const res = await fetchAPI<RawPost>(`/api/comunidade/posts/${postId}/`, {
+      method: 'PATCH',
       body: JSON.stringify({ conteudo }),
     });
     return normalizePost(res);

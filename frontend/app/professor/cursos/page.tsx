@@ -65,7 +65,6 @@ export default function ProfessorCursosPage() {
   const [videosNovos, setVideosNovos] = useState<File[]>([]);
   const [recursosNovos, setRecursosNovos] = useState<File[]>([]);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  const [apagandoVideoId, setApagandoVideoId] = useState<number | null>(null);
   const [apagandoRecursoId, setApagandoRecursoId] = useState<number | null>(null);
   const [enviandoRecursoAulaId, setEnviandoRecursoAulaId] = useState<number | null>(null);
   const [apagandoRecursoAulaId, setApagandoRecursoAulaId] = useState<number | null>(null);
@@ -197,28 +196,6 @@ export default function ProfessorCursosPage() {
     }
   };
 
-  const apagarVideoExistente = async (video: { id: number }) => {
-    if (!editando) return;
-    const confirmado = await confirm({
-      title: "Remover vídeo",
-      description: "O vídeo será removido deste curso. Esta ação não pode ser desfeita.",
-      confirmLabel: "Remover",
-      destructive: true,
-    });
-    if (!confirmado) return;
-    setApagandoVideoId(video.id);
-    try {
-      await api.professor.apagarVideoCurso(editando.id, video.id);
-      const cursoAtualizado = { ...editando, videos: editando.videos.filter((v) => v.id !== video.id) };
-      setEditando(cursoAtualizado);
-      setCursos((prev) => prev.map((c) => (c.id === cursoAtualizado.id ? cursoAtualizado : c)));
-    } catch (err) {
-      setErro(err instanceof Error ? err.message : "Erro ao remover o vídeo.");
-    } finally {
-      setApagandoVideoId(null);
-    }
-  };
-
   const escolherRecursoAula = (videoId: number) => {
     aulaParaRecursoRef.current = videoId;
     recursoAulaInputRef.current?.click();
@@ -297,7 +274,8 @@ export default function ProfessorCursosPage() {
     setErro(null);
     try {
       if (editando) {
-        await api.professor.atualizarCurso(editando.id, form, videosNovos, recursosNovos);
+        // Ao editar não se enviam vídeos novos: as aulas não se trocam.
+        await api.professor.atualizarCurso(editando.id, form, [], recursosNovos);
       } else {
         await api.professor.criarCurso(form, videosNovos, recursosNovos);
       }
@@ -537,15 +515,24 @@ export default function ProfessorCursosPage() {
                   disabled={submetendo}
                   className="sr-only"
                 />
-                <button
-                  type="button"
-                  onClick={escolherVideos}
-                  disabled={submetendo}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  {editando ? "Adicionar mais vídeos" : "Fazer upload de vídeos (1 ou mais)"}
-                </button>
+                {editando ? (
+                  // Ao editar não se trocam, acrescentam ou apagam aulas (o backend recusa).
+                  <p className="flex items-start gap-2 rounded-lg border border-border/70 bg-surface/60 px-3 py-2 text-xs text-muted-foreground">
+                    <Film className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    As aulas não podem ser trocadas, acrescentadas ou apagadas ao editar. Podes mudar o título, a descrição, a
+                    capa e os recursos, e as legendas e os recursos de cada aula.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={escolherVideos}
+                    disabled={submetendo}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Fazer upload de vídeos (1 ou mais)
+                  </button>
+                )}
 
                 {editando && editando.videos.length > 0 && (
                   <>
@@ -579,15 +566,6 @@ export default function ProfessorCursosPage() {
                                   {formatarDuracaoCurta(video.duracao_segundos)}
                                 </span>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => void apagarVideoExistente(video)}
-                                disabled={apagandoVideoId === video.id}
-                                className="text-red-400 hover:text-red-300 disabled:opacity-50"
-                                aria-label={`Remover ${video.titulo}`}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 pl-5">

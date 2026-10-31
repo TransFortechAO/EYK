@@ -196,7 +196,8 @@ export default function ProfessorVideosPage() {
     setSubmetendo(true);
     setErro(null);
     try {
-      const payload: ProfessorVideoPayload = { ...form, arquivo: videoFile };
+      // Ao editar não se envia ficheiro de vídeo: o vídeo não se troca.
+      const payload: ProfessorVideoPayload = { ...form, arquivo: editando ? null : videoFile };
       if (editando) {
         await api.professor.atualizarVideo(editando.id, payload, recursosNovos);
       } else {
@@ -455,48 +456,56 @@ export default function ProfessorVideosPage() {
                   Se não escolheres uma, é usado automaticamente um frame do vídeo.
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label>Ficheiro de vídeo</Label>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={onVideoSelecionado}
-                  disabled={submetendo}
-                  className="sr-only"
-                />
-                <button
-                  type="button"
-                  onClick={escolherVideo}
-                  disabled={submetendo}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  Fazer upload de vídeo
-                </button>
-
-                {videoFile ? (
-                  <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <Film className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-                      <span className="truncate">{videoFile.name}</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setVideoFile(null)}
-                      disabled={submetendo}
-                      className="shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-50"
-                      aria-label="Remover ficheiro"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : editando?.arquivo ? (
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Film className="h-3.5 w-3.5 shrink-0" /> Já tem um ficheiro de vídeo enviado.
+              {editando ? (
+                // Ao editar não se troca o vídeo (o backend recusa): só texto, capa e recursos.
+                <div className="space-y-1.5">
+                  <Label>Vídeo</Label>
+                  <p className="flex items-start gap-2 rounded-lg border border-border/70 bg-surface/60 px-3 py-2 text-xs text-muted-foreground">
+                    <Film className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    O vídeo não pode ser trocado ao editar. Podes mudar o título, a descrição, a capa e os recursos. Para
+                    outro vídeo, publica-o como novo.
                   </p>
-                ) : null}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Ficheiro de vídeo</Label>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={onVideoSelecionado}
+                    disabled={submetendo}
+                    className="sr-only"
+                  />
+                  <button
+                    type="button"
+                    onClick={escolherVideo}
+                    disabled={submetendo}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Fazer upload de vídeo
+                  </button>
+
+                  {videoFile ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Film className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                        <span className="truncate">{videoFile.name}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setVideoFile(null)}
+                        disabled={submetendo}
+                        className="shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        aria-label="Remover ficheiro"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Recursos (PDF, opcional)</Label>

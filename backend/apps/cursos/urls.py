@@ -10,6 +10,7 @@ from apps.feed.api_views import (
     comentario_detail,
     comentario_list,
     comentario_reagir,
+    post_detail,
     post_list,
     post_react,
 )
@@ -71,6 +72,7 @@ urlpatterns = [
     path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),
+    path('comunidade/posts/<int:post_id>/', post_detail, name='api-post-detail'),
     path('comunidade/posts/<int:post_id>/reagir/', post_react, name='api-post-react'),
     path('comunidade/posts/<int:post_id>/comentarios/', comentario_list, name='api-comentario-list'),
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/', comentario_detail, name='api-comentario-detail'),
