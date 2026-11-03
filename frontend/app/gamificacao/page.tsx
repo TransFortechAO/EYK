@@ -28,7 +28,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar } from "@/components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSecoesMoveis } from "@/components/ds/secoes-moveis";
 import { cn } from "@/lib/utils";
 import { api, type Badge, type WalletEntry, type GamePanel } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
@@ -40,7 +40,6 @@ const SEPARADORES = [
   { id: "conquistas", rotulo: "Conquistas" },
   { id: "moedas", rotulo: "Moedas" },
 ] as const;
-type Separador = (typeof SEPARADORES)[number]["id"];
 
 const badgeIcons: Record<string, typeof Sparkles> = {
   PlayCircle,
@@ -63,9 +62,8 @@ export default function GamificacaoPage() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [wallet, setWallet] = useState<WalletEntry[]>([]);
   const [linkCopiado, setLinkCopiado] = useState(false);
-  const [separador, setSeparador] = useState<Separador>("resumo");
-  // Esconde no telemóvel/tablet o que não é do separador escolhido.
-  const so = (id: Separador) => (separador === id ? undefined : "movel:hidden");
+  // Esconde no telemóvel/tablet o que não é do separador escolhido (Design System).
+  const { so, separadores } = useSecoesMoveis(SEPARADORES);
 
   const copiarLinkConvite = async () => {
     if (!user?.username) return;
@@ -105,15 +103,7 @@ export default function GamificacaoPage() {
     <div className="space-y-8">
       <PageHeader title="Gamificação" description="Conquistas, moedas e progresso — acompanha a tua jornada." />
 
-      <Tabs value={separador} onValueChange={(v) => setSeparador(v as Separador)} className="computador:hidden">
-        <TabsList className="w-full bg-surface">
-          {SEPARADORES.map((s) => (
-            <TabsTrigger key={s.id} value={s.id} className="flex-1">
-              {s.rotulo}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {separadores}
 
       <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-5", so("resumo"))}>
         <StatCard icon={Coins} label="Moedas EYK" value={p.coins} tone="gold" />

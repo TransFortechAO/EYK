@@ -75,7 +75,7 @@ export default function LandingPage() {
       <div className="relative z-10">
 
         {/* Cabeçalho */}
-        <header className="sticky top-0 z-20 border-b border-white/5 bg-[#0a0a0a]/90 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0a]">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-8">
             <div className="flex items-center gap-2">
               <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt=""

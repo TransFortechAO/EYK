@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, BookOpen, Calendar, Eye, GraduationCap, Lock, Pencil, TrendingUp, Users, Video as VideoIcon } from "lucide-react";
+import { ArrowLeft, BookOpen, Calendar, Eye, GraduationCap, Lock, MessageSquare, Pencil, TrendingUp, Trophy, Users, Video as VideoIcon } from "lucide-react";
 import { StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { MenuModeracao, useBloquear } from "@/components/moderacao/denunciar";
 import {
   ConquistasPerfil,
-  ConteudoProfessor,
   CursosConcluidosPerfil,
+  CursosProfessor,
   IconeTipoConta,
   PublicacoesPerfil,
+  VideosProfessor,
 } from "@/components/perfil/secoes";
+import { useSecoesMoveis, type SecaoMovel } from "@/components/ds/secoes-moveis";
 import { api, formatarDataCurta, type PerfilPublico } from "@/lib/api";
 
 export default function PerfilPublicoPage() {
@@ -38,6 +40,17 @@ function PerfilPublicoConteudo() {
   const [aSeguir, setASeguir] = useState(false);
   const [seguidores, setSeguidores] = useState(0);
   const [seguindoLoading, setSeguindoLoading] = useState(false);
+
+  // Telemóvel/tablet: cada tipo de conteúdo no seu separador (Design System).
+  type Secao = "cursos" | "videos" | "concluidos" | "conquistas" | "publicacoes";
+  const secoes: SecaoMovel<Secao>[] = [];
+  if (perfil && !perfil.privado) {
+    if (perfil.isTeacher) secoes.push({ id: "cursos", rotulo: "Cursos", icone: BookOpen }, { id: "videos", rotulo: "Vídeos", icone: VideoIcon });
+    if (perfil.listaCursosConcluidos) secoes.push({ id: "concluidos", rotulo: "Concluídos", icone: GraduationCap });
+    if (perfil.conquistas) secoes.push({ id: "conquistas", rotulo: "Conquistas", icone: Trophy });
+    if (perfil.publicacoes) secoes.push({ id: "publicacoes", rotulo: "Publicações", icone: MessageSquare });
+  }
+  const separadores = useSecoesMoveis(secoes);
 
   useEffect(() => {
     let alive = true;
@@ -206,10 +219,22 @@ function PerfilPublicoConteudo() {
             </div>
           )}
 
-          {perfil.isTeacher && <ConteudoProfessor perfil={perfil} />}
-          {perfil.listaCursosConcluidos && <CursosConcluidosPerfil cursos={perfil.listaCursosConcluidos} />}
-          {perfil.conquistas && <ConquistasPerfil conquistas={perfil.conquistas} />}
-          {perfil.publicacoes && <PublicacoesPerfil publicacoes={perfil.publicacoes} />}
+          {separadores.separadores}
+          {perfil.isTeacher && (
+            <>
+              <div className={separadores.so("cursos")}><CursosProfessor perfil={perfil} /></div>
+              <div className={separadores.so("videos")}><VideosProfessor perfil={perfil} /></div>
+            </>
+          )}
+          {perfil.listaCursosConcluidos && (
+            <div className={separadores.so("concluidos")}><CursosConcluidosPerfil cursos={perfil.listaCursosConcluidos} /></div>
+          )}
+          {perfil.conquistas && (
+            <div className={separadores.so("conquistas")}><ConquistasPerfil conquistas={perfil.conquistas} /></div>
+          )}
+          {perfil.publicacoes && (
+            <div className={separadores.so("publicacoes")}><PublicacoesPerfil publicacoes={perfil.publicacoes} /></div>
+          )}
         </>
       )}
     </div>

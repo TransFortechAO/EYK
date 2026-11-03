@@ -92,6 +92,15 @@ export default function ProfessorVideosPage() {
     setModalAberto(true);
   };
 
+  // Ação rápida do Painel (?novo=1): abre logo o formulário de criar.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("novo") !== "1") return;
+    abrirCriar();
+    url.searchParams.delete("novo");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }, []);
+
   const abrirEditar = (video: ProfessorVideo) => {
     setEditando(video);
     setForm({

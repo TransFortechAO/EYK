@@ -3,6 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Download, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CHIP_BOTAO } from "@/components/ds/chip";
+import { cn } from "@/lib/utils";
 
 // Em desenvolvimento o service worker fica desligado (iria guardar em cache os
 // ficheiros do hot-reload do Next); pode ser ligado com NEXT_PUBLIC_ENABLE_SW=true.
@@ -73,8 +75,8 @@ export function InstallAppButton() {
     <Button
       variant="outline"
       size="sm"
-      // Tema claro: sem borda nem sombra (no escuro mantém a borda para se destacar do fundo).
-      className="hidden gap-1.5 rounded-full border-transparent bg-surface shadow-none sm:inline-flex dark:border-input"
+      // Chip do Design System: sem borda nem sombra no tema claro.
+      className={cn("hidden gap-1.5 sm:inline-flex", CHIP_BOTAO)}
       onClick={() => void instalar()}
     >
       <Download className="h-4 w-4" />

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { ProfileMenu } from "@/components/profile-menu";
 import { SinoNotificacoes } from "@/components/sino-notificacoes";
 import { InstallAppButton } from "@/components/pwa";
+import { Chip } from "@/components/ds/chip";
 import { api, type LeaderRow } from "@/lib/api";
 import { PesquisaGlobal } from "@/components/pesquisa-global";
 import { CampoPesquisaPagina, pesquisaDaPagina } from "@/components/pesquisa-pagina";
@@ -77,16 +78,15 @@ export function Topbar() {
       ) : null}
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
+        {/* Chips do Design System: sem borda nem sombra no tema claro. */}
+        <Chip className="hidden sm:inline-flex" title="Moedas EYK">
           <Coins className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium tabular-nums">
-            {(me?.coins ?? 0).toLocaleString("pt-PT")}
-          </span>
-        </div>
-        <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
+          <span className="tabular-nums">{(me?.coins ?? 0).toLocaleString("pt-PT")}</span>
+        </Chip>
+        <Chip className="hidden sm:inline-flex" title="Streak (dias seguidos)">
           <Flame className="h-4 w-4 text-streak" />
-          <span className="text-sm font-medium tabular-nums">{me?.streak ?? 0}</span>
-        </div>
+          <span className="tabular-nums">{me?.streak ?? 0}</span>
+        </Chip>
 
         <InstallAppButton />
 
