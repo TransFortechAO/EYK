@@ -50,7 +50,7 @@ export default function InicioPage() {
       <SoPlataformaGeral>
         <section>
           <SectionHeader title="Cursos recentes" href="/cursos" cta="Ver todos os cursos" />
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
             {cursosRecentes.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
@@ -59,7 +59,7 @@ export default function InicioPage() {
 
         <section>
           <SectionHeader title="Vídeos recentes" href="/videos" cta="Ver todos os vídeos" />
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
             {videos.map((video) => (
               <VideoCard key={video.id} video={video} />
             ))}

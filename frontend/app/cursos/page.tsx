@@ -106,7 +106,7 @@ export default function CursosPage() {
         <section>
           <SectionHeader title={`${filtered.length} curso${filtered.length === 1 ? "" : "s"} encontrado${filtered.length === 1 ? "" : "s"}`} />
           {filtered.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
               {filtered.map((course) => (
                 <CourseCard key={course.id} course={course} />
               ))}

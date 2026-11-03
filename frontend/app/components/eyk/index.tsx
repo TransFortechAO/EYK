@@ -12,11 +12,11 @@ import {
   Hand,
   Share2,
   ExternalLink,
-  Check,
-  Link as LinkIcon,
   Star,
   EyeOff,
   Pencil,
+  MessageCircle,
+  Repeat2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,12 +24,13 @@ import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UserAvatar } from "@/components/UserAvatar";
 import { api, formatarDataCurta, mensagemDeErro, type Course, type Video, type Post } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 import { toast } from "sonner";
 import { PostComments } from "@/components/eyk/post-comments";
+import { ModalPartilha, PreviaPost } from "@/components/partilha/modal-partilha";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MenuModeracao } from "@/components/moderacao/denunciar";
 
 
@@ -190,14 +191,15 @@ export function CourseCard({ course }: { course: Course }) {
     <Card className="group relative overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
       <Link
         href={`/cursos/${course.id}`}
-        className="block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        // Telemóvel: cartão horizontal e compacto; a partir do tablet, vertical.
+        className="flex h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring sm:block"
       >
         <div
-          className="relative aspect-[16/9] w-full"
+          className="relative aspect-[16/9] w-[40%] shrink-0 self-start sm:w-full"
           style={{ background: course.thumbnail }}
           aria-hidden
         >
-          <Badge className="absolute left-3 top-3 rounded-full bg-background/90 text-foreground border-0 backdrop-blur">
+          <Badge className="absolute left-3 top-3 hidden rounded-full bg-background/90 text-foreground border-0 backdrop-blur sm:inline-flex">
             {course.category}
           </Badge>
           {typeof course.progress === "number" && (
@@ -210,9 +212,9 @@ export function CourseCard({ course }: { course: Course }) {
           )}
         </div>
 
-        <div className="space-y-3 p-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="rounded-full bg-secondary px-2 py-0.5">{course.level}</span>
+        <div className="min-w-0 flex-1 space-y-1.5 p-3 sm:space-y-3 sm:p-4">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span className="hidden rounded-full bg-secondary px-2 py-0.5 sm:inline">{course.level}</span>
             {course.durationLabel && (
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
@@ -231,7 +233,7 @@ export function CourseCard({ course }: { course: Course }) {
             )}
           </div>
 
-          <h3 className="font-serif text-lg font-semibold leading-snug text-foreground line-clamp-2">
+          <h3 className="font-serif text-base font-semibold leading-snug text-foreground line-clamp-2 sm:text-lg">
             {course.title}
           </h3>
 
@@ -257,7 +259,7 @@ export function CourseCard({ course }: { course: Course }) {
               )}
             </div>
             {course.publishedAt && (
-              <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+              <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
                 <Calendar className="h-3.5 w-3.5" />
                 {formatarDataCurta(course.publishedAt)}
               </span>
@@ -286,8 +288,9 @@ export function VideoCard({ video }: { video: Video }) {
       href={`/videos/${video.id}`}
       className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
     >
-      <Card className="overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
-        <div className="relative aspect-video w-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+      {/* Telemóvel: cartão horizontal e compacto; a partir do tablet, vertical. */}
+      <Card className="flex overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated sm:block">
+        <div className="relative aspect-video w-[40%] shrink-0 self-start bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center sm:w-full">
           {/* Thumbnail (se existir) */}
           {video.thumbnail ? (
             <div
@@ -297,7 +300,7 @@ export function VideoCard({ video }: { video: Video }) {
             />
           ) : (
             /* Fallback quando não há thumbnail */
-            <PlayCircle className="h-16 w-16 text-white/30 transition-transform duration-200 group-hover:scale-110" />
+            <PlayCircle className="h-10 w-10 text-white/30 transition-transform duration-200 group-hover:scale-110 sm:h-16 sm:w-16" />
           )}
 
           {/* Overlay com ícone de play (hover) */}
@@ -315,11 +318,11 @@ export function VideoCard({ video }: { video: Video }) {
           )}
         </div>
 
-        <div className="space-y-2 p-4">
-          <h3 className="font-serif text-base font-semibold leading-snug line-clamp-2">
+        <div className="min-w-0 flex-1 space-y-1.5 p-3 sm:space-y-2 sm:p-4">
+          <h3 className="font-serif text-sm font-semibold leading-snug line-clamp-2 sm:text-base">
             {video.title}
           </h3>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 text-xs text-muted-foreground">
             {video.teacherUserId ? (
               <LinkDentroDeCartao
                 href={`/perfil/${video.teacherUserId}`}
@@ -333,7 +336,7 @@ export function VideoCard({ video }: { video: Video }) {
             <span className="shrink-0">{video.views.toLocaleString()} visualizações</span>
           </div>
           {video.publishedAt && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
               <Calendar className="h-3.5 w-3.5" />
               {formatarDataCurta(video.publishedAt)}
             </div>
@@ -359,14 +362,23 @@ export function PostCard({
   post,
   onToggleLike,
   onAutorBloqueado,
+  onRepostado,
+  abrirAoCarregar = false,
 }: {
   post: Post;
   onToggleLike?: () => void;
   /** Chamado depois de o utilizador bloquear o autor (para tirar os posts dele da lista). */
   onAutorBloqueado?: (userId: number) => void;
+  /** Chamado com o novo post depois de repostar (para o pôr no topo da lista). */
+  onRepostado?: (novo: Post) => void;
+  /** Abre logo o modal do post (ex: link partilhado /comunidade?post=ID). */
+  abrirAoCarregar?: boolean;
 }) {
   const [liked, setLiked] = useState(post.liked || false);
   const [likes, setLikes] = useState(post.likes);
+  const [comentarios, setComentarios] = useState(post.comments);
+  const [modalAberto, setModalAberto] = useState(abrirAoCarregar);
+  const [partilhaAberta, setPartilhaAberta] = useState(false);
   const { user } = useAuth();
   const souAutor = user?.id != null && post.authorId != null && String(user.id) === String(post.authorId);
   const [conteudo, setConteudo] = useState(post.content);
@@ -379,6 +391,10 @@ export function PostCard({
     setConteudo(post.content);
     setEditadoEm(post.editadoEm);
   }, [post.content, post.editadoEm]);
+
+  useEffect(() => {
+    if (abrirAoCarregar) setModalAberto(true);
+  }, [abrirAoCarregar]);
 
   const guardarEdicao = async () => {
     const novo = texto.trim();
@@ -415,93 +431,214 @@ export function PostCard({
     setLiked(!liked);
   };
 
-  return (
-    <Card className="border-border/70 shadow-soft transition-shadow">
-      <div className="p-5 space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <UserAvatar
-                name={post.author}
-                initials={post.initials}
-                foto={post.authorFoto ?? undefined}
-                userId={post.authorId ?? undefined}
-              />
-            </Avatar>
-            <div>
-              {post.authorId ? (
-                <Link
-                  href={`/perfil/${post.authorId}`}
-                  className="font-medium text-sm hover:underline underline-offset-2 transition-colors"
-                >
-                  {post.author}
-                </Link>
-              ) : (
-                <p className="font-medium text-sm">{post.author}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {post.timeAgo}
-                {editadoEm && " · editado"}
-              </p>
-            </div>
+  // O que se partilha: num repost sem comentário, a publicação original.
+  const partilhaOriginal = Boolean(post.repostDe?.id && !conteudo && !post.repostDe.indisponivel);
+  const idPartilha = partilhaOriginal ? post.repostDe!.id! : post.id;
+  const autorPartilha = partilhaOriginal ? post.repostDe!.author ?? post.author : post.author;
+  const textoPartilha = partilhaOriginal ? post.repostDe!.content ?? "" : conteudo;
+  const iniciaisPartilha = partilhaOriginal ? post.repostDe!.initials ?? "??" : post.initials;
+
+  const cabecalho = (emModal: boolean) => (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-10 w-10">
+          <UserAvatar
+            name={post.author}
+            initials={post.initials}
+            foto={post.authorFoto ?? undefined}
+            userId={post.authorId ?? undefined}
+          />
+        </Avatar>
+        <div>
+          {post.authorId ? (
+            <Link
+              href={`/perfil/${post.authorId}`}
+              className="font-medium text-sm hover:underline underline-offset-2 transition-colors"
+            >
+              {post.author}
+            </Link>
+          ) : (
+            <p className="font-medium text-sm">{post.author}</p>
+          )}
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            {post.repostDe && (
+              <>
+                <Repeat2 className="h-3.5 w-3.5" aria-hidden /> repostou ·
+              </>
+            )}
+            {post.timeAgo}
+            {editadoEm && " · editado"}
+          </p>
+        </div>
+      </div>
+      {!emModal && (
+        <div className="flex items-center gap-1">
+          {souAutor && !aEditar && conteudo && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                setTexto(conteudo);
+                setAEditar(true);
+              }}
+              aria-label="Editar publicação"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          <MenuModeracao
+            tipo="post"
+            id={post.id}
+            autorId={post.authorId}
+            autorNome={post.author}
+            onBloqueado={onAutorBloqueado}
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const corpo = (emModal: boolean) => (
+    <>
+      {post.oculto && <AvisoOculto />}
+      {aEditar && !emModal ? (
+        <div className="space-y-2">
+          <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} className="text-sm" />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setAEditar(false)} disabled={aGuardar}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={() => void guardarEdicao()} disabled={aGuardar || !texto.trim()}>
+              Guardar
+            </Button>
           </div>
-          <div className="flex items-center gap-1">
-            {souAutor && !aEditar && (
+        </div>
+      ) : (
+        conteudo && <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{conteudo}</p>
+      )}
+      {post.repostDe && <PostOriginal original={post.repostDe} />}
+    </>
+  );
+
+  return (
+    <>
+      <Card className="border-border/70 shadow-soft transition-shadow">
+        <div className="space-y-4 p-5">
+          {cabecalho(false)}
+          {corpo(false)}
+          {/* Reações, comentários (abre o modal do post) e partilhar. */}
+          <div className="flex items-center gap-1 border-t border-border/60 pt-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("gap-2 text-xs", liked && "text-primary")}
+              onClick={toggleLike}
+              aria-label={liked ? "Retirar reação" : "Reagir"}
+            >
+              <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
+              {likes}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-xs"
+              onClick={() => setModalAberto(true)}
+              aria-label={`Ver comentários (${comentarios})`}
+            >
+              <MessageCircle className="h-4 w-4" />
+              {comentarios}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto gap-2 text-xs"
+              onClick={() => setPartilhaAberta(true)}
+            >
+              <Share2 className="h-4 w-4" />
+              Partilhar
+              {!!post.reposts && <span className="tabular-nums text-muted-foreground">· {post.reposts}</span>}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Modal do post: a publicação e, por baixo, os comentários (com a caixa para comentar). */}
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Publicação de {post.author}</DialogTitle>
+            <DialogDescription>A publicação e os comentários.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 p-5 pr-12">
+            {cabecalho(true)}
+            {corpo(true)}
+            <div className="flex items-center gap-1 border-t border-border/60 pt-3">
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => {
-                  setTexto(conteudo);
-                  setAEditar(true);
-                }}
-                aria-label="Editar publicação"
+                size="sm"
+                className={cn("gap-2 text-xs", liked && "text-primary")}
+                onClick={toggleLike}
               >
-                <Pencil className="h-4 w-4" />
+                <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
+                {likes}
               </Button>
-            )}
-            <ShareButton url={`/comunidade?post=${post.id}`} titulo="Publicação na comunidade EYK" />
-            <MenuModeracao
-              tipo="post"
-              id={post.id}
-              autorId={post.authorId}
-              autorNome={post.author}
-              onBloqueado={onAutorBloqueado}
-            />
-          </div>
-        </div>
-        {post.oculto && <AvisoOculto />}
-        {aEditar ? (
-          <div className="space-y-2">
-            <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} className="text-sm" />
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setAEditar(false)} disabled={aGuardar}>
-                Cancelar
-              </Button>
-              <Button size="sm" onClick={() => void guardarEdicao()} disabled={aGuardar || !texto.trim()}>
-                Guardar
-              </Button>
+              <span className="inline-flex items-center gap-2 px-3 text-xs text-muted-foreground">
+                <MessageCircle className="h-4 w-4" />
+                {comentarios} comentário{comentarios === 1 ? "" : "s"}
+              </span>
             </div>
           </div>
-        ) : (
-          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{conteudo}</p>
-        )}
-        <div className="flex items-center gap-4 pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("gap-2 text-xs", liked && "text-primary")}
-            onClick={toggleLike}
-          >
-            <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
-            {likes}
-          </Button>
-        </div>
+          <div className="border-t border-border/60 bg-surface/40 p-5">
+            <PostComments postId={post.id} initialCount={comentarios} modo="modal" onTotalChange={setComentarios} />
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* Comentários: mostra 2 de cada vez, com "Ver mais" */}
-        <PostComments postId={post.id} initialCount={post.comments} />
+      <ModalPartilha
+        aberto={partilhaAberta}
+        aoMudar={setPartilhaAberta}
+        url={`/comunidade/post/${idPartilha}`}
+        titulo={`Publicação de ${autorPartilha} na comunidade EYK`}
+        previsualizacao={<PreviaPost autor={autorPartilha} iniciais={iniciaisPartilha} texto={textoPartilha} />}
+        post={post}
+        aoRepostar={onRepostado}
+      />
+    </>
+  );
+}
+
+/** A publicação original dentro de um repost. */
+function PostOriginal({ original }: { original: NonNullable<Post["repostDe"]> }) {
+  if (original.indisponivel) {
+    return (
+      <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+        Esta publicação já não está disponível.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2 rounded-xl border border-border/70 bg-surface/50 p-4">
+      <div className="flex items-center gap-2">
+        <Avatar className="h-7 w-7">
+          <UserAvatar
+            name={original.author ?? ""}
+            initials={original.initials ?? "??"}
+            foto={original.authorFoto ?? undefined}
+            userId={original.authorId ?? undefined}
+          />
+        </Avatar>
+        {original.authorId ? (
+          <Link href={`/perfil/${original.authorId}`} className="text-sm font-medium hover:underline underline-offset-2">
+            {original.author}
+          </Link>
+        ) : (
+          <span className="text-sm font-medium">{original.author}</span>
+        )}
+        <span className="text-xs text-muted-foreground">· {original.timeAgo}</span>
       </div>
-    </Card>
+      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{original.content}</p>
+    </div>
   );
 }
 
@@ -634,47 +771,27 @@ export function ShareButton({
   url,
   titulo,
   className,
+  previsualizacao,
 }: {
   url: string;
   titulo?: string;
   className?: string;
+  /** Miniatura no modal (ex: capa do vídeo/curso). */
+  previsualizacao?: ReactNode;
 }) {
-  const [copiado, setCopiado] = useState(false);
-
-  const partilhar = async () => {
-    const absoluta = url.startsWith("http") ? url : `${window.location.origin}${url}`;
-
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ url: absoluta, title: titulo });
-        return;
-      } catch {
-        // utilizador cancelou a partilha nativa — cai para copiar o link
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(absoluta);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      /* clipboard indisponível neste browser */
-    }
-  };
-
+  const [aberto, setAberto] = useState(false);
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className={cn("h-8 w-8 shrink-0", className)}>
-          <Share2 className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-2" align="end">
-        <Button variant="ghost" className="w-full justify-start gap-2 text-xs" onClick={() => void partilhar()}>
-          {copiado ? <Check className="h-4 w-4 text-primary" /> : <LinkIcon className="h-4 w-4" />}
-          {copiado ? "Link copiado!" : "Copiar link"}
-        </Button>
-      </PopoverContent>
-    </Popover>
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn("h-8 w-8 shrink-0", className)}
+        onClick={() => setAberto(true)}
+        aria-label="Partilhar"
+      >
+        <Share2 className="h-4 w-4" />
+      </Button>
+      <ModalPartilha aberto={aberto} aoMudar={setAberto} url={url} titulo={titulo ?? "EYK"} previsualizacao={previsualizacao} />
+    </>
   );
 }

@@ -105,7 +105,7 @@ export default function VideosPage() {
         <section>
           <SectionHeader title={`${filtrados.length} vídeo${filtrados.length === 1 ? "" : "s"} encontrado${filtrados.length === 1 ? "" : "s"}`} />
           {filtrados.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
               {filtrados.map((v) => (
                 <VideoCard key={v.id} video={v} />
               ))}

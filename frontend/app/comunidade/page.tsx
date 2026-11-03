@@ -2,16 +2,13 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Users, Send } from "lucide-react";
+import { Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, SectionHeader, PostCard, EmptyState } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar } from "@/components/ui/avatar";
-import { api, mensagemDeErro, type Post } from "@/lib/api";
-import { UserInitialsLink } from "@/components/UserAvatar";
+import { api, type Post } from "@/lib/api";
 import { ComunidadeComEscola } from "@/components/instituicao/escola";
+import { CompositorPost } from "@/components/comunidade/compositor";
 
 export default function ComunidadePage() {
   return (
@@ -24,9 +21,7 @@ export default function ComunidadePage() {
 function ComunidadeConteudo() {
   const searchParams = useSearchParams();
   const postPartilhado = searchParams.get("post");
-  const [text, setText] = useState("");
   const [posts, setPosts] = useState<Post[]>([]);
-  const [submitting, setSubmitting] = useState(false);
   const [reagindoIds, setReagindoIds] = useState<Set<string>>(new Set());
 
   const loadPosts = useCallback(async () => {
@@ -45,21 +40,6 @@ function ComunidadeConteudo() {
       alvo.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [postPartilhado, posts]);
-
-  const submit = async () => {
-    if (!text.trim() || submitting) return;
-    try {
-      setSubmitting(true);
-      const newPost = await api.createPost(text.trim());
-      setPosts((prev) => [newPost, ...prev]);
-      setText("");
-    } catch (err) {
-      // Filtro automático (linguagem proibida, links em conta nova, spam…).
-      toast.error(mensagemDeErro(err, "Não foi possível publicar. Tenta de novo."));
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const toggleLike = async (postId: string) => {
     // Evita disparar dois pedidos para o mesmo post (ex: duplo clique antes
@@ -102,26 +82,9 @@ function ComunidadeConteudo() {
       {/* Com escola parceira: separadores para a comunidade de cada Turma LGA. */}
       <ComunidadeComEscola>
         <div className="space-y-8">
-          <Card className="p-5 shadow-soft">
-            <div className="flex gap-3">
-              <Avatar className="h-10 w-10 shrink-0">
-                <UserInitialsLink/>
-              </Avatar>
-              <div className="flex-1 space-y-3">
-                <Textarea
-                  placeholder="O que estás a aprender hoje? Partilha com a comunidade..."
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  className="min-h-[90px] resize-none bg-surface"
-                />
-                <div className="flex justify-end">
-                  <Button onClick={() => void submit()} disabled={!text.trim() || submitting} className="gap-2">
-                    <Send className="h-4 w-4" />
-                    {submitting ? "A publicar…" : "Publicar"}
-                  </Button>
-                </div>
-              </div>
-            </div>
+          {/* Só o campo; ao clicar abre o cartão para escrever a publicação. */}
+          <Card className="p-4 shadow-soft">
+            <CompositorPost aoPublicar={(novo) => setPosts((prev) => [novo, ...prev])} />
           </Card>
 
           <section>
@@ -142,6 +105,8 @@ function ComunidadeConteudo() {
                       post={post}
                       onToggleLike={() => void toggleLike(post.id)}
                       onAutorBloqueado={(userId) => setPosts((prev) => prev.filter((p) => p.authorId !== userId))}
+                      onRepostado={(novo) => setPosts((prev) => [novo, ...prev])}
+                      abrirAoCarregar={postPartilhado === post.id}
                     />
                   </div>
                 ))}

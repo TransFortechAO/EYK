@@ -1,21 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { Hand, Search } from "lucide-react";
+import { Suspense, useState } from "react";
+import { Hand } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/eyk";
-import { Input } from "@/components/ui/input";
+import { CampoPesquisaBiblioteca, usePesquisaBiblioteca } from "@/components/pesquisa-biblioteca";
+import { normalizarTexto } from "@/components/filtros/barra-filtros";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { lgaCategories, lgaSigns } from "@/lib/lga-data";
 import { LGASign } from "@/components/lga-sign";
 import { GestosValidadosBiblioteca } from "@/components/instituicao/escola";
 
 export default function BibliotecaPage() {
-  const [cat, setCat] = useState("Todos");
-  const [q, setQ] = useState("");
+  return (
+    <Suspense fallback={null}>
+      <Biblioteca />
+    </Suspense>
+  );
+}
+
+function Biblioteca() {
+  const [cat, setCat] = useState("Todas");
+  // A pesquisa está no topo (computador) ou na página (telemóvel/tablet) — ver pesquisa-biblioteca.tsx.
+  const [q] = usePesquisaBiblioteca();
   const list = lgaSigns.filter(
     (s) =>
-      (cat === "Todos" || s.category === cat) &&
-      (q.trim() === "" || s.term.toLowerCase().includes(q.toLowerCase())),
+      (cat === "Todas" || s.category === cat) &&
+      (q.trim() === "" || normalizarTexto(s.term).includes(normalizarTexto(q.trim()))),
   );
 
   return (
@@ -25,17 +35,7 @@ export default function BibliotecaPage() {
         description="Consulta rápida de gestos da Língua Gestual Angolana — aprende ao teu ritmo."
       />
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Pesquisar termo, palavra, frase..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="pl-9 bg-surface"
-          />
-        </div>
-      </div>
+      <CampoPesquisaBiblioteca className="computador:hidden" />
 
       <Tabs value={cat} onValueChange={setCat}>
         <TabsList className="bg-surface flex-wrap h-auto py-1">

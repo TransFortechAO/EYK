@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -10,12 +10,12 @@ import {
   Users,
   PlayCircle,
   Lock,
-  Maximize2,
   CheckCircle2,
   Upload,
   Star,
 } from "lucide-react";
 import { CourseCard, SectionHeader, EmptyState, ShareButton } from "@/components/eyk";
+import { PreviaConteudo } from "@/components/partilha/modal-partilha";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +63,6 @@ export default function CoursePlayerPage() {
   const [inscrevendo, setInscrevendo] = useState(false);
   const [mostrarUploadRecurso, setMostrarUploadRecurso] = useState(false);
   const [recursosKey, setRecursosKey] = useState(0);
-  const playerWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -155,10 +154,6 @@ export default function CoursePlayerPage() {
     }
   };
 
-  const entrarEmFullscreen = () => {
-    playerWrapRef.current?.requestFullscreen?.();
-  };
-
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" className="-ml-2 gap-1.5" onClick={() => router.push("/cursos")}>
@@ -169,7 +164,7 @@ export default function CoursePlayerPage() {
         {/* Coluna principal: player + info + tabs */}
         <div className="min-w-0 space-y-6">
           <Card className="overflow-hidden rounded-3xl border-border/70 shadow-elevated">
-            <div ref={playerWrapRef} className="relative">
+            <div className="relative">
               {activeVideo ? (
                 <ModernVideoPlayer
                   fileUrl={activeVideo.fileUrl}
@@ -202,25 +197,20 @@ export default function CoursePlayerPage() {
                   <PlayCircle className="h-12 w-12" />
                 </div>
               )}
-              <button
-                type="button"
-                onClick={entrarEmFullscreen}
-                aria-label="Ecrã inteiro"
-                className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70"
-              >
-                <Maximize2 className="h-4 w-4" />
-              </button>
-              {activeVideo && (
-                <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-                  Aula {activeIndex + 1} — {activeVideo.title}
-                </span>
-              )}
             </div>
           </Card>
 
-          {activeVideo && activeVideo.durationLabel && (
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" /> Duração da aula: {activeVideo.durationLabel}
+          {/* A aula fica por baixo do vídeo (por cima tapava os controlos do player). */}
+          {activeVideo && (
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground sm:text-sm">
+              <span className="font-medium text-foreground">
+                Aula {activeIndex + 1} de {curso.videos.length} — {activeVideo.title}
+              </span>
+              {activeVideo.durationLabel && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> {activeVideo.durationLabel}
+                </span>
+              )}
             </p>
           )}
 
@@ -254,7 +244,11 @@ export default function CoursePlayerPage() {
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{curso.title}</h1>
             <div className="flex shrink-0 items-center gap-1">
-              <ShareButton url={`/cursos/${curso.id}`} titulo={curso.title} />
+              <ShareButton
+                url={`/cursos/${curso.id}`}
+                titulo={curso.title}
+                previsualizacao={<PreviaConteudo capa={curso.thumbnail} titulo={curso.title} rotulo="Curso" autor={curso.teacher} />}
+              />
               {!curso.souOProfessor && <BotaoDenunciar tipo="curso" id={curso.id} autorId={curso.teacherUserId} />}
             </div>
           </div>

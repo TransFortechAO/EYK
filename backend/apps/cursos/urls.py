@@ -10,9 +10,11 @@ from apps.feed.api_views import (
     comentario_detail,
     comentario_list,
     comentario_reagir,
+    partilha_publica,
     post_detail,
     post_list,
     post_react,
+    post_repostar,
 )
 from apps.gamificacao.api_views import (
     badges_list,
@@ -74,6 +76,8 @@ urlpatterns = [
     path('comunidade/posts/', post_list, name='api-post-list'),
     path('comunidade/posts/<int:post_id>/', post_detail, name='api-post-detail'),
     path('comunidade/posts/<int:post_id>/reagir/', post_react, name='api-post-react'),
+    path('comunidade/posts/<int:post_id>/repostar/', post_repostar, name='api-post-repostar'),
+    path('partilha/<str:tipo>/<int:obj_id>/', partilha_publica, name='api-partilha-publica'),
     path('comunidade/posts/<int:post_id>/comentarios/', comentario_list, name='api-comentario-list'),
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/', comentario_detail, name='api-comentario-detail'),
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/reagir/', comentario_reagir, name='api-comentario-reagir'),

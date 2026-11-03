@@ -82,6 +82,83 @@ def post_list(request):
     return Response(serializer.data)
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def post_repostar(request, post_id):
+    """Reposta a publicação de alguém na comunidade, com um comentário opcional.
+    Aponta sempre para a publicação original (repostar um repost reposta o original)."""
+    alvo = get_object_or_404(_visiveis(Post.objects.select_related('autor', 'repost_de'), request), pk=post_id)
+    original = alvo.repost_de or alvo
+    if original.oculto or estao_bloqueados(request.user, original.autor):
+        return Response({'detail': 'Esta publicação não pode ser repostada.'}, status=status.HTTP_400_BAD_REQUEST)
+    conteudo = (request.data.get('conteudo') or '').strip()
+    if not conteudo and Post.objects.filter(autor=request.user, repost_de=original, conteudo='').exists():
+        return Response({'detail': 'Já repostaste esta publicação.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        termos = verificar_publicacao(request.user, conteudo, 'post')
+    except ConteudoRecusado as erro:
+        return Response({'detail': erro.mensagem}, status=erro.status)
+    post = Post.objects.create(autor=request.user, conteudo=conteudo, repost_de=original)
+    if conteudo:
+        sinalizar_se_necessario('post', post, termos)
+    if original.autor_id != request.user.id:
+        nome = request.user.get_display_name() or request.user.username
+        notificar(
+            original.autor, 'comunidade', f'{nome} repostou a tua publicação: "{_resumo(original.conteudo)}"',
+            link=f'/comunidade?post={post.id}',
+        )
+    return Response(PostSerializer(post, context=_contexto(request)).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def partilha_publica(request, tipo, obj_id):
+    """Dados mínimos para a pré-visualização de um link partilhado noutras redes
+    (título, excerto, autor e capa). Público — os robôs das redes não têm sessão —,
+    por isso só devolve o que é preciso e nada do que está oculto."""
+    if tipo == 'post':
+        post = get_object_or_404(
+            Post.objects.select_related('autor', 'repost_de__autor'), pk=obj_id, oculto=False, autor__is_active=True,
+        )
+        nome = post.autor.get_display_name() or post.autor.username
+        texto = post.conteudo
+        if not texto and post.repost_de and not post.repost_de.oculto:
+            texto = post.repost_de.conteudo
+        return Response({
+            'tipo': 'post',
+            'titulo': f'{nome} na comunidade EYK',
+            'descricao': _resumo(texto, 220),
+            'autor': nome,
+            'imagem': post.imagem.url if post.imagem else None,
+        })
+    if tipo == 'video':
+        from apps.professores.models import Video
+
+        video = get_object_or_404(Video.objects.select_related('professor'), pk=obj_id, ativo=True, oculto=False)
+        return Response({
+            'tipo': 'video',
+            'titulo': video.titulo,
+            'descricao': _resumo(video.descricao, 220),
+            'autor': video.professor.nome_publico,
+            'imagem': video.thumbnail.url if video.thumbnail else None,
+        })
+    if tipo == 'curso':
+        from apps.cursos.models import Curso
+
+        curso = get_object_or_404(
+            Curso.objects.select_related('professor', 'categoria'), pk=obj_id, ativo=True, oculto=False,
+        )
+        return Response({
+            'tipo': 'curso',
+            'titulo': curso.titulo,
+            'descricao': _resumo(curso.descricao, 220),
+            'autor': curso.professor.nome_publico,
+            'categoria': curso.categoria.nome if curso.categoria_id else None,
+            'imagem': curso.thumbnail.url if curso.thumbnail else None,
+        })
+    return Response({'detail': 'Tipo desconhecido.'}, status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(['PATCH'])
 @permission_classes([permissions.IsAuthenticated])
 def post_detail(request, post_id):

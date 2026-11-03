@@ -31,21 +31,32 @@ type PostCommentsProps = {
   postId: string;
   initialCount?: number;
   onCommentAdded?: () => void;
+  /** "modal": dentro do modal do post — sempre aberto e com todos os comentários. */
+  modo?: "cartao" | "modal";
+  /** Avisa quando o número de comentários muda (para o contador do cartão). */
+  onTotalChange?: (total: number) => void;
 };
 
 export function PostComments({
   postId,
   initialCount = 0,
   onCommentAdded,
+  modo = "cartao",
+  onTotalChange,
 }: PostCommentsProps) {
-  const [aberto, setAberto] = useState(false);
+  const noModal = modo === "modal";
+  const [aberto, setAberto] = useState(noModal);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [total, setTotal] = useState(initialCount);
   const [texto, setTexto] = useState("");
-  const [visiveis, setVisiveis] = useState(COMENTARIOS_POR_PAGINA);
+  const [visiveis, setVisiveis] = useState(noModal ? Number.POSITIVE_INFINITY : COMENTARIOS_POR_PAGINA);
   const [carregando, setCarregando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [carregado, setCarregado] = useState(false);
+
+  useEffect(() => {
+    if (carregado) onTotalChange?.(total);
+  }, [total, carregado, onTotalChange]);
 
   // Mantém o contador sincronizado com o post enquanto a lista não foi carregada
   useEffect(() => {
@@ -121,21 +132,23 @@ export function PostComments({
   const existemMais = visiveis < comentarios.length;
 
   return (
-    <div className="space-y-3 border-t border-border/60 pt-4">
-      <button
-        type="button"
-        onClick={() => setAberto((anterior) => !anterior)}
-        className="hit flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        aria-expanded={aberto}
-      >
-        <MessageCircle className="h-4 w-4" />
-        {aberto ? "Ocultar comentários" : `Ver comentários (${total})`}
-        {aberto ? (
-          <ChevronUp className="h-4 w-4" />
-        ) : (
-          <ChevronDown className="h-4 w-4" />
-        )}
-      </button>
+    <div className={cn("space-y-3", !noModal && "border-t border-border/60 pt-4")}>
+      {!noModal && (
+        <button
+          type="button"
+          onClick={() => setAberto((anterior) => !anterior)}
+          className="hit flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          aria-expanded={aberto}
+        >
+          <MessageCircle className="h-4 w-4" />
+          {aberto ? "Ocultar comentários" : `Ver comentários (${total})`}
+          {aberto ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </button>
+      )}
 
       {aberto && (
         <div className="space-y-3">
@@ -166,7 +179,7 @@ export function PostComments({
             </ul>
           )}
 
-          {!carregando && comentarios.length > COMENTARIOS_POR_PAGINA && (
+          {!noModal && !carregando && comentarios.length > COMENTARIOS_POR_PAGINA && (
             <div className="flex justify-center">
               {existemMais ? (
                 <Button

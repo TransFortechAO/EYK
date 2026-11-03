@@ -499,6 +499,31 @@ export type Post = {
   oculto?: boolean;
   /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
   editadoEm: string | null;
+  /** Repost: a publicação original (ou `indisponivel` se foi apagada/ocultada). */
+  repostDe?: PostOriginal | null;
+  /** Quantas vezes foi repostada. */
+  reposts?: number;
+};
+
+export type PostOriginal = {
+  id: string | null;
+  indisponivel: boolean;
+  author?: string;
+  authorId?: number | null;
+  initials?: string;
+  authorFoto?: string | null;
+  content?: string;
+  timeAgo?: string;
+};
+
+/** Dados públicos para pré-visualizar um link partilhado (ver /api/partilha/). */
+export type DadosPartilha = {
+  tipo: "post" | "video" | "curso";
+  titulo: string;
+  descricao: string;
+  autor: string;
+  imagem: string | null;
+  categoria?: string | null;
 };
 
 export type Comentario = {
@@ -1028,6 +1053,17 @@ type RawPost = {
   comentarios?: number | string | null;
   liked?: boolean | null;
   oculto?: boolean | null;
+  repost_de?: {
+    id: number | null;
+    indisponivel?: boolean;
+    autor?: number | null;
+    autor_nome?: string | null;
+    autor_initials?: string | null;
+    autor_foto?: string | null;
+    conteudo?: string | null;
+    time_ago?: string | null;
+  } | null;
+  reposts?: number | null;
 };
 
 type RawNotifType = Notification["type"] | (string & {});
@@ -1087,22 +1123,6 @@ type RawWalletEntry = {
 };
 
 // --- Helpers internos -----------------------------------------------------------------
-
-const COVERS = [
-  "linear-gradient(135deg,#B8892F,#E8C878)",
-  "linear-gradient(135deg,#2C1810,#8B5E34)",
-  "linear-gradient(135deg,#3D5A80,#98C1D9)",
-  "linear-gradient(135deg,#7B2D26,#D69F7E)",
-  "linear-gradient(135deg,#2F4858,#86BBD8)",
-  "linear-gradient(135deg,#4A4E69,#C9ADA7)",
-];
-
-function thumbnailFor(idLike: number | string): string {
-  const s = String(idLike);
-  let sum = 0;
-  for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i);
-  return COVERS[sum % COVERS.length];
-}
 
 // Usa a imagem de capa real (enviada pelo professor ou gerada automaticamente
 // a partir de um frame do vídeo) quando existir; caso contrário mantém o
@@ -1222,6 +1242,7 @@ import {
   mockLeaderboard, mockBadges, mockWallet, courseCategories,
 } from "@/lib/mock-data";
 import { limparCacheApiOffline } from "@/lib/offline";
+import { thumbnailFor } from "@/lib/capas";
 
 // Os mocks de Video/Post (usados só como fallback antes de a BD ter dados)
 // não têm foto de professor/autor — completa com `null` para bater com os
@@ -1413,6 +1434,19 @@ function normalizePost(raw: RawPost): Post {
     liked: Boolean(raw?.liked),
     oculto: Boolean(raw?.oculto),
     editadoEm: raw?.editado_em || null,
+    repostDe: raw?.repost_de
+      ? {
+          id: raw.repost_de.id != null ? String(raw.repost_de.id) : null,
+          indisponivel: Boolean(raw.repost_de.indisponivel),
+          author: raw.repost_de.autor_nome || "Anónimo",
+          authorId: typeof raw.repost_de.autor === "number" ? raw.repost_de.autor : null,
+          initials: raw.repost_de.autor_initials || "??",
+          authorFoto: mediaUrl(raw.repost_de.autor_foto) ?? null,
+          content: raw.repost_de.conteudo || "",
+          timeAgo: raw.repost_de.time_ago || "",
+        }
+      : null,
+    reposts: Number(raw?.reposts ?? 0),
   };
 }
 
@@ -1671,6 +1705,14 @@ export const api = {
   },
   createPost: async (conteudo: string): Promise<Post> => {
     const res = await fetchAPI<RawPost>('/api/comunidade/posts/', {
+      method: 'POST',
+      body: JSON.stringify({ conteudo }),
+    });
+    return normalizePost(res);
+  },
+  /** Reposta a publicação de alguém (com um comentário opcional). */
+  repostar: async (postId: string | number, conteudo = ""): Promise<Post> => {
+    const res = await fetchAPI<RawPost>(`/api/comunidade/posts/${postId}/repostar/`, {
       method: 'POST',
       body: JSON.stringify({ conteudo }),
     });

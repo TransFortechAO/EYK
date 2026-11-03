@@ -25,14 +25,42 @@ class PostSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()
     comentarios = serializers.SerializerMethodField()
     liked = serializers.SerializerMethodField()
+    repost_de = serializers.SerializerMethodField()
+    reposts = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = [
             'id', 'autor', 'autor_nome', 'autor_initials', 'autor_foto',
             'conteudo', 'imagem', 'criado_em', 'editado_em', 'time_ago',
-            'likes', 'comentarios', 'liked', 'oculto',
+            'likes', 'comentarios', 'liked', 'oculto', 'repost_de', 'reposts',
         ]
+
+    def get_repost_de(self, obj):
+        """Resumo da publicação original de um repost. Se foi apagada, ocultada
+        pela moderação ou é de alguém bloqueado, fica só "indisponível"."""
+        if not obj.repost_de_id:
+            return None
+        original = obj.repost_de
+        if original is None:
+            return {'id': None, 'indisponivel': True}
+        request = self.context.get('request')
+        eu = request.user.id if request and request.user.is_authenticated else None
+        if (original.oculto and original.autor_id != eu) or original.autor_id in self.context.get('ocultos', ()):
+            return {'id': original.id, 'indisponivel': True}
+        return {
+            'id': original.id,
+            'indisponivel': False,
+            'autor': original.autor_id,
+            'autor_nome': self.get_autor_nome(original),
+            'autor_initials': self.get_autor_initials(original),
+            'autor_foto': self.get_autor_foto(original),
+            'conteudo': original.conteudo,
+            'time_ago': self.get_time_ago(original),
+        }
+
+    def get_reposts(self, obj):
+        return obj.reposts.count()
 
     def get_autor_nome(self, obj):
         return obj.autor.get_display_name()

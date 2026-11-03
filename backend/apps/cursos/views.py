@@ -378,6 +378,12 @@ def curso_inscrever(request, pk):
     except Curso.DoesNotExist:
         return Response({'detail': 'Curso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
+    if curso.professor.user_id == request.user.id:
+        return Response(
+            {'detail': 'Não te podes inscrever no teu próprio curso.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     from apps.alunos.models import Aluno
 
     from .models import EngajamentoCurso, Inscricao
