@@ -1,19 +1,18 @@
 "use client";
 
-import { Search, Coins, Flame, Sun, Moon } from "lucide-react";
+import { Coins, Flame, Sun, Moon } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/theme-provider";
-import { Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { ProfileMenu } from "@/components/profile-menu";
 import { SinoNotificacoes } from "@/components/sino-notificacoes";
 import { InstallAppButton } from "@/components/pwa";
 import { api, type LeaderRow } from "@/lib/api";
 import { PesquisaGlobal } from "@/components/pesquisa-global";
-import { CampoPesquisaBiblioteca } from "@/components/pesquisa-biblioteca";
+import { CampoPesquisaPagina, pesquisaDaPagina } from "@/components/pesquisa-pagina";
 
 
 export function Topbar() {
@@ -59,12 +58,9 @@ export function Topbar() {
     };
   }, []);
 
-  // Em telemóvel a pesquisa abre por cima do cabeçalho; a partir de `sm` fica sempre visível.
-  const [buscaAberta, setBuscaAberta] = useState(false);
-  const pathname = usePathname();
-  const noInicio = pathname === "/inicio";
-  // Biblioteca: a pesquisa do topo procura gestos (no telemóvel/tablet está só na página).
-  const naBiblioteca = pathname === "/biblioteca";
+  // Pesquisa: no computador está aqui, com o texto da página; no telemóvel/tablet
+  // está dentro da própria página. Páginas sem pesquisa não mostram campo.
+  const pagina = pesquisaDaPagina(usePathname());
 
   return (
     <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center gap-3 border-b border-border bg-background/80 px-3 pt-[env(safe-area-inset-top)] backdrop-blur md:px-6">
@@ -74,37 +70,13 @@ export function Topbar() {
       </Link>
       <SidebarTrigger className="hidden shrink-0 computador:inline-flex" />
 
-      {naBiblioteca ? (
-        <Suspense fallback={<div className="flex-1" />}>
-          <CampoPesquisaBiblioteca className="hidden max-w-xl flex-1 computador:block" />
-        </Suspense>
-      ) : (
-        <PesquisaGlobal
-          autoFocus={buscaAberta}
-          aoFechar={() => setBuscaAberta(false)}
-          className={cn(
-            "flex-1 max-w-xl",
-            // No Início (telemóvel/tablet) a pesquisa está por baixo do título da página.
-            noInicio
-              ? "hidden computador:flex"
-              : buscaAberta
-                ? "absolute inset-x-0 bottom-0 z-40 h-16 max-w-none bg-background px-3 sm:static sm:inset-auto sm:h-auto sm:max-w-xl sm:bg-transparent sm:px-0"
-                : "hidden sm:flex",
-          )}
-        />
-      )}
+      {pagina?.tipo === "global" ? (
+        <PesquisaGlobal placeholder={pagina.placeholder} className="hidden max-w-xl flex-1 computador:flex" />
+      ) : pagina ? (
+        <CampoPesquisaPagina className="hidden max-w-xl flex-1 computador:block" />
+      ) : null}
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label="Pesquisar"
-          onClick={() => setBuscaAberta(true)}
-          className={cn("rounded-full sm:hidden", (noInicio || naBiblioteca) && "hidden")}
-        >
-          <Search className="h-5 w-5" />
-        </Button>
         <div className="hidden items-center gap-2 rounded-full bg-surface px-3 py-1.5 border border-border/70 sm:flex">
           <Coins className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium tabular-nums">

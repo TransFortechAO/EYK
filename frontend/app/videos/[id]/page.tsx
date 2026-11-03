@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Eye, Calendar, Clock } from "lucide-react";
 import { ShareButton } from "@/components/eyk";
 import { PreviaConteudo } from "@/components/partilha/modal-partilha";
+import { RecursosAnexos } from "@/components/curso/recursos-anexos";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -182,7 +183,6 @@ export default function VideoPlayerPage() {
                 hasPrevious={watchHistory.length > 0}
                 onNext={goToNextVideo}
                 onPrevious={goToPreviousVideo}
-                recursos={video.recursos}
                 temLegenda={video.temLegenda}
               />
             </div>
@@ -257,6 +257,9 @@ export default function VideoPlayerPage() {
               </p>
             </Card>
           )}
+
+          {/* Recursos do vídeo: aqui, e não dentro do player. */}
+          <RecursosAnexos recursos={video.recursos} />
 
           <VideoComments videoId={video.id} />
         </div>

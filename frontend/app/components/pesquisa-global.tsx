@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BookOpen, GraduationCap, Search, X } from "lucide-react";
-import { api, type Course, type UtilizadorPesquisa } from "@/lib/api";
+import { BookOpen, GraduationCap, PlayCircle, Search, X } from "lucide-react";
+import { api, type Course, type UtilizadorPesquisa, type Video } from "@/lib/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,15 +11,17 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /**
- * Pesquisa de cursos, categorias e professores. Usada na barra do topo e, no
+ * Pesquisa geral: cursos, vídeos e professores (com os resultados por baixo). Usada na barra do topo e, no
  * telemóvel/tablet, por baixo do título do Início (para não tapar os ícones do topo).
  */
 export function PesquisaGlobal({
   className,
   autoFocus,
   aoFechar,
+  placeholder = "Pesquisar cursos, vídeos ou professores…",
 }: {
   className?: string;
+  placeholder?: string;
   autoFocus?: boolean;
   /** Mostra o botão de fechar (telemóvel, quando a pesquisa abre por cima do topo). */
   aoFechar?: () => void;
@@ -29,7 +31,9 @@ export function PesquisaGlobal({
   const [aPesquisar, setAPesquisar] = useState(false);
   const [cursosEncontrados, setCursosEncontrados] = useState<Course[]>([]);
   const [professoresEncontrados, setProfessoresEncontrados] = useState<UtilizadorPesquisa[]>([]);
+  const [videosEncontrados, setVideosEncontrados] = useState<Video[]>([]);
   const todosCursosRef = useRef<Course[] | null>(null);
+  const todosVideosRef = useRef<Video[] | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +41,7 @@ export function PesquisaGlobal({
     const termo = q.trim();
     if (termo.length < 2) {
       setCursosEncontrados([]);
+      setVideosEncontrados([]);
       setProfessoresEncontrados([]);
       setAPesquisar(false);
       return;
@@ -46,8 +51,8 @@ export function PesquisaGlobal({
     // Os cursos só têm paginação pequena nesta plataforma — busca-se a lista
     // uma vez (cache em ref, não re-pedida a cada tecla) e filtra-se aqui
     // por título ou categoria, em vez de um endpoint de pesquisa dedicado.
-    if (!todosCursosRef.current) {
-      todosCursosRef.current = await api.getCursos();
+    if (!todosCursosRef.current || !todosVideosRef.current) {
+      [todosCursosRef.current, todosVideosRef.current] = await Promise.all([api.getCursos(), api.getVideos("recent")]);
     }
     const termoMin = termo.toLowerCase();
     const cursos = todosCursosRef.current.filter(
@@ -57,7 +62,12 @@ export function PesquisaGlobal({
     const utilizadores = await api.pesquisarUtilizadores(termo);
     const professores = utilizadores.filter((u) => u.isTeacher);
 
+    const videos = todosVideosRef.current.filter(
+      (v) => v.title.toLowerCase().includes(termoMin) || v.teacher.toLowerCase().includes(termoMin),
+    );
+
     setCursosEncontrados(cursos.slice(0, 5));
+    setVideosEncontrados(videos.slice(0, 5));
     setProfessoresEncontrados(professores.slice(0, 5));
     setAPesquisar(false);
   }, []);
@@ -83,7 +93,7 @@ export function PesquisaGlobal({
   }, []);
 
   const semResultados =
-    !aPesquisar && cursosEncontrados.length === 0 && professoresEncontrados.length === 0;
+    !aPesquisar && cursosEncontrados.length === 0 && videosEncontrados.length === 0 && professoresEncontrados.length === 0;
 
   return (
     <div ref={searchWrapRef} className={cn("relative flex min-w-0 items-center gap-2", className)}>
@@ -91,7 +101,7 @@ export function PesquisaGlobal({
         <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           autoFocus={autoFocus}
-          placeholder="Pesquisar curso, categoria ou professor…"
+          placeholder={placeholder}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -145,6 +155,33 @@ export function PesquisaGlobal({
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-foreground">{curso.title}</p>
                             <p className="truncate text-xs text-muted-foreground">{curso.category}</p>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {videosEncontrados.length > 0 && (
+                <div className="py-1">
+                  <p className="px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Vídeos
+                  </p>
+                  <ul>
+                    {videosEncontrados.map((video) => (
+                      <li key={video.id}>
+                        <Link
+                          href={`/videos/${video.id}`}
+                          onClick={() => setMostrarResultados(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-surface"
+                        >
+                          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-secondary-foreground">
+                            <PlayCircle className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-foreground">{video.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">{video.teacher}</p>
                           </div>
                         </Link>
                       </li>

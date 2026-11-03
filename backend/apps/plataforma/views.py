@@ -26,6 +26,7 @@ ANUNCIO_AGENDAR_MAX_DIAS = 90
 CAMPOS_NUMERICOS = {
     # campo: (mínimo, máximo)
     'limite_video_mb': (10, 5000),
+    'limite_aula_mb': (10, 5000),
     'limite_pdf_mb': (1, 500),
     'denuncias_para_ocultar': (1, 50),
     'avisos_para_suspender': (1, 20),
@@ -44,7 +45,11 @@ def _config_publica(config: ConfiguracaoPlataforma) -> dict:
             # a mostrar um aviso novo a quem fechou o anterior.
             'versao': config.atualizado_em.isoformat() if config.atualizado_em else '',
         },
-        'limites': {'videoMb': config.limite_video_mb, 'pdfMb': config.limite_pdf_mb},
+        'limites': {
+            'videoMb': config.limite_video_mb,
+            'aulaMb': config.limite_aula_mb,
+            'pdfMb': config.limite_pdf_mb,
+        },
     }
 
 

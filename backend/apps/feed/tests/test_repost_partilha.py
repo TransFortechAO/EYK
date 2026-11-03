@@ -87,3 +87,30 @@ class TestPartilhaPublica:
                                      url_externa="https://youtube.com/watch?v=x", ativo=True)
         assert client.get(reverse("api-partilha-publica", args=["video", video.id])).status_code == 404
         assert client.get(reverse("api-partilha-publica", args=["outro", 1])).status_code == 404
+
+
+PNG_1PX = (
+    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+    b"\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+
+
+@pytest.mark.django_db
+class TestPublicarComFoto:
+    def test_publica_so_com_foto(self, client, aluno_user, settings, tmp_path):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        settings.MEDIA_ROOT = tmp_path
+        client.force_login(aluno_user)
+        foto = SimpleUploadedFile("foto.png", PNG_1PX, content_type="image/png")
+        r = client.post(reverse("api-post-list"), data={"conteudo": "", "imagem": foto})
+        assert r.status_code == 201
+        assert r.json()["imagem"]
+
+    def test_recusa_ficheiro_que_nao_e_imagem(self, client, aluno_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        client.force_login(aluno_user)
+        ficheiro = SimpleUploadedFile("x.pdf", b"%PDF-1.4", content_type="application/pdf")
+        r = client.post(reverse("api-post-list"), data={"conteudo": "olá", "imagem": ficheiro})
+        assert r.status_code == 400

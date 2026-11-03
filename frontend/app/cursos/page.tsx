@@ -5,6 +5,7 @@ import { BookOpen } from "lucide-react";
 import { PageHeader, SectionHeader, CourseCard, EmptyState } from "@/components/eyk";
 import { api, type Course } from "@/lib/api";
 import { ConteudosComEscola } from "@/components/instituicao/escola";
+import { usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { BarraFiltros, normalizarTexto, type DefFiltro } from "@/components/filtros/barra-filtros";
 
 const SEM_FILTROS: Record<string, string> = { categoria: "", nivel: "", duracao: "", professor: "", avaliacao: "", ordem: "" };
@@ -26,7 +27,8 @@ function dentroDaDuracao(c: Course, faixa: string): boolean {
 export default function CursosPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, na página no telemóvel/tablet.
+  const [pesquisa, setPesquisa] = usePesquisaPagina();
   const [valores, setValores] = useState(SEM_FILTROS);
 
   useEffect(() => {
@@ -98,8 +100,6 @@ export default function CursosPage() {
           valores={valores}
           aoMudar={(id, valor) => setValores((v) => ({ ...v, [id]: valor }))}
           pesquisa={pesquisa}
-          aoPesquisar={setPesquisa}
-          placeholderPesquisa="Pesquisar cursos por título, categoria ou professor…"
           aoLimpar={limpar}
         />
 

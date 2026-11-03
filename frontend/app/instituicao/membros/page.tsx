@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Info, Search, Ticket, UserMinus } from "lucide-react";
+import { Info, Ticket, UserMinus } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/confirm-dialog";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { acao, Carregando, celula, ErroCarregar, Etiqueta, EtiquetaPapel, haQuanto, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
@@ -16,7 +16,8 @@ import type { Papel } from "@/lib/instituicoes/tipos";
 export default function MembrosPage() {
   const { instituicaoId, papel, pode, atual, recarregar: recarregarPertencas } = useInstituicaoAtual();
   const confirmar = useConfirm();
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [pesquisa] = usePesquisaPagina();
   const [filtroPapel, setFiltroPapel] = useState<Papel | "">("");
   const gerir = pode("gerir_membros");
 
@@ -83,16 +84,7 @@ export default function MembrosPage() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input
-              aria-label="Pesquisar membros"
-              placeholder="Pesquisar por nome ou email"
-              className="pl-9"
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-            />
-          </div>
+          <CampoPesquisaPagina className="relative flex-1 computador:hidden" />
           <Seletor aria-label="Filtrar por papel" className="sm:w-56" value={filtroPapel} onChange={(e) => setFiltroPapel(e.target.value as Papel | "")}>
             <option value="">Todos os papéis</option>
             {PAPEIS.map((p) => (

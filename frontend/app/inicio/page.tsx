@@ -6,6 +6,7 @@ import { api, type Course, type Video } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 import { InicioEscola, SoPlataformaGeral } from "@/components/instituicao/escola";
 import { PesquisaGlobal } from "@/components/pesquisa-global";
+import { pesquisaDaPagina } from "@/components/pesquisa-pagina";
 import { BoasVindasProfessor } from "@/components/boas-vindas-professor";
 
 export default function InicioPage() {
@@ -39,7 +40,7 @@ export default function InicioPage() {
           description="Explora cursos e vídeos e aprende ao teu ritmo."
         />
         {/* Telemóvel/tablet: a pesquisa fica aqui (no topo tapava os outros ícones). */}
-        <PesquisaGlobal className="computador:hidden" />
+        <PesquisaGlobal className="computador:hidden" placeholder={pesquisaDaPagina("/inicio")?.placeholder} />
       </div>
 
       {/* Com escola parceira: trabalhos de LGA, aulas novas, avisos e desafios da escola. */}

@@ -2,6 +2,7 @@
 
 import { useLimitesUpload } from "@/hooks/useLimitesUpload";
 import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -18,7 +19,6 @@ import {
   Film,
   FileText,
   Image as ImageIcon,
-  Search,
   Clock,
   Paperclip,
 } from "lucide-react";
@@ -57,7 +57,8 @@ export default function ProfessorCursosPage() {
   const confirm = useConfirm();
   const [cursos, setCursos] = useState<ProfessorCurso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [pesquisa] = usePesquisaPagina();
   const [filtro, setFiltro] = useState<FiltroEstado>("todos");
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<ProfessorCurso | null>(null);
@@ -137,9 +138,9 @@ export default function ProfessorCursosPage() {
     const ficheiros = Array.from(e.target.files || []);
     e.target.value = "";
     if (ficheiros.length === 0) return;
-    const grande = ficheiros.find((f) => f.size > limites.videoMb * 1024 * 1024);
+    const grande = ficheiros.find((f) => f.size > limites.aulaMb * 1024 * 1024);
     if (grande) {
-      setErro(`"${grande.name}" tem mais de ${limites.videoMb}MB, o máximo por vídeo.`);
+      setErro(`"${grande.name}" tem mais de ${limites.aulaMb}MB, o máximo por aula.`);
       return;
     }
     setVideosNovos((prev) => [...prev, ...ficheiros]);
@@ -318,15 +319,7 @@ export default function ProfessorCursosPage() {
 
       {!loading && cursos.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Pesquisar curso…"
-              className="rounded-full pl-9"
-            />
-          </div>
+          <CampoPesquisaPagina className="relative max-w-sm flex-1 computador:hidden" />
           <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FiltroEstado)}>
             <TabsList>
               <TabsTrigger value="todos">Todos</TabsTrigger>
@@ -530,7 +523,7 @@ export default function ProfessorCursosPage() {
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
                   >
                     <Upload className="h-4 w-4" />
-                    Fazer upload de vídeos (1 ou mais)
+                    Fazer upload de vídeos (1 ou mais) · máx. {limites.aulaMb} MB por aula
                   </button>
                 )}
 

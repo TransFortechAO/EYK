@@ -550,7 +550,8 @@ function Categorias() {
 }
 
 const CAMPOS_LIMITES: { campo: keyof ConfigAdmin; label: string; ajuda: string; sufixo: string; grupo: "upload" | "moderacao" }[] = [
-  { campo: "limite_video_mb", label: "Tamanho máximo de cada vídeo", ajuda: "Entre 10 e 5000 MB.", sufixo: "MB", grupo: "upload" },
+  { campo: "limite_video_mb", label: "Tamanho máximo de um vídeo avulso", ajuda: "Vídeos publicados fora de um curso. Entre 10 e 5000 MB.", sufixo: "MB", grupo: "upload" },
+  { campo: "limite_aula_mb", label: "Tamanho máximo do vídeo de uma aula", ajuda: "Cada vídeo (aula) de um curso. Entre 10 e 5000 MB.", sufixo: "MB", grupo: "upload" },
   { campo: "limite_pdf_mb", label: "Tamanho máximo de cada PDF", ajuda: "Entre 1 e 500 MB.", sufixo: "MB", grupo: "upload" },
   {
     campo: "denuncias_para_ocultar",

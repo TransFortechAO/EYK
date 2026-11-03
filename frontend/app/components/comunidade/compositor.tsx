@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AtSign, Send } from "lucide-react";
+import { AtSign, ImagePlus, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   api,
@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserInitialsLink } from "@/components/UserAvatar";
 
 const MAXIMO = 2000;
+const FOTO_MAX_MB = 5;
 const PLACEHOLDER = "O que estás a aprender hoje? Partilha com a comunidade…";
 
 /**
@@ -43,6 +44,32 @@ export function CompositorPost({
   const [termo, setTermo] = useState("");
   const [pessoas, setPessoas] = useState<UtilizadorPesquisa[]>([]);
   const areaRef = useRef<HTMLTextAreaElement>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const [foto, setFoto] = useState<File | null>(null);
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!foto) {
+      setFotoUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(foto);
+    setFotoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [foto]);
+
+  const escolherFoto = (ficheiro: File | undefined) => {
+    if (!ficheiro) return;
+    if (!ficheiro.type.startsWith("image/")) {
+      toast.error("Só podes juntar imagens.");
+      return;
+    }
+    if (ficheiro.size > FOTO_MAX_MB * 1024 * 1024) {
+      toast.error(`A imagem pode ter no máximo ${FOTO_MAX_MB}MB.`);
+      return;
+    }
+    setFoto(ficheiro);
+  };
 
   useEffect(() => {
     if (!aMencionar || termo.trim().length < 2) {
@@ -70,12 +97,13 @@ export function CompositorPost({
   };
 
   const publicar = async () => {
-    if (!texto.trim() || aPublicar) return;
+    if ((!texto.trim() && !foto) || aPublicar) return;
     setAPublicar(true);
     try {
-      const novo = await api.createPost(texto.trim());
+      const novo = await api.createPost(texto.trim(), foto);
       aoPublicar(novo);
       setTexto("");
+      setFoto(null);
       setAberto(false);
       toast.success("Publicado na comunidade.");
     } catch (err) {
@@ -101,6 +129,16 @@ export function CompositorPost({
         >
           {PLACEHOLDER}
         </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="shrink-0 rounded-full text-primary"
+          onClick={() => setAberto(true)}
+          aria-label="Publicar uma foto"
+        >
+          <ImagePlus className="h-5 w-5" />
+        </Button>
       </div>
 
       <Dialog open={aberto} onOpenChange={setAberto}>
@@ -130,6 +168,21 @@ export function CompositorPost({
               maxLength={MAXIMO}
               className="min-h-[140px] resize-none border-transparent bg-surface text-base shadow-none"
             />
+
+            {fotoUrl && (
+              <div className="relative overflow-hidden rounded-xl border border-border/70">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={fotoUrl} alt="Foto a publicar" className="max-h-72 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setFoto(null)}
+                  className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white hover:bg-black/75"
+                  aria-label="Tirar a foto"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
             {aMencionar && (
               <div className="space-y-2 rounded-xl border border-border/70 p-3">
@@ -169,6 +222,26 @@ export function CompositorPost({
 
             <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-3">
               <div className="flex items-center gap-1">
+                <input
+                  ref={fotoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    escolherFoto(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => fotoRef.current?.click()}
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  Foto
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -186,7 +259,7 @@ export function CompositorPost({
               </div>
               <Button
                 onClick={() => void publicar()}
-                disabled={!texto.trim() || aPublicar}
+                disabled={(!texto.trim() && !foto) || aPublicar}
                 className="gap-2"
               >
                 <Send className="h-4 w-4" />

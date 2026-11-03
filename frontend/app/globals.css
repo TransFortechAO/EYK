@@ -125,13 +125,14 @@
   --chart-4: oklch(0.55 0.14 250);
   --chart-5: oklch(0.7 0.14 320);
 
-  --sidebar: #f4e1bc;
-  --sidebar-foreground: #55432a;
+  /* Quase a cor do fundo; a borda fina (dourada, discreta) é que marca a barra. */
+  --sidebar: oklch(0.99 0.005 85);
+  --sidebar-foreground: #4a3b25;
   --sidebar-primary: #b27f1e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ead0a0;
-  --sidebar-accent-foreground: #55432a;
-  --sidebar-border: oklch(0 0 0 / 8%);
+  --sidebar-accent: oklch(0.95 0.025 85);
+  --sidebar-accent-foreground: #4a3b25;
+  --sidebar-border: oklch(0.86 0.04 85);
   --sidebar-ring: #b27f1e;
 
   --gradient-gold: linear-gradient(135deg, oklch(0.68 0.13 78), oklch(0.82 0.14 85));
@@ -172,13 +173,13 @@
   --chart-3: oklch(0.75 0.19 55);
   --chart-4: oklch(0.7 0.14 250);
   --chart-5: oklch(0.78 0.16 320);
-  --sidebar: #17130f;
+  --sidebar: oklch(0.15 0.005 85);
   --sidebar-foreground: #f0ece4;
   --sidebar-primary: #e8a80c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #241d17;
+  --sidebar-accent: oklch(0.22 0.01 85);
   --sidebar-accent-foreground: #f0ece4;
-  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-border: oklch(0.82 0.1 85 / 22%);
   --sidebar-ring: #e8a80c;
   --gradient-gold: linear-gradient(135deg, oklch(0.68 0.13 78), oklch(0.86 0.13 88));
   --gradient-surface: linear-gradient(180deg, oklch(0.17 0 0), oklch(0.13 0 0));

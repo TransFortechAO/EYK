@@ -5,6 +5,7 @@ import { PlayCircle } from "lucide-react";
 import { PageHeader, SectionHeader, VideoCard, EmptyState } from "@/components/eyk";
 import { api, type Video } from "@/lib/api";
 import { ConteudosComEscola } from "@/components/instituicao/escola";
+import { usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { BarraFiltros, minutosDeDuracao, normalizarTexto, type DefFiltro } from "@/components/filtros/barra-filtros";
 
 const SEM_FILTROS: Record<string, string> = { duracao: "", professor: "", publicado: "", ordem: "" };
@@ -25,7 +26,8 @@ function dentroDaDuracao(v: Video, faixa: string): boolean {
 
 export default function VideosPage() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, na página no telemóvel/tablet.
+  const [pesquisa, setPesquisa] = usePesquisaPagina();
   const [valores, setValores] = useState(SEM_FILTROS);
 
   useEffect(() => {
@@ -97,8 +99,6 @@ export default function VideosPage() {
           valores={valores}
           aoMudar={(id, valor) => setValores((v) => ({ ...v, [id]: valor }))}
           pesquisa={pesquisa}
-          aoPesquisar={setPesquisa}
-          placeholderPesquisa="Pesquisar vídeos por título ou professor…"
           aoLimpar={limpar}
         />
 

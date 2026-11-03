@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { Hand } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/eyk";
-import { CampoPesquisaBiblioteca, usePesquisaBiblioteca } from "@/components/pesquisa-biblioteca";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { normalizarTexto } from "@/components/filtros/barra-filtros";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { lgaCategories, lgaSigns } from "@/lib/lga-data";
@@ -11,17 +11,9 @@ import { LGASign } from "@/components/lga-sign";
 import { GestosValidadosBiblioteca } from "@/components/instituicao/escola";
 
 export default function BibliotecaPage() {
-  return (
-    <Suspense fallback={null}>
-      <Biblioteca />
-    </Suspense>
-  );
-}
-
-function Biblioteca() {
   const [cat, setCat] = useState("Todas");
-  // A pesquisa está no topo (computador) ou na página (telemóvel/tablet) — ver pesquisa-biblioteca.tsx.
-  const [q] = usePesquisaBiblioteca();
+  // A pesquisa está no topo (computador) ou na página (telemóvel/tablet) — ver pesquisa-pagina.tsx.
+  const [q] = usePesquisaPagina();
   const list = lgaSigns.filter(
     (s) =>
       (cat === "Todas" || s.category === cat) &&
@@ -35,7 +27,7 @@ function Biblioteca() {
         description="Consulta rápida de gestos da Língua Gestual Angolana — aprende ao teu ritmo."
       />
 
-      <CampoPesquisaBiblioteca className="computador:hidden" />
+      <CampoPesquisaPagina className="computador:hidden" />
 
       <Tabs value={cat} onValueChange={setCat}>
         <TabsList className="bg-surface flex-wrap h-auto py-1">

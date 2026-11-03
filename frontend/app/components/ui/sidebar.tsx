@@ -136,7 +136,7 @@ export function Sidebar({
           "sticky top-0 z-40 flex h-screen flex-col text-sidebar-foreground transition-[width] duration-200 ease-linear",
           estreita ? "w-[3.5rem]" : "w-64",
           variant === "floating"
-            ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar shadow-soft"
+            ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar"
             : "border-r border-sidebar-border bg-sidebar",
           espreitar && "shadow-elevated",
           className,

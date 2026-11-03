@@ -433,11 +433,12 @@ export type PalavraProibida = { id: number; termo: string; acao: 'bloquear' | 's
 
 export type ConfigPublica = {
   aviso: { ativo: boolean; tipo: 'info' | 'aviso' | 'manutencao'; mensagem: string; versao: string };
-  limites: { videoMb: number; pdfMb: number };
+  limites: { videoMb: number; aulaMb?: number; pdfMb: number };
 };
 
 export type ConfigAdmin = {
   limite_video_mb: number;
+  limite_aula_mb: number;
   limite_pdf_mb: number;
   denuncias_para_ocultar: number;
   avisos_para_suspender: number;
@@ -503,6 +504,8 @@ export type Post = {
   repostDe?: PostOriginal | null;
   /** Quantas vezes foi repostada. */
   reposts?: number;
+  /** Foto da publicação (URL absoluto), se houver. */
+  imagem?: string | null;
 };
 
 export type PostOriginal = {
@@ -1042,6 +1045,7 @@ type RawCourseDetail = RawCourse & {
 
 type RawPost = {
   id?: number | string;
+  imagem?: string | null;
   editado_em?: string | null;
   autor?: number | null;
   autor_nome?: string | null;
@@ -1447,6 +1451,7 @@ function normalizePost(raw: RawPost): Post {
         }
       : null,
     reposts: Number(raw?.reposts ?? 0),
+    imagem: mediaUrl(raw?.imagem) ?? null,
   };
 }
 
@@ -1703,11 +1708,14 @@ export const api = {
     }
     return mockPostsComFoto;
   },
-  createPost: async (conteudo: string): Promise<Post> => {
-    const res = await fetchAPI<RawPost>('/api/comunidade/posts/', {
-      method: 'POST',
-      body: JSON.stringify({ conteudo }),
-    });
+  createPost: async (conteudo: string, imagem?: File | null): Promise<Post> => {
+    let body: string | FormData = JSON.stringify({ conteudo });
+    if (imagem) {
+      body = new FormData();
+      body.append('conteudo', conteudo);
+      body.append('imagem', imagem);
+    }
+    const res = await fetchAPI<RawPost>('/api/comunidade/posts/', { method: 'POST', body });
     return normalizePost(res);
   },
   /** Reposta a publicação de alguém (com um comentário opcional). */

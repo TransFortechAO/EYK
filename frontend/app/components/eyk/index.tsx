@@ -517,6 +517,15 @@ export function PostCard({
       ) : (
         conteudo && <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{conteudo}</p>
       )}
+      {post.imagem && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.imagem}
+          alt={`Foto publicada por ${post.author}`}
+          loading="lazy"
+          className={cn("w-full rounded-xl bg-surface object-cover", emModal ? "max-h-[60vh]" : "max-h-[480px]")}
+        />
+      )}
       {post.repostDe && <PostOriginal original={post.repostDe} />}
     </>
   );
@@ -527,37 +536,39 @@ export function PostCard({
         <div className="space-y-4 p-5">
           {cabecalho(false)}
           {corpo(false)}
-          {/* Reações, comentários (abre o modal do post) e partilhar. */}
-          <div className="flex items-center gap-1 border-t border-border/60 pt-3">
+          {/* Como num feed: reagir, comentar (abre o modal do post) e partilhar, com os números. */}
+          <div className="grid grid-cols-3 gap-1 border-t border-border/60 pt-2">
             <Button
               variant="ghost"
               size="sm"
-              className={cn("gap-2 text-xs", liked && "text-primary")}
+              className={cn("gap-2 text-xs sm:text-sm", liked && "text-primary")}
               onClick={toggleLike}
               aria-label={liked ? "Retirar reação" : "Reagir"}
             >
               <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
-              {likes}
+              <span className="hidden sm:inline">Gosto</span>
+              <span className="tabular-nums">{likes}</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="gap-2 text-xs"
+              className="gap-2 text-xs sm:text-sm"
               onClick={() => setModalAberto(true)}
               aria-label={`Ver comentários (${comentarios})`}
             >
               <MessageCircle className="h-4 w-4" />
-              {comentarios}
+              <span className="hidden sm:inline">Comentar</span>
+              <span className="tabular-nums">{comentarios}</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              className="ml-auto gap-2 text-xs"
+              className="gap-2 text-xs sm:text-sm"
               onClick={() => setPartilhaAberta(true)}
             >
               <Share2 className="h-4 w-4" />
-              Partilhar
-              {!!post.reposts && <span className="tabular-nums text-muted-foreground">· {post.reposts}</span>}
+              <span>Partilhar</span>
+              {!!post.reposts && <span className="tabular-nums text-muted-foreground">{post.reposts}</span>}
             </Button>
           </div>
         </div>

@@ -24,5 +24,9 @@ def limite_video_bytes() -> int:
     return configuracao().limite_video_mb * 1024 * 1024
 
 
+def limite_aula_bytes() -> int:
+    return configuracao().limite_aula_mb * 1024 * 1024
+
+
 def limite_pdf_bytes() -> int:
     return configuracao().limite_pdf_mb * 1024 * 1024

@@ -30,6 +30,7 @@ import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { abasTelemovel, restoParaMais, type ItemNav } from "@/lib/instituicoes/navegacao";
 import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { ICONE_NAV } from "@/components/instituicao/icones-nav";
+import { UserAvatar } from "@/components/UserAvatar";
 
 import {
   Sidebar,
@@ -58,7 +59,6 @@ const secondary = [
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 const administracao = [
@@ -181,10 +181,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="floating" collapsible="icon">
-      <SidebarHeader className="px-4 py-5">
-        <Link href="/inicio" className="flex items-center gap-2" onClick={closeOnNavigate}>
-         <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt="logo-eyk" className="h-20 w-auto object-contain" />
-        </Link>
+      <SidebarHeader className="px-4 pb-3 pt-5">
+        <LogoBarra aoNavegar={closeOnNavigate} />
       </SidebarHeader>
 
       <SidebarContent>
@@ -314,21 +312,68 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-2">
+      {/* Rodapé: Configurações (penúltimo) e, por baixo, a conta com "Sair" à direita. */}
+      <SidebarFooter className="gap-1 border-t border-sidebar-border p-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={handleLogout}
-              tooltip="Sair"
-              disabled={logoutLoading}
-              className="text-destructive hover:bg-sidebar-accent hover:text-destructive cursor-pointer"
+              asChild
+              isActive={isActive("/configuracoes") && !pathname.startsWith("/configuracoes/administracao")}
+              tooltip="Configurações"
+              className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
             >
-              <LogOut />
-              <span>{logoutLoading ? "A sair…" : "Sair"}</span>
+              <Link href="/configuracoes" onClick={closeOnNavigate}>
+                <Settings />
+                <span>Configurações</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <RodapeConta aoSair={handleLogout} aSair={logoutLoading} />
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+/** Logótipo à medida da barra: grande com a barra aberta, pequeno com ela recolhida. */
+function LogoBarra({ aoNavegar }: { aoNavegar: () => void }) {
+  const { state, isMobile } = useSidebar();
+  const recolhida = !isMobile && state === "collapsed";
+  return (
+    <Link href="/inicio" className="flex items-center justify-center" onClick={aoNavegar} aria-label="EYK — Início">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png"
+        alt="EYK"
+        className={recolhida ? "h-9 w-auto object-contain" : "h-auto w-full max-w-[11rem] object-contain"}
+      />
+    </Link>
+  );
+}
+
+/** A conta: foto e nome; "Sair" encostado à direita (só o ícone com a barra recolhida). */
+function RodapeConta({ aoSair, aSair }: { aoSair: () => void; aSair: boolean }) {
+  const { state, isMobile } = useSidebar();
+  const { user } = useAuth();
+  const recolhida = !isMobile && state === "collapsed";
+  return (
+    <div className={recolhida ? "flex flex-col items-center gap-1 py-1" : "flex items-center gap-2 rounded-lg px-2 py-1.5"}>
+      {user && (
+        <Link href={`/perfil/${user.id}`} className="flex min-w-0 flex-1 items-center gap-2.5" title={user.name}>
+          <UserAvatar name={user.name} initials={user.initials} foto={user.foto ?? null} userId={user.id} size={32} noLink />
+          {!recolhida && <span className="truncate text-sm font-medium">{user.name}</span>}
+        </Link>
+      )}
+      <button
+        type="button"
+        onClick={aoSair}
+        disabled={aSair}
+        title="Sair"
+        className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-sidebar-accent disabled:opacity-60"
+      >
+        <LogOut className="h-4 w-4" />
+        {!recolhida && (aSair ? "A sair…" : "Sair")}
+      </button>
+    </div>
   );
 }

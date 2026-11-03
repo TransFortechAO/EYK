@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from apps.accounts.notificacoes import notificar
 from apps.cursos.models import Curso, EngajamentoCurso, Inscricao, RecursoCurso
 from apps.moderacao.filtro import ConteudoRecusado, verificar_publicacao
-from apps.plataforma.servicos import configuracao, limite_pdf_bytes, limite_video_bytes
+from apps.plataforma.servicos import configuracao, limite_aula_bytes, limite_pdf_bytes, limite_video_bytes
 
 from .models import Professor, ReacaoVideo, RecursoVideo, Seguidor, Video
 from .serializers import (
@@ -64,9 +64,14 @@ def _validar_arquivo_pdf(arquivo):
     return None
 
 
-def _validar_tamanho_video(arquivo):
-    """Lança ValueError se o vídeo ultrapassar o limite definido pelos administradores."""
-    if arquivo is not None and arquivo.size > limite_video_bytes():
+def _validar_tamanho_video(arquivo, aula=False):
+    """Lança ValueError se o vídeo ultrapassar o limite definido pelos administradores
+    (um para vídeos avulsos, outro para os vídeos das aulas de um curso)."""
+    if arquivo is None:
+        return
+    if aula and arquivo.size > limite_aula_bytes():
+        raise ValueError(f'Cada aula pode ter no máximo {configuracao().limite_aula_mb}MB.')
+    if not aula and arquivo.size > limite_video_bytes():
         raise ValueError(f'Cada vídeo pode ter no máximo {configuracao().limite_video_mb}MB.')
 
 
@@ -142,7 +147,7 @@ def professor_apagar_conta(request):
 
 def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
     for arquivo in arquivos:
-        _validar_tamanho_video(arquivo)
+        _validar_tamanho_video(arquivo, aula=True)
     for indice, arquivo in enumerate(arquivos):
         video = Video.objects.create(
             professor=professor,

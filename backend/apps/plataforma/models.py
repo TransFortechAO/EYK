@@ -14,8 +14,9 @@ class ConfiguracaoPlataforma(models.Model):
         ('manutencao', 'Manutenção'),
     ]
 
-    # Limites de upload
+    # Limites de upload (vídeo avulso e vídeo de uma aula de curso)
     limite_video_mb = models.PositiveIntegerField(default=500)
+    limite_aula_mb = models.PositiveIntegerField(default=500)
     limite_pdf_mb = models.PositiveIntegerField(default=50)
 
     # Aviso no topo da app (ex: manutenção agendada)

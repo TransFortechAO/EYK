@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
-  Search,
   UserCog,
   CircleDot,
   X,
@@ -28,9 +27,9 @@ import {
   type AdminUserTipoFiltro,
 } from "@/lib/api";
 import { PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -98,7 +97,8 @@ export default function AdminUtilizadoresPage() {
   const { user: authUser } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [q] = usePesquisaPagina();
   const [tipo, setTipo] = useState<AdminUserTipoFiltro>("");
   const [menuAberto, setMenuAberto] = useState<string | null>(null);
   const [apagar, setApagar] = useState<AdminUser | null>(null);
@@ -276,15 +276,7 @@ export default function AdminUtilizadoresPage() {
       {/* ===== Filtros ===== */}
       <Card className="p-5 shadow-soft">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-5">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Pesquisar por nome de utilizador ou email…"
-              className="pl-9"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-          </div>
+          <CampoPesquisaPagina className="relative flex-1 computador:hidden" />
 
           <div className="relative w-full lg:w-64">
             <button

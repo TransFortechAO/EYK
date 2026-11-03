@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CampoPesquisaPagina } from "@/components/pesquisa-pagina";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -59,17 +59,14 @@ export function BarraFiltros({
   valores,
   aoMudar,
   pesquisa,
-  aoPesquisar,
-  placeholderPesquisa,
   aoLimpar,
 }: {
   chave: string;
   filtros: DefFiltro[];
   valores: Record<string, string>;
   aoMudar: (id: string, valor: string) => void;
+  /** O texto pesquisado (?q=), para saber se há algo a limpar. */
   pesquisa: string;
-  aoPesquisar: (texto: string) => void;
-  placeholderPesquisa: string;
   aoLimpar: () => void;
 }) {
   const { visiveis, alternar } = useFiltrosVisiveis(chave, filtros);
@@ -79,17 +76,9 @@ export function BarraFiltros({
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={pesquisa}
-            onChange={(e) => aoPesquisar(e.target.value)}
-            placeholder={placeholderPesquisa}
-            aria-label={placeholderPesquisa}
-            className="h-10 rounded-full border-transparent bg-surface pl-4 pr-10 shadow-none dark:border-border/70"
-          />
-        </div>
-        <div className="flex shrink-0 gap-2">
+        {/* Telemóvel/tablet: a pesquisa da página fica aqui; no computador está na barra do topo. */}
+        <CampoPesquisaPagina className="flex-1 computador:hidden" />
+        <div className="flex shrink-0 gap-2 sm:ml-auto">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-10 gap-2 rounded-full">

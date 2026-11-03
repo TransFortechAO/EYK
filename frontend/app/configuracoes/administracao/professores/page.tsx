@@ -4,7 +4,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   UserPlus,
-  Search,
   User,
   Users,
   Mail,
@@ -25,6 +24,7 @@ import {
   type CriarProfessorPayload,
 } from "@/lib/api";
 import { PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +98,8 @@ export default function AdminProfessoresPage() {
   const [professores, setProfessores] = useState<AdminProfessor[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"todos" | "ativos" | "pendentes">("todos");
-  const [q, setQ] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [q] = usePesquisaPagina();
   const [toast, setToast] = useState<Toast | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [submetendo, setSubmetendo] = useState(false);
@@ -304,15 +305,7 @@ export default function AdminProfessoresPage() {
             </TabsList>
           </Tabs>
 
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Pesquisar por nome, utilizador, email ou área…"
-              className="pl-9"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-          </div>
+          <CampoPesquisaPagina className="relative w-full sm:max-w-sm computador:hidden" />
         </div>
 
         {loading ? (

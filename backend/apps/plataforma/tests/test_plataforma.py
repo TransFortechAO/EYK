@@ -23,7 +23,7 @@ class TestConfiguracao:
     def test_config_publica_sem_sessao(self, client):
         body = client.get(reverse('plataforma-config')).json()
         assert body['aviso']['ativo'] is False
-        assert body['limites'] == {'videoMb': 500, 'pdfMb': 50}
+        assert body['limites'] == {'videoMb': 500, 'aulaMb': 500, 'pdfMb': 50}
 
     def test_admin_ativa_aviso_e_altera_limites(self, client, staff):
         client.force_login(staff)

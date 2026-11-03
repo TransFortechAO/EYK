@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { BadgeCheck, Hand, Plus, Search, ShieldQuestion, X } from "lucide-react";
+import { BadgeCheck, Hand, Plus, ShieldQuestion, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +28,8 @@ export default function GestuarioPage() {
   const [vista, setVista] = useState<Vista>("validados");
   const [tema, setTema] = useState<TemaGesto | "">("");
   const [variante, setVariante] = useState("");
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [pesquisa] = usePesquisaPagina();
   const [propor, setPropor] = useState(false);
   const [aRever, setARever] = useState<Gesto | null>(null);
   const { dados, erro, aCarregar, recarregar } = useCarregar(() => apiLga.listarGestos(instituicaoId), [instituicaoId]);
@@ -71,11 +73,8 @@ export default function GestuarioPage() {
           </TabsList>
         </Tabs>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_12rem_12rem]">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input aria-label="Pesquisar gestos" placeholder="Pesquisar palavra ou frase" className="pl-9" value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} />
-          </div>
+        <div className="grid gap-2 sm:grid-cols-[1fr_12rem_12rem] computador:grid-cols-[12rem_12rem] computador:justify-end">
+          <CampoPesquisaPagina className="relative computador:hidden" />
           <Seletor aria-label="Tema" value={tema} onChange={(e) => setTema(e.target.value as TemaGesto | "")}>
             <option value="">Todos os temas</option>
             {(Object.keys(ROTULO_TEMA) as TemaGesto[]).map((t) => (

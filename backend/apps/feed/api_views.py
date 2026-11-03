@@ -14,6 +14,7 @@ from .models import Comentario, Post, ReacaoComentario, ReacaoPost
 from .serializers import ComentarioSerializer, PostSerializer
 
 MOEDAS_POR_POST = 2
+TAMANHO_MAX_IMAGEM_POST = 5 * 1024 * 1024  # fotos nas publicações da comunidade
 
 
 def _contexto(request):
@@ -58,17 +59,23 @@ def _notificar_comentario(request, post, comentario, parent):
 @permission_classes([permissions.IsAuthenticated])
 def post_list(request):
     if request.method == 'POST':
-        conteudo = request.data.get('conteudo', '').strip()
-        if not conteudo:
+        conteudo = (request.data.get('conteudo') or '').strip()
+        imagem = request.FILES.get('imagem')
+        if not conteudo and not imagem:
             return Response(
-                {'detail': 'O conteúdo do post é obrigatório.'},
+                {'detail': 'Escreve alguma coisa ou junta uma foto.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        if imagem:
+            if not (imagem.content_type or '').startswith('image/'):
+                return Response({'detail': 'Só podes juntar imagens.'}, status=status.HTTP_400_BAD_REQUEST)
+            if imagem.size > TAMANHO_MAX_IMAGEM_POST:
+                return Response({'detail': 'A imagem pode ter no máximo 5MB.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             termos = verificar_publicacao(request.user, conteudo, 'post')
         except ConteudoRecusado as erro:
             return Response({'detail': erro.mensagem}, status=erro.status)
-        post = Post.objects.create(autor=request.user, conteudo=conteudo)
+        post = Post.objects.create(autor=request.user, conteudo=conteudo, imagem=imagem)
         sinalizar_se_necessario('post', post, termos)
         # Recompensa a participação na comunidade — mesma mecânica de
         # carteira/XP usada nas outras ações gamificadas da plataforma.

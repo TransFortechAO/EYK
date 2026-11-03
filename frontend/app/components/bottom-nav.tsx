@@ -48,8 +48,10 @@ const MAIS: Item[] = [
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
+
+// Penúltimo do painel "Mais" (antes de "Sair"), como na barra lateral.
+const CONFIGURACOES: Item[] = [{ title: "Configurações", url: "/configuracoes", icon: Settings }];
 
 const PROFESSOR: Item[] = [
   { title: "Painel", url: "/professor", icon: LayoutDashboard },
@@ -139,6 +141,7 @@ export function BottomNav() {
     ...MAIS,
     ...(user?.isTeacher ? PROFESSOR : []),
     ...(user?.isStaff ? ADMINISTRACAO : []),
+    ...CONFIGURACOES,
   ];
   // "Mais" fica ativo quando o painel está aberto ou a página pertence ao painel.
   // /configuracoes/administracao/* pertence ao grupo de administração.
@@ -250,6 +253,8 @@ export function BottomNav() {
           {user?.isStaff && (
             <Grupo titulo="Administração" icone={ShieldCheck} itens={ADMINISTRACAO} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           )}
+
+          <Grupo itens={CONFIGURACOES} ativo={(url) => pathname === url} aoNavegar={() => setMaisAberto(false)} />
 
           <button
             type="button"

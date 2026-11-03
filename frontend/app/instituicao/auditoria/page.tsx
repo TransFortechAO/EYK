@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Lock, Search, ShieldAlert } from "lucide-react";
+import { Lock, ShieldAlert } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { Carregando, celula, dataHora, ErroCarregar, Etiqueta, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
@@ -27,7 +27,8 @@ export default function AuditoriaPage() {
   const { instituicaoId, pode } = useInstituicaoAtual();
   const [grupo, setGrupo] = useState("");
   const [origem, setOrigem] = useState<"" | "instituicao" | "equipa_eyk">("");
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [pesquisa] = usePesquisaPagina();
   const { dados, erro, aCarregar, recarregar } = useCarregar(() => api.listarAuditoria(instituicaoId), [instituicaoId]);
 
   const lista = useMemo(() => {
@@ -49,11 +50,8 @@ export default function AuditoriaPage() {
           <p className="text-sm text-muted-foreground">Quem fez o quê e quando, nas ações sensíveis da instituição.</p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_14rem_12rem]">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input aria-label="Pesquisar no registo" placeholder="Pesquisar" className="pl-9" value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} />
-          </div>
+        <div className="grid gap-2 sm:grid-cols-[1fr_14rem_12rem] computador:grid-cols-[14rem_12rem] computador:justify-end">
+          <CampoPesquisaPagina className="relative computador:hidden" />
           <Seletor aria-label="Tipo de ação" value={grupo} onChange={(e) => setGrupo(e.target.value)}>
             <option value="">Todas as ações</option>
             {GRUPOS_ACAO.map((g) => (

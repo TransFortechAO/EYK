@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { CourseCard, SectionHeader, EmptyState, ShareButton } from "@/components/eyk";
 import { PreviaConteudo } from "@/components/partilha/modal-partilha";
+import { RecursosAnexos } from "@/components/curso/recursos-anexos";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -173,7 +174,6 @@ export default function CoursePlayerPage() {
                   thumbnail={curso.thumbnail}
                   videoId={activeVideo.id}
                   onViewRegistered={() => marcarAulaComoAssistida(activeVideo.id)}
-                  recursos={[...curso.recursos, ...activeVideo.recursos]}
                   temLegenda={activeVideo.temLegenda}
                   // "Seguinte"/"anterior" = outra aula deste curso (a seguinte só
                   // se já estiver desbloqueada). Ao terminar, o player avança
@@ -211,6 +211,9 @@ export default function CoursePlayerPage() {
                   <Clock className="h-3.5 w-3.5" /> {activeVideo.durationLabel}
                 </span>
               )}
+
+          {/* Materiais da aula: por baixo do vídeo, e não dentro do player. */}
+          {activeVideo && <RecursosAnexos recursos={activeVideo.recursos} titulo="Materiais desta aula" />}
             </p>
           )}
 

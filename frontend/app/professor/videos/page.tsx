@@ -2,6 +2,7 @@
 
 import { useLimitesUpload } from "@/hooks/useLimitesUpload";
 import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -21,7 +22,6 @@ import {
   Film,
   FileText,
   Image as ImageIcon,
-  Search,
   PlayCircle,
   Clock,
 } from "lucide-react";
@@ -62,7 +62,8 @@ export default function ProfessorVideosPage() {
   const [submetendo, setSubmetendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [reordenando, setReordenando] = useState(false);
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [pesquisa] = usePesquisaPagina();
   const [filtro, setFiltro] = useState<FiltroEstado>("todos");
   const videoInputRef = useRef<HTMLInputElement>(null);
   const recursosInputRef = useRef<HTMLInputElement>(null);
@@ -257,15 +258,7 @@ export default function ProfessorVideosPage() {
 
       {!loading && videos.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Pesquisar vídeo…"
-              className="rounded-full pl-9"
-            />
-          </div>
+          <CampoPesquisaPagina className="relative max-w-sm flex-1 computador:hidden" />
           <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FiltroEstado)}>
             <TabsList>
               <TabsTrigger value="todos">Todos</TabsTrigger>
@@ -468,7 +461,7 @@ export default function ProfessorVideosPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label>Ficheiro de vídeo</Label>
+                  <Label>Ficheiro de vídeo <span className="font-normal text-muted-foreground">(máx. {limites.videoMb} MB)</span></Label>
                   <input
                     ref={videoInputRef}
                     type="file"
