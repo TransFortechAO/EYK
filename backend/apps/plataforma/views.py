@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 from apps.cursos.models import Categoria
 
-from .models import Anuncio, ConfiguracaoPlataforma
+from .models import Anuncio, ConfiguracaoPlataforma, GestoLGA
 from .servicos import configuracao, limpar_cache_configuracao
 from .tasks import enviar_anuncio, enviar_lembrete_agora
 
@@ -274,3 +274,66 @@ def admin_categoria_detail(request, pk):
     categoria.nome = nome
     categoria.save(update_fields=['nome'])
     return Response(_categorias())
+
+
+# ── Gestos de LGA ────────────────────────────────────────────────────────────
+
+GESTO_TAMANHO_MAX = 20 * 1024 * 1024  # vídeo curto em loop
+
+
+def _gesto_json(gesto: GestoLGA) -> dict:
+    return {
+        'id': gesto.id,
+        'palavra': gesto.palavra,
+        'video': gesto.video.url if gesto.video else None,
+        'validado': gesto.validado,
+        'validado_por': gesto.validado_por,
+    }
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def gestos_publicos(request):
+    """Gestos validados, por palavra (a app mostra-os junto ao texto)."""
+    gestos = GestoLGA.objects.filter(validado=True).exclude(video='')
+    return Response({g.palavra: g.video.url for g in gestos})
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_gestos(request):
+    if request.method == 'GET':
+        return Response([_gesto_json(g) for g in GestoLGA.objects.all()])
+    palavra = (request.data.get('palavra') or '').strip()
+    video = request.FILES.get('video')
+    if not palavra or not video:
+        return Response({'detail': 'Indica a palavra e o vídeo do gesto.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not (video.content_type or '').startswith('video/'):
+        return Response({'detail': 'O gesto tem de ser um vídeo (MP4 ou WebM).'}, status=status.HTTP_400_BAD_REQUEST)
+    if video.size > GESTO_TAMANHO_MAX:
+        return Response({'detail': 'O vídeo do gesto pode ter no máximo 20MB.'}, status=status.HTTP_400_BAD_REQUEST)
+    gesto, _ = GestoLGA.objects.update_or_create(
+        palavra=palavra,
+        defaults={
+            'video': video,
+            'validado': str(request.data.get('validado', '')).lower() in ('1', 'true', 'on'),
+            'validado_por': (request.data.get('validado_por') or '').strip()[:120],
+        },
+    )
+    return Response(_gesto_json(gesto), status=status.HTTP_201_CREATED)
+
+
+@api_view(['PATCH', 'DELETE'])
+@permission_classes([permissions.IsAdminUser])
+def admin_gesto(request, pk):
+    gesto = get_object_or_404(GestoLGA, pk=pk)
+    if request.method == 'DELETE':
+        gesto.video.delete(save=False)
+        gesto.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    if 'validado' in request.data:
+        gesto.validado = bool(request.data.get('validado'))
+    if 'validado_por' in request.data:
+        gesto.validado_por = (request.data.get('validado_por') or '').strip()[:120]
+    gesto.save()
+    return Response(_gesto_json(gesto))

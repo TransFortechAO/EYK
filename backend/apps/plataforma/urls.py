@@ -4,6 +4,9 @@ from . import views
 
 urlpatterns = [
     path('config/', views.config_publica, name='plataforma-config'),
+    path('gestos/', views.gestos_publicos, name='plataforma-gestos'),
+    path('admin/gestos/', views.admin_gestos, name='plataforma-admin-gestos'),
+    path('admin/gestos/<int:pk>/', views.admin_gesto, name='plataforma-admin-gesto'),
     path('admin/config/', views.admin_config, name='plataforma-admin-config'),
     path('admin/anuncios/', views.admin_anuncios, name='plataforma-admin-anuncios'),
     path('admin/anuncios/<int:pk>/', views.admin_anuncio_cancelar, name='plataforma-admin-anuncio'),

@@ -42,6 +42,7 @@ export default function InicioPage() {
       <div className="space-y-4">
         <PageHeader
           title={`Olá, ${firstName}`}
+          gesto="Olá"
           description="Explora cursos e vídeos e aprende ao teu ritmo."
         />
         {/* Telemóvel/tablet: a pesquisa fica aqui (no topo tapava os outros ícones). */}

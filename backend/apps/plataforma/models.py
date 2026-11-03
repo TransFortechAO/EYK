@@ -89,3 +89,24 @@ class Anuncio(models.Model):
 
     def __str__(self):
         return self.titulo
+
+
+class GestoLGA(models.Model):
+    """Gesto de Língua Gestual Angolana em vídeo curto (1–2 s, em loop), mostrado
+    junto às palavras da plataforma (menus, botões, saudações).
+    Só aparece aos utilizadores depois de `validado` — os gestos têm de ser gravados
+    e confirmados por pessoas surdas que usam LGA (ver docs/lga-icones-palavras.md)."""
+    palavra = models.CharField(max_length=60, unique=True, help_text='Palavra como aparece na plataforma, ex: "Início".')
+    video = models.FileField(upload_to='gestos/')
+    validado = models.BooleanField(default=False)
+    validado_por = models.CharField(
+        max_length=120, blank=True, help_text='Quem validou o gesto (pessoa surda / associação).',
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['palavra']
+
+    def __str__(self):
+        return self.palavra

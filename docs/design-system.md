@@ -98,6 +98,12 @@ exceto para bordas/realces descritos abaixo.
   `div.space-y-4.overflow-y-auto.p-5`.
 - Partilhar: `components/partilha/modal-partilha.tsx` (redes, email, copiar link, repostar).
 
+### Gestos de LGA (`components/ds/gesto-animado.tsx`)
+- Vídeo curto em loop, sem som, ao lado do título da página (`PageHeader`, palavra = título;
+  no Início "Olá"). Só gestos **validados** pela comunidade surda; sem gesto, só texto.
+- Respeita "Reduzir animações": o vídeo fica parado e só anda ao passar o cursor.
+- Geridos em Administração → Plataforma → Gestos de LGA. Lista de palavras: `docs/lga-icones-palavras.md`.
+
 ### Player de vídeo
 - Nada por cima dos controlos. Número/título da aula e **recursos ficam por baixo do vídeo**.
 

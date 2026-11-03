@@ -25,6 +25,7 @@ import { api, mensagemDeErro, tempoRelativo, type Anuncio, type CategoriaAdmin, 
 import { useAuth } from "@/components/auth-gate";
 import { useConfirm } from "@/components/confirm-dialog";
 import { PageHeader, SectionHeader } from "@/components/eyk";
+import { GestosLGA } from "@/components/admin/gestos-lga";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ export default function PlataformaPage() {
       <Anuncios />
       {config && <TarefasAgendadas config={config} setConfig={setConfig} guardar={guardar} />}
       <Categorias />
+      <GestosLGA />
       {config && <Limites config={config} guardar={guardar} />}
       {config?.atualizado_por && (
         <p className="text-xs text-muted-foreground">

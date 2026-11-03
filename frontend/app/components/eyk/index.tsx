@@ -29,6 +29,7 @@ import { api, formatarDataCurta, mensagemDeErro, type Course, type Video, type P
 import { useAuth } from "@/components/auth-gate";
 import { toast } from "sonner";
 import { PostComments } from "@/components/eyk/post-comments";
+import { GestoAnimado } from "@/components/ds/gesto-animado";
 import { ModalPartilha, PreviaPost } from "@/components/partilha/modal-partilha";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MenuModeracao } from "@/components/moderacao/denunciar";
@@ -40,20 +41,27 @@ export function PageHeader({
   title,
   description,
   children,
+  gesto,
 }: {
   title: string;
   description?: string;
   children?: ReactNode;
+  /** Palavra do gesto de LGA mostrado ao lado do título (por omissão, o próprio título). */
+  gesto?: string;
 }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          {title}
-        </h1>
-        {description && (
-          <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">{description}</p>
-        )}
+      <div className="flex min-w-0 items-center gap-3">
+        {/* Gesto de LGA da palavra, se a equipa já tiver um validado (Design System). */}
+        <GestoAnimado palavra={gesto ?? title} className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
+        <div className="min-w-0">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            {title}
+          </h1>
+          {description && (
+            <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">{description}</p>
+          )}
+        </div>
       </div>
       {children && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">{children}</div>}
     </div>

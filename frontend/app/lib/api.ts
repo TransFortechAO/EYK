@@ -436,6 +436,15 @@ export type ConfigPublica = {
   limites: { videoMb: number; aulaMb?: number; pdfMb: number };
 };
 
+/** Gesto de LGA em vídeo (ver docs/lga-icones-palavras.md). */
+export type GestoLGA = {
+  id: number;
+  palavra: string;
+  video: string | null;
+  validado: boolean;
+  validado_por: string;
+};
+
 export type ConfigAdmin = {
   limite_video_mb: number;
   limite_aula_mb: number;
@@ -1946,6 +1955,34 @@ export const api = {
       } catch {
         return null;
       }
+    },
+    /** Gestos de LGA validados, por palavra → URL do vídeo. Nunca lança erro. */
+    gestos: async (): Promise<Record<string, string>> => {
+      try {
+        const res = await fetchAPI<Record<string, string>>('/api/plataforma/gestos/');
+        return Object.fromEntries(Object.entries(res ?? {}).map(([p, url]) => [p, mediaUrl(url) ?? url]));
+      } catch {
+        return {};
+      }
+    },
+    // ── Gestão dos gestos (equipa EYK) ──
+    listarGestos: async (): Promise<GestoLGA[]> => {
+      const res = await fetchAPI<GestoLGA[]>('/api/plataforma/admin/gestos/');
+      return (res ?? []).map((g) => ({ ...g, video: mediaUrl(g.video) ?? g.video }));
+    },
+    enviarGesto: async (dados: { palavra: string; video: File; validado: boolean; validadoPor: string }): Promise<GestoLGA> => {
+      const form = new FormData();
+      form.append('palavra', dados.palavra);
+      form.append('video', dados.video);
+      form.append('validado', dados.validado ? 'true' : 'false');
+      form.append('validado_por', dados.validadoPor);
+      return await fetchAPI<GestoLGA>('/api/plataforma/admin/gestos/', { method: 'POST', body: form });
+    },
+    atualizarGesto: async (id: number, dados: { validado?: boolean; validado_por?: string }): Promise<GestoLGA> => {
+      return await fetchAPI<GestoLGA>(`/api/plataforma/admin/gestos/${id}/`, { method: 'PATCH', body: JSON.stringify(dados) });
+    },
+    apagarGesto: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/plataforma/admin/gestos/${id}/`, { method: 'DELETE' });
     },
   },
 

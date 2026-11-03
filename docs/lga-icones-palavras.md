@@ -3,6 +3,13 @@
 Lista das palavras que aparecem nas páginas da EYK e que podem ser acompanhadas (ou
 substituídas) por um **gesto real de Língua Gestual Angolana em animação curta**.
 
+**Fontes existentes (pesquisa de novembro de 2026):** não há nenhum conjunto aberto e com licença
+de vídeos de gestos isolados da LGA. O projeto Pamosii Viva Surdo (github.com/7Dark7Cloud7/pamosii-viva-surdo)
+tem aulas e um glossário de ~200 palavras, mas diz que os vídeos dos gestos isolados ainda estão
+planeados e que o glossário precisa de validação; o dicionário de LGA (800 palavras) existe em livro/CD.
+Os cursos no YouTube são aulas completas, sem licença para reutilizar. Por isso os gestos da EYK têm
+de ser **gravados pela própria equipa**, com autorização das pessoas filmadas.
+
 **Importante:** os gestos têm de ser **gravados e validados por pessoas surdas** que usam LGA
 (por exemplo, com a ANSA — Associação Nacional de Surdos de Angola — ou os educadores surdos
 das escolas parceiras). Os "gestos" que a Biblioteca mostra hoje são só emojis de demonstração.
@@ -108,6 +115,8 @@ Legenda: ✅ já existe na Biblioteca (como demonstração, precisa do gesto rea
 ## Por onde começar
 
 1. Gravar primeiro os ⭐ (cerca de 15 gestos) — aparecem em todas as páginas.
-2. Criar o componente `GestoAnimado` (vídeo em loop + texto) em `components/ds/` e usá-lo no
-   menu, nos botões principais e nas saudações.
+2. Carregar cada vídeo em **Administração → Plataforma → Gestos de LGA** (palavra exatamente como
+   aparece na plataforma, ex.: "Cursos"; marcar "validado" e por quem). O componente
+   `GestoAnimado` (`components/ds/gesto-animado.tsx`) mostra-o logo ao lado do título da página
+   com essa palavra (e "Olá" no Início). Sem gesto validado, fica só o texto.
 3. Juntar os restantes por secção, validando cada gesto com a comunidade surda.
