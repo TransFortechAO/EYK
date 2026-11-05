@@ -5,6 +5,9 @@ from .base import *
 # Apenas para desenvolvimento local/rede privada. Não usar estas permissões em produção.
 DEBUG = True
 ALLOWED_HOSTS = ['*']
+# O Next reencaminha os pedidos para o Django: sem isto os URLs de media saem com
+# 127.0.0.1:8000, que noutro computador da rede aponta para ele próprio.
+USE_X_FORWARDED_HOST = True
 
 DATABASES = {
     'default': {
