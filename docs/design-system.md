@@ -63,7 +63,8 @@ exceto para bordas/realces descritos abaixo.
   centrados; abre ao passar o cursor e empurra o conteúdo, sem ficar por cima dele.
 - **Menu de baixo**: 4 abas + "Mais"; "Configurações" logo antes de "Sair".
 - **Barra do topo** da app: logótipo (só `movel:`), pesquisa da página (só `computador:`), chips de
-  moedas e streak, sino com pré-visualização, perfil. **Página pública (landing): barra opaca.**
+  moedas e streak, sino com pré-visualização; o menu de perfil só aparece aqui em `movel:`
+  (no computador está no rodapé da barra lateral, a abrir ao passar o cursor). **Página pública (landing): barra opaca.**
 
 ## 4. Regras de componentes
 
@@ -84,8 +85,10 @@ exceto para bordas/realces descritos abaixo.
 - **Telemóvel/tablet**: cada tipo de elemento no seu separador (nada misturado num scroll enorme).
 - **Computador**: tudo visível, uma secção por baixo da outra.
 - Aplicado em: Perfil e Gamificação.
-- Leaderboard e Comunidade usam separadores em **todos** os ecrãs, porque são vistas alternativas
-  da mesma lista (Classificação / Streak / Moedas / Professores; Recentes / Em alta / As minhas).
+- A Leaderboard usa separadores em **todos** os ecrãs, porque são vistas alternativas da mesma
+  lista (Classificação / Streak / Moedas / Professores).
+- A Comunidade **não** tem separadores: o feed é aleatório entre todas as publicações, antigas e
+  recentes, para quem entra não sentir que perdeu nada.
 - Separadores das Configurações: 3 por linha no telemóvel, 6 numa linha a partir do tablet.
 
 ### Cartões de conteúdo

@@ -1719,9 +1719,11 @@ export const api = {
   // =========================================================================
   //  COMUNIDADE (posts, comentários, reações)
   // =========================================================================
-  getPosts: async (): Promise<Post[]> => {
+  /** Feed aleatório; `destaque` (link partilhado) garante essa publicação em primeiro. */
+  getPosts: async (destaque?: string | null): Promise<Post[]> => {
     try {
-      const res = await fetchAPI<RawPost[]>('/api/comunidade/posts/');
+      const query = destaque ? `?post=${encodeURIComponent(destaque)}` : '';
+      const res = await fetchAPI<RawPost[]>(`/api/comunidade/posts/${query}`);
       if (Array.isArray(res) && res.length > 0) {
         return res.map(normalizePost);
       }

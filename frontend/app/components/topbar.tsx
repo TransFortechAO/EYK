@@ -103,7 +103,10 @@ export function Topbar() {
 
         <SinoNotificacoes naoLidas={naoLidas} />
 
-        <ProfileMenu />
+        {/* No computador o menu de perfil está só na barra lateral. */}
+        <div className="flex computador:hidden">
+          <ProfileMenu />
+        </div>
       </div>
     </header>
   );

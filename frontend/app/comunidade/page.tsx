@@ -3,14 +3,10 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Clock, Flame, UserRound, Users } from "lucide-react";
+import { Flame, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, PostCard, EmptyState } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserAvatar } from "@/components/UserAvatar";
-import { useAuth } from "@/components/auth-gate";
 import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { normalizarTexto } from "@/components/filtros/barra-filtros";
 import { api, type Post } from "@/lib/api";
@@ -32,9 +28,9 @@ function ComunidadeConteudo() {
   const [reagindoIds, setReagindoIds] = useState<Set<string>>(new Set());
 
   const loadPosts = useCallback(async () => {
-    const list = await api.getPosts();
+    const list = await api.getPosts(postPartilhado);
     setPosts(list);
-  }, []);
+  }, [postPartilhado]);
 
   useEffect(() => {
     void loadPosts();
@@ -79,37 +75,21 @@ function ComunidadeConteudo() {
     }
   };
 
-  // Separadores do feed e pesquisa da página (?q=: no topo no computador, aqui no telemóvel/tablet).
-  const [separador, setSeparador] = useState<"recentes" | "alta" | "minhas">("recentes");
+  // Pesquisa da página (?q=): no topo no computador, aqui no telemóvel/tablet.
   const [pesquisa] = usePesquisaPagina();
-  const { user } = useAuth();
 
   const visiveis = useMemo(() => {
     const termo = normalizarTexto(pesquisa.trim());
-    let lista = posts.filter(
+    return posts.filter(
       (p) => !termo || normalizarTexto(`${p.content} ${p.author} ${p.repostDe?.content ?? ""}`).includes(termo),
     );
-    if (separador === "minhas") lista = lista.filter((p) => user?.id != null && p.authorId === user.id);
-    if (separador === "alta") lista = [...lista].sort((a, b) => b.likes + b.comments * 2 - (a.likes + a.comments * 2));
-    return lista;
-  }, [posts, pesquisa, separador, user?.id]);
+  }, [posts, pesquisa]);
 
-  // Coluna lateral (computador): publicações em destaque e quem mais participa.
+  // Coluna lateral (computador): publicações em destaque.
   const destaques = useMemo(
     () => [...posts].filter((p) => p.content).sort((a, b) => b.likes + b.comments - (a.likes + a.comments)).slice(0, 3),
     [posts],
   );
-  const ativos = useMemo(() => {
-    const contagem = new Map<number, { nome: string; iniciais: string; foto: string | null; total: number }>();
-    for (const p of posts) {
-      if (p.authorId == null) continue;
-      const atual = contagem.get(p.authorId) ?? { nome: p.author, iniciais: p.initials, foto: p.authorFoto, total: 0 };
-      atual.total += 1;
-      contagem.set(p.authorId, atual);
-    }
-    return [...contagem.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 5);
-  }, [posts]);
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -128,14 +108,6 @@ function ComunidadeConteudo() {
             <Card className="p-4 shadow-soft">
               <CompositorPost aoPublicar={(novo) => setPosts((prev) => [novo, ...prev])} />
             </Card>
-
-            <Tabs value={separador} onValueChange={(v) => setSeparador(v as typeof separador)}>
-              <TabsList className="w-full bg-surface">
-                <TabsTrigger value="recentes" className="flex-1 gap-1.5"><Clock className="h-4 w-4" />Recentes</TabsTrigger>
-                <TabsTrigger value="alta" className="flex-1 gap-1.5"><Flame className="h-4 w-4" />Em alta</TabsTrigger>
-                <TabsTrigger value="minhas" className="flex-1 gap-1.5"><UserRound className="h-4 w-4" />As minhas</TabsTrigger>
-              </TabsList>
-            </Tabs>
 
             {visiveis.length > 0 ? (
               <div className="space-y-5">
@@ -166,9 +138,7 @@ function ComunidadeConteudo() {
                 description={
                   posts.length === 0
                     ? "Sê o primeiro a partilhar algo com a comunidade!"
-                    : separador === "minhas"
-                      ? "Ainda não publicaste nada — partilha o que estás a aprender."
-                      : "Tenta outra pesquisa."
+                    : "Tenta outra pesquisa."
                 }
               />
             )}
@@ -196,24 +166,6 @@ function ComunidadeConteudo() {
                     ))}
                   </ul>
                 )}
-              </Card>
-              <Card className="space-y-3 p-4 shadow-soft">
-                <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
-                  <Users className="h-4 w-4 text-primary" /> Quem mais participa
-                </h2>
-                <ul className="space-y-2">
-                  {ativos.map(([id, a]) => (
-                    <li key={id}>
-                      <Link href={`/perfil/${id}`} className="flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-surface">
-                        <Avatar className="h-9 w-9">
-                          <UserAvatar noLink name={a.nome} initials={a.iniciais} foto={a.foto ?? undefined} userId={id} size={36} />
-                        </Avatar>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{a.nome}</span>
-                        <span className="text-xs tabular-nums text-muted-foreground">{a.total}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
               </Card>
             </div>
           </aside>

@@ -5,6 +5,7 @@ import pytest
 from django.urls import reverse
 
 from apps.cursos.models import Curso
+from apps.feed.api_views import TAMANHO_FEED
 from apps.feed.models import Post
 from apps.professores.models import Video
 
@@ -114,3 +115,39 @@ class TestPublicarComFoto:
         ficheiro = SimpleUploadedFile("x.pdf", b"%PDF-1.4", content_type="application/pdf")
         r = client.post(reverse("api-post-list"), data={"conteudo": "olá", "imagem": ficheiro})
         assert r.status_code == 400
+
+
+@pytest.mark.django_db
+class TestFeedAleatorio:
+    def _criar(self, autor, quantidade):
+        return [Post.objects.create(autor=autor, conteudo=f"Post {i}") for i in range(quantidade)]
+
+    def test_publicacoes_antigas_tambem_aparecem(self, client, aluno_user):
+        # Mais publicações do que cabem no feed: as mais antigas não podem ficar sempre de fora.
+        posts = self._criar(aluno_user, TAMANHO_FEED + 10)
+        client.force_login(aluno_user)
+        antigos = {p.id for p in posts[:10]}
+        vistos = set()
+        for _ in range(8):
+            vistos |= {p["id"] for p in client.get(reverse("api-post-list")).json()}
+        assert vistos & antigos
+
+    def test_o_feed_tem_no_maximo_o_tamanho_definido(self, client, aluno_user):
+        self._criar(aluno_user, TAMANHO_FEED + 3)
+        client.force_login(aluno_user)
+        assert len(client.get(reverse("api-post-list")).json()) == TAMANHO_FEED
+
+    def test_post_de_um_link_vem_primeiro_sem_repetir(self, client, aluno_user):
+        posts = self._criar(aluno_user, TAMANHO_FEED + 10)
+        client.force_login(aluno_user)
+        alvo = posts[0].id
+        lista = client.get(reverse("api-post-list"), {"post": alvo}).json()
+        ids = [p["id"] for p in lista]
+        assert ids[0] == alvo
+        assert ids.count(alvo) == 1
+
+    def test_link_para_post_ocultado_nao_o_mostra(self, client, aluno_user, professor_user):
+        oculto = Post.objects.create(autor=professor_user, conteudo="x", oculto=True)
+        client.force_login(aluno_user)
+        ids = [p["id"] for p in client.get(reverse("api-post-list"), {"post": oculto.id}).json()]
+        assert oculto.id not in ids

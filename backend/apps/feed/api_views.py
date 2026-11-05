@@ -14,6 +14,7 @@ from .models import Comentario, Post, ReacaoComentario, ReacaoPost
 from .serializers import ComentarioSerializer, PostSerializer
 
 MOEDAS_POR_POST = 2
+TAMANHO_FEED = 50
 TAMANHO_MAX_IMAGEM_POST = 5 * 1024 * 1024  # fotos nas publicações da comunidade
 
 
@@ -84,7 +85,15 @@ def post_list(request):
         serializer = PostSerializer(post, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    posts = _visiveis(Post.objects.select_related('autor'), request).order_by('-criado_em')[:50]
+    # Feed aleatório entre todas as publicações, antigas e recentes, para quem entra
+    # não sentir que perdeu nada. `?post=ID` (link partilhado, notificação) vem primeiro.
+    visiveis = _visiveis(Post.objects.select_related('autor'), request)
+    posts = list(visiveis.order_by('?')[:TAMANHO_FEED])
+    destaque = request.query_params.get('post', '')
+    if destaque.isdigit():
+        alvo = visiveis.filter(pk=destaque).first()
+        if alvo:
+            posts = [alvo, *[p for p in posts if p.pk != alvo.pk]]
     serializer = PostSerializer(posts, many=True, context=_contexto(request))
     return Response(serializer.data)
 
