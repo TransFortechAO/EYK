@@ -14,7 +14,18 @@ const SW_LIGADO =
 /** Regista o service worker (public/sw.js). Montado uma vez no layout raiz. */
 export function PwaRegister() {
   useEffect(() => {
-    if (!SW_LIGADO || !("serviceWorker" in navigator)) return;
+    if (!("serviceWorker" in navigator)) return;
+    if (!SW_LIGADO) {
+      // Um service worker deixado por uma versão de produção neste endereço continuaria
+      // a servir JavaScript antigo (em dev os ficheiros têm sempre o mesmo nome).
+      void navigator.serviceWorker.getRegistrations().then((registos) => {
+        registos.forEach((r) => void r.unregister());
+      });
+      void caches.keys().then((nomes) => {
+        nomes.filter((n) => n.startsWith("eyk-") && !n.startsWith("eyk-videos")).forEach((n) => void caches.delete(n));
+      });
+      return;
+    }
     navigator.serviceWorker.register("/sw.js").catch(() => {
       /* sem service worker a app continua a funcionar, só não fica offline */
     });
