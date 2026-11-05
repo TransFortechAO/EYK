@@ -30,7 +30,7 @@ import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { abasTelemovel, restoParaMais, type ItemNav } from "@/lib/instituicoes/navegacao";
 import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { ICONE_NAV } from "@/components/instituicao/icones-nav";
-import { UserAvatar } from "@/components/UserAvatar";
+import { ProfileMenu } from "@/components/profile-menu";
 
 import {
   Sidebar,
@@ -351,19 +351,13 @@ function LogoBarra({ aoNavegar }: { aoNavegar: () => void }) {
   );
 }
 
-/** A conta: foto e nome; "Sair" encostado à direita (só o ícone com a barra recolhida). */
+/** A conta: só o ícone de perfil (com o menu ao passar o cursor) e "Sair" encostado à direita. */
 function RodapeConta({ aoSair, aSair }: { aoSair: () => void; aSair: boolean }) {
   const { state, isMobile } = useSidebar();
-  const { user } = useAuth();
   const recolhida = !isMobile && state === "collapsed";
   return (
     <div className={recolhida ? "flex flex-col items-center gap-1 py-1" : "flex items-center gap-2 rounded-lg px-2 py-1.5"}>
-      {user && (
-        <Link href={`/perfil/${user.id}`} className="flex min-w-0 flex-1 items-center gap-2.5" title={user.name}>
-          <UserAvatar name={user.name} initials={user.initials} foto={user.foto ?? null} userId={user.id} size={32} noLink />
-          {!recolhida && <span className="truncate text-sm font-medium">{user.name}</span>}
-        </Link>
-      )}
+      <ProfileMenu aoPassarCursor lado="top" alinhamento="start" />
       <button
         type="button"
         onClick={aoSair}

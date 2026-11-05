@@ -59,7 +59,7 @@ exceto para bordas/realces descritos abaixo.
 | `computador:` | ≥ 1024px com rato, ou ≥ 1367px | barra lateral |
 
 - **Barra lateral**: logótipo à largura da barra; grupos por papel; "Configurações" em penúltimo;
-  rodapé com a foto e o nome da conta e "Sair" à direita. Recolhida (72px) só com os ícones,
+  rodapé só com o ícone de perfil (menu ao passar o cursor) e "Sair" à direita. Recolhida (72px) só com os ícones,
   centrados; abre ao passar o cursor e empurra o conteúdo, sem ficar por cima dele.
 - **Menu de baixo**: 4 abas + "Mais"; "Configurações" logo antes de "Sair".
 - **Barra do topo** da app: logótipo (só `movel:`), pesquisa da página (só `computador:`), chips de

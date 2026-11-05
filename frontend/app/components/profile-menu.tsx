@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { LogOut, User2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,11 +18,35 @@ import { api, API_BASE_URL, mediaUrl } from "@/lib/api";
 /**
  * Ícone de perfil partilhado por toda a plataforma. Abre um menu cujo
  * primeiro item ("O meu perfil") leva à página privada do perfil (/perfil),
- * igual para alunos e professores.
+ * igual para alunos e professores. Com `aoPassarCursor` (barra lateral) o menu
+ * abre ao passar o rato; com o teclado continua a abrir com Enter.
  */
-export function ProfileMenu({ className }: { className?: string }) {
+export function ProfileMenu({
+  className,
+  aoPassarCursor = false,
+  lado,
+  alinhamento = "end",
+}: {
+  className?: string;
+  aoPassarCursor?: boolean;
+  lado?: "top" | "right" | "bottom" | "left";
+  alinhamento?: "start" | "center" | "end";
+}) {
   const { user } = useAuth();
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [aberto, setAberto] = useState(false);
+  const fecharRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Só com rato. O atraso a fechar deixa levar o cursor do ícone até ao menu.
+  const manterAberto = (e: React.PointerEvent) => {
+    if (!aoPassarCursor || e.pointerType !== "mouse") return;
+    if (fecharRef.current) clearTimeout(fecharRef.current);
+    setAberto(true);
+  };
+  const fecharDepois = (e: React.PointerEvent) => {
+    if (!aoPassarCursor || e.pointerType !== "mouse") return;
+    fecharRef.current = setTimeout(() => setAberto(false), 200);
+  };
 
   const handleLogout = useCallback(async () => {
     if (logoutLoading) return;
@@ -53,11 +77,17 @@ export function ProfileMenu({ className }: { className?: string }) {
   const perfilLabel = "O meu perfil";
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={aberto} onOpenChange={setAberto} modal={!aoPassarCursor}>
       <DropdownMenuTrigger asChild>
         <button
           className={className ?? "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"}
           aria-label="Menu do utilizador"
+          onPointerEnter={manterAberto}
+          onPointerLeave={fecharDepois}
+          // O menu já está aberto: um clique com o rato não o deve fechar.
+          onPointerDown={(e) => {
+            if (aoPassarCursor && e.pointerType === "mouse") e.preventDefault();
+          }}
         >
           <Avatar className="h-9 w-9 border-2 border-primary/30">
             {user?.foto ? (
@@ -73,7 +103,13 @@ export function ProfileMenu({ className }: { className?: string }) {
           </Avatar>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent
+        side={lado}
+        align={alinhamento}
+        className="w-56"
+        onPointerEnter={manterAberto}
+        onPointerLeave={fecharDepois}
+      >
         <DropdownMenuLabel>
           <span className="inline-flex items-center gap-2">
             <User2 className="w-4 h-4 text-muted-foreground" />
