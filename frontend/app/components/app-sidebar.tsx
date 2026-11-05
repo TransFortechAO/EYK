@@ -345,7 +345,7 @@ function LogoBarra({ aoNavegar }: { aoNavegar: () => void }) {
       <img
         src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png"
         alt="EYK"
-        className={recolhida ? "h-9 w-auto object-contain" : "h-auto w-full max-w-[11rem] object-contain"}
+        className={recolhida ? "h-10 w-full object-contain" : "h-auto w-full max-w-[11rem] object-contain"}
       />
     </Link>
   );

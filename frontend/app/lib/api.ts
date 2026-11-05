@@ -437,6 +437,13 @@ export type ConfigPublica = {
 };
 
 /** Gesto de LGA em vídeo (ver docs/lga-icones-palavras.md). */
+export type NomeUtilizador = {
+  username: string;
+  disponivel: boolean;
+  sugestoes: string[];
+  nome_ocupado?: boolean;
+};
+
 export type GestoLGA = {
   id: number;
   palavra: string;
@@ -1534,15 +1541,21 @@ export const api = {
   // NOTA: assume que existe (ou vai ser criado) o endpoint '/accounts/auth/register/'
   // no backend Django, seguindo a mesma convenção de '/accounts/auth/login/'.
   // Confirmar com o backend antes de usar em produção.
-  register: async (username: string, email: string, password: string, ref?: string) => {
+  register: async (dados: { nome: string; username: string; email: string; password: string; ref?: string }) => {
     const res = await fetchAPI<{ ok: boolean; user: AuthUser; error?: string }>(
       '/accounts/auth/register/',
-      {
-        method: 'POST',
-        body: JSON.stringify(ref ? { username, email, password, ref } : { username, email, password }),
-      },
+      { method: 'POST', body: JSON.stringify(dados) },
     );
     return res;
+  },
+  /** Registo: propõe um nome de utilizador a partir do nome, ou verifica o escolhido. Nunca lança erro. */
+  nomeUtilizador: async (nome: string, username = ''): Promise<NomeUtilizador | null> => {
+    const params = new URLSearchParams({ nome, username });
+    try {
+      return await fetchAPI<NomeUtilizador>(`/accounts/auth/nome-utilizador/?${params}`);
+    } catch {
+      return null;
+    }
   },
   logout: async () => {
     limparCacheApiOffline();

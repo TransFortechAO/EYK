@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api";
+import { api, type NomeUtilizador } from "@/lib/api";
 import { guardarDestinoDoEndereco } from "@/lib/destino";
 
 const EYK_GOLD = "#d4a24a";
@@ -64,7 +64,11 @@ function RegisterConteudo() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [nome, setNome] = useState("");
+  // Nome de utilizador: proposto a partir do nome; a pessoa pode escolher outro.
   const [username, setUsername] = useState("");
+  const [aEditarUsername, setAEditarUsername] = useState(false);
+  const [verificacao, setVerificacao] = useState<NomeUtilizador | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -74,12 +78,39 @@ function RegisterConteudo() {
   const passwordsCoincidem =
     confirmPassword.length > 0 ? confirmPassword === password : null;
 
+  useEffect(() => {
+    const procurar = aEditarUsername ? username.trim() : nome.trim();
+    if (procurar.length < 2) {
+      setVerificacao(null);
+      if (!aEditarUsername) setUsername("");
+      return;
+    }
+    const temporizador = setTimeout(() => {
+      void api.nomeUtilizador(nome.trim(), aEditarUsername ? username.trim() : "").then((res) => {
+        if (!res) return;
+        setVerificacao(res);
+        if (!aEditarUsername) setUsername(res.username);
+      });
+    }, 350);
+    return () => clearTimeout(temporizador);
+  }, [nome, username, aEditarUsername]);
+
+  const escolherUsername = (escolhido: string) => {
+    setUsername(escolhido);
+    setAEditarUsername(true);
+    setVerificacao({ username: escolhido, disponivel: true, sugestoes: [] });
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!nome.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setErrorMsg("Preenche todos os campos.");
+      return;
+    }
+    if (aEditarUsername && verificacao && !verificacao.disponivel) {
+      setErrorMsg("Este nome de utilizador já existe. Escolhe uma das sugestões.");
       return;
     }
     if (password !== confirmPassword) {
@@ -93,17 +124,24 @@ function RegisterConteudo() {
 
     startTransition(async () => {
       try {
-        const res = await api.register(username.trim(), email.trim(), password, ref);
+        const res = await api.register({ nome: nome.trim(), username: username.trim(), email: email.trim(), password, ref });
         if (!res?.ok) {
           setErrorMsg(res?.error || "Não foi possível criar a conta. Tenta novamente.");
           return;
         }
         window.location.assign("/personalizar-perfil");
       } catch (err) {
-        const status = (err as { status?: number })?.status;
+        const { status, data } = err as { status?: number; data?: { codigo?: string; sugestoes?: string[] } };
         const msg = err instanceof Error ? err.message : "Erro ao criar conta.";
+        // Alguém ficou com este nome de utilizador entretanto: mostra as alternativas.
+        if (data?.codigo === "username_ocupado") {
+          setAEditarUsername(true);
+          setVerificacao({ username: username.trim(), disponivel: false, sugestoes: data.sugestoes ?? [] });
+          setErrorMsg(msg);
+          return;
+        }
         if (status === 409 || msg.toLowerCase().includes("já existe") || msg.toLowerCase().includes("already")) {
-          setErrorMsg("Já existe uma conta com este nome de utilizador ou email.");
+          setErrorMsg("Já existe uma conta com este email.");
         } else {
           setErrorMsg(msg);
         }
@@ -211,8 +249,8 @@ function RegisterConteudo() {
 
           <form onSubmit={handleSubmit} method="post" className="space-y-5" noValidate>
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-white/85 text-sm">
-                Nome de utilizador
+              <Label htmlFor="nome" className="text-white/85 text-sm">
+                Nome
               </Label>
               <div className="relative group">
                 <User
@@ -221,17 +259,80 @@ function RegisterConteudo() {
                   aria-hidden
                 />
                 <Input
-                  id="username"
-                  name="username"
+                  id="nome"
+                  name="nome"
                   type="text"
-                  autoComplete="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="name"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
                   required
                   disabled={isPending}
                   className="h-12 rounded-2xl pl-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/40 transition-all focus-visible:bg-white/[0.06] focus-visible:border-[#d4a24a]/50 focus-visible:ring-2 focus-visible:ring-[#d4a24a]/25"
                 />
               </div>
+
+              {/* Nome de utilizador criado a partir do nome, com sugestões se já existir. */}
+              {aEditarUsername ? (
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="username" className="text-xs text-white/60">
+                    Nome de utilizador
+                  </Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
+                    disabled={isPending}
+                    className="h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-sm text-white focus-visible:border-[#d4a24a]/50 focus-visible:ring-2 focus-visible:ring-[#d4a24a]/25"
+                  />
+                </div>
+              ) : (
+                username && (
+                  <p className="flex flex-wrap items-center gap-x-2 pt-1 text-xs text-white/60">
+                    O teu nome de utilizador:
+                    <span className="font-medium text-white">@{username}</span>
+                    <button
+                      type="button"
+                      onClick={() => setAEditarUsername(true)}
+                      className="font-medium underline underline-offset-2"
+                      style={{ color: EYK_GOLD_LIGHT }}
+                    >
+                      Mudar
+                    </button>
+                  </p>
+                )
+              )}
+
+              {verificacao && (
+                <div aria-live="polite" className="space-y-1.5 text-xs">
+                  {aEditarUsername && (
+                    <p className={verificacao.disponivel ? "flex items-center gap-1 text-emerald-400" : "flex items-center gap-1 text-red-400"}>
+                      {verificacao.disponivel ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
+                      {verificacao.disponivel ? "Disponível" : "Este nome de utilizador já existe."}
+                    </p>
+                  )}
+                  {verificacao.nome_ocupado && !aEditarUsername && (
+                    <p className="text-white/60">Já existe alguém com este nome, por isso propomos este.</p>
+                  )}
+                  {verificacao.sugestoes.length > 0 && (verificacao.nome_ocupado || !verificacao.disponivel) && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-white/60">Outras opções:</span>
+                      {verificacao.sugestoes.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => escolherUsername(s)}
+                          className="rounded-full border border-white/15 px-2.5 py-1 text-white/85 transition-colors hover:border-[#d4a24a]/60 hover:text-white"
+                        >
+                          @{s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
