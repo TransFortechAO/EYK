@@ -181,8 +181,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="floating" collapsible="icon">
-      {/* Altura fixa: o logótipo muda de tamanho, mas os ícones não sobem nem descem. */}
-      <SidebarHeader className="h-24 shrink-0 justify-center px-4">
+      {/* O logótipo fica sempre no mesmo sítio, com o centro alinhado com os ícones. */}
+      <SidebarHeader className="h-24 shrink-0 justify-center pl-[11px]">
         <LogoBarra aoNavegar={closeOnNavigate} />
       </SidebarHeader>
 
@@ -336,17 +336,15 @@ export function AppSidebar() {
   );
 }
 
-/** Logótipo à medida da barra: grande com a barra aberta, pequeno com ela recolhida. */
+/** Logótipo igual com a barra aberta ou recolhida, como no Instagram. */
 function LogoBarra({ aoNavegar }: { aoNavegar: () => void }) {
-  const { state, isMobile } = useSidebar();
-  const recolhida = !isMobile && state === "collapsed";
   return (
-    <Link href="/inicio" className="flex items-center justify-center" onClick={aoNavegar} aria-label="EYK — Início">
+    <Link href="/inicio" className="w-fit" onClick={aoNavegar} aria-label="EYK — Início">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png"
         alt="EYK"
-        className={recolhida ? "h-10 w-full object-contain" : "h-auto w-full max-w-[11rem] object-contain"}
+        className="h-12 w-12 object-contain"
       />
     </Link>
   );

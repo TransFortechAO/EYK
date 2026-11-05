@@ -58,7 +58,7 @@ exceto para bordas/realces descritos abaixo.
 | `movel:` | telemóvel e tablet (até 1023px, ou ecrã táctil até 1366px) | menu de baixo + painel "Mais" |
 | `computador:` | ≥ 1024px com rato, ou ≥ 1367px | barra lateral |
 
-- **Barra lateral**: logótipo à largura da barra; grupos por papel; "Configurações" em penúltimo;
+- **Barra lateral**: logótipo de 48px, igual nos dois estados e alinhado com os ícones; grupos por papel; "Configurações" em penúltimo;
   rodapé só com o ícone de perfil (menu ao passar o cursor) e "Sair" à direita. Recolhida (72px) só com os ícones; abre ao
   passar o cursor e empurra o conteúdo, sem ficar por cima dele. Como no Instagram, **os ícones têm o
   mesmo tamanho (22px) e o mesmo lugar nos dois estados**: só o texto aparece ou desaparece.
