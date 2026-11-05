@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { destinoSeguro, loginComDestino } from "./destino";
+import { destinoSeguro, loginComDestino, paginaInicial } from "./destino";
 
 describe("voltar ao sítio de onde se veio depois de entrar", () => {
   it("aceita caminhos internos, com o código do convite", () => {
@@ -23,5 +23,13 @@ describe("voltar ao sítio de onde se veio depois de entrar", () => {
   it("o login leva o destino no endereço", () => {
     expect(loginComDestino("/instituicao/aderir?codigo=LGA3A")).toBe("/login?next=%2Finstituicao%2Faderir%3Fcodigo%3DLGA3A");
     expect(loginComDestino("https://site.mau")).toBe("/login");
+  });
+});
+
+describe("paginaInicial", () => {
+  it("a equipa EYK entra nas métricas e os restantes no Início", () => {
+    expect(paginaInicial({ isStaff: true })).toBe("/configuracoes/administracao/metricas");
+    expect(paginaInicial({ isStaff: false })).toBe("/inicio");
+    expect(paginaInicial(null)).toBe("/inicio");
   });
 });

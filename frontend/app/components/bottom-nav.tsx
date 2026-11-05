@@ -60,8 +60,8 @@ const PROFESSOR: Item[] = [
 ];
 
 const ADMINISTRACAO: Item[] = [
-  ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
+  ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },
@@ -234,6 +234,9 @@ export function BottomNav() {
             <SheetDescription className="sr-only">Outras páginas da plataforma EYK.</SheetDescription>
           </SheetHeader>
 
+          {user?.isStaff && (
+            <Grupo titulo="Administração" icone={ShieldCheck} itens={ADMINISTRACAO} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
+          )}
           {user?.isTeacher && (
             <Grupo titulo="Professor" icone={LayoutDashboard} itens={PROFESSOR} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           )}
@@ -249,10 +252,7 @@ export function BottomNav() {
           {geralNoMais.length > 0 && (
             <Grupo titulo="Plataforma EYK" icone={Home} itens={geralNoMais} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
           )}
-          <Grupo titulo={daEscola.length || geralNoMais.length || user?.isTeacher ? "Mais" : undefined} itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          {user?.isStaff && (
-            <Grupo titulo="Administração" icone={ShieldCheck} itens={ADMINISTRACAO} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          )}
+          <Grupo titulo={daEscola.length || geralNoMais.length || user?.isTeacher || user?.isStaff ? "Mais" : undefined} itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
 
           <Grupo itens={CONFIGURACOES} ativo={(url) => pathname === url} aoNavegar={() => setMaisAberto(false)} />
 

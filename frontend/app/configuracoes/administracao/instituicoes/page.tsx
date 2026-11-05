@@ -63,7 +63,7 @@ export default function AdminInstituicoesPage() {
     <div className="space-y-8">
       <PageHeader
         title="Escolas e instituições"
-        description="Criar escolas, centros e organizações parceiras (o responsável recebe o convite de administrador), ativar, suspender, ajustar quotas e aprovar o que as escolas querem publicar na plataforma geral."
+        description="Criar escolas, centros e organizações parceiras (com o convite de administrador para o responsável), ativar, suspender, ajustar quotas e aprovar o que as escolas querem publicar na plataforma geral."
       >
         <Button asChild variant="outline" className="gap-1.5">
           {/* A equipa EYK não pertence a escolas: vê o espaço de uma escola só em pré-visualização. */}
@@ -244,7 +244,7 @@ function NovaInstituicao({ aberto, aoFechar, aoCriar }: { aberto: boolean; aoFec
         <DialogHeader>
           <div>
             <DialogTitle>Nova instituição</DialogTitle>
-            <DialogDescription>Depois de assinado o acordo de parceria. O responsável recebe um convite e fica administrador.</DialogDescription>
+            <DialogDescription>Depois de assinado o acordo de parceria. Ainda não é enviado email: as escolas estão em demonstração, guardadas só neste browser.</DialogDescription>
           </div>
         </DialogHeader>
         <form onSubmit={submeter} className="flex min-h-0 flex-col">
@@ -284,7 +284,7 @@ function NovaInstituicao({ aberto, aoFechar, aoCriar }: { aberto: boolean; aoFec
             <Button type="button" variant="outline" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit">Criar e enviar convite</Button>
+            <Button type="submit">Criar escola</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -42,6 +42,11 @@ export function loginComDestino(caminho: string): string {
   return seguro ? `/login?next=${encodeURIComponent(seguro)}` : "/login";
 }
 
+/** Primeira página de cada pessoa: a equipa EYK entra nas métricas; os outros no Início. */
+export function paginaInicial(user?: { isStaff?: boolean } | null): string {
+  return user?.isStaff ? "/configuracoes/administracao/metricas" : "/inicio";
+}
+
 /**
  * O destino a usar depois de entrar: o ?next= do endereço atual ou o guardado
  * na sessão. Apaga-o (só se usa uma vez).

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
-import { consumirDestino, guardarDestinoDoEndereco } from "@/lib/destino";
+import { consumirDestino, guardarDestinoDoEndereco, paginaInicial } from "@/lib/destino";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
@@ -135,7 +135,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Credenciais inválidas. Tenta novamente.");
           return;
         }
-        window.location.assign(consumirDestino());
+        window.location.assign(consumirDestino(paginaInicial(res.user)));
       } catch (err) {
         const sancaoConta = sancaoDoErro(err);
         if (sancaoConta) {
@@ -167,7 +167,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Código inválido. Tenta novamente.");
           return;
         }
-        window.location.assign(consumirDestino());
+        window.location.assign(consumirDestino(paginaInicial(res.user)));
       } catch (err) {
         const sancaoConta = sancaoDoErro(err);
         if (sancaoConta) {

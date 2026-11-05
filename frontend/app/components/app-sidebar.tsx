@@ -62,8 +62,8 @@ const secondary = [
 ];
 
 const administracao = [
-  ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
+  ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },
@@ -187,6 +187,40 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Equipa EYK: a administração vem primeiro. */}
+        {user?.isStaff && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton disabled tooltip="Administração" className="opacity-60 cursor-default hover:bg-transparent">
+                      <ShieldCheck />
+                      <span>Administração</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {administracao.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.url)}
+                        tooltip={item.title}
+                        className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
+                      >
+                        <Link href={item.url} onClick={closeOnNavigate}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarSeparator />
+          </>
+        )}
+
         {/* Professor: as suas ferramentas primeiro, para saber logo que entrou como professor. */}
         {user?.isTeacher && (
           <SidebarGroup>
@@ -278,39 +312,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {user?.isStaff && (
-          <>
-            <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton disabled tooltip="Administração" className="opacity-60 cursor-default hover:bg-transparent">
-                      <ShieldCheck />
-                      <span>Administração</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {administracao.map((item) => (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url)}
-                        tooltip={item.title}
-                        className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-medium"
-                      >
-                        <Link href={item.url} onClick={closeOnNavigate}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
       </SidebarContent>
 
       {/* Rodapé: Configurações (penúltimo) e, por baixo, a conta com "Sair" à direita. */}

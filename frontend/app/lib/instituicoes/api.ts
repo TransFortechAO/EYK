@@ -1067,7 +1067,7 @@ export const apiInstituicoes = {
         expiraEm: new Date(Date.now() + VALIDADE_CONVITE_DIAS * DIA).toISOString(),
         estado: "pendente",
       });
-      auditar(inst.id, "instituicao_criada", `Espaço criado; convite de administrador enviado a ${inst.responsavel.email}.`, "Equipa EYK", "equipa_eyk");
+      auditar(inst.id, "instituicao_criada", `Espaço criado; convite de administrador criado para ${inst.responsavel.email}.`, "Equipa EYK", "equipa_eyk");
       guardar();
       return inst;
     },
