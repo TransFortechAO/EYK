@@ -35,6 +35,7 @@ from .servicos import (
     registar_consentimento,
 )
 
+
 def instituicao_json(i: Instituicao) -> dict:
     return {
         'id': sid(i.id),
