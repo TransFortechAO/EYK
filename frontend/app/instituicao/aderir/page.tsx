@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Building2, CheckCircle2, Clock, ShieldCheck, Ticket } from "lucide-react";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth-gate";
 import { CHAVE_INSTITUICAO } from "@/components/instituicao/contexto";
 import { Caixa, Campo, erroTexto, EtiquetaPapel } from "@/components/instituicao/ui";
-import { apiInstituicoes as api } from "@/lib/instituicoes/api";
+import { apiInstituicoes as api, sincronizarPertencas } from "@/lib/instituicoes/api";
+import { apiEscolasServidor, ConviteInexistente } from "@/lib/instituicoes/servidor";
 import type { FinalidadeConsentimento } from "@/lib/instituicoes/tipos";
 
 type Info = Awaited<ReturnType<typeof api.consultarCodigo>>;
@@ -29,6 +30,8 @@ function Aderir() {
   const { user } = useAuth();
   const [codigo, setCodigo] = useState(params.get("codigo") ?? "");
   const [info, setInfo] = useState<Info | null>(null);
+  // Convite real (do servidor): fica ligado à conta com sessão, sem pedir nome nem email.
+  const [noServidor, setNoServidor] = useState(false);
   const [nome, setNome] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [decisoes, setDecisoes] = useState<Partial<Record<FinalidadeConsentimento, boolean>>>({});
@@ -38,12 +41,20 @@ function Aderir() {
   const [resultado, setResultado] = useState<{ tipo: "membro" | "pendente"; instituicaoId: string } | null>(null);
   const texto = api.textoConsentimento();
 
-  const consultar = async (e: FormEvent) => {
-    e.preventDefault();
+  const procurar = async (valor: string) => {
     setErro(null);
     setAEnviar(true);
     try {
-      setInfo(await api.consultarCodigo(codigo, user?.id));
+      try {
+        const c = await apiEscolasServidor.consultarConvite(valor);
+        setInfo({ ...c, grupo: null, aluno: null, requerAprovacao: false, pedeConsentimento: false });
+        setNoServidor(true);
+      } catch (err) {
+        // Códigos das turmas ainda vivem nos dados locais.
+        if (!(err instanceof ConviteInexistente)) throw err;
+        setInfo(await api.consultarCodigo(valor, user?.id));
+        setNoServidor(false);
+      }
     } catch (err) {
       setErro(erroTexto(err));
     } finally {
@@ -51,13 +62,35 @@ function Aderir() {
     }
   };
 
+  const consultar = (e: FormEvent) => {
+    e.preventDefault();
+    void procurar(codigo);
+  };
+
+  // Veio pelo link do email: o código já está no endereço.
+  const jaProcurou = useRef(false);
+  useEffect(() => {
+    if (jaProcurou.current || !user || !params.get("codigo")) return;
+    jaProcurou.current = true;
+    void procurar(params.get("codigo") ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, params]);
+
   const aderir = async (e: FormEvent) => {
     e.preventDefault();
     setErro(null);
     setAEnviar(true);
     try {
       // A conta com sessão iniciada é a que fica na escola (é assim que a escola "regista" o aluno ou o professor).
-      const r = await api.aderir(codigo, { nome: nome.trim(), email: email.trim(), consentimentos: decisoes, comApoio, utilizadorId: user?.id });
+      let r: { resultado: "membro" | "pendente"; instituicaoId: string };
+      if (noServidor) {
+        const aceite = await apiEscolasServidor.aceitarConvite(codigo);
+        const lista = await apiEscolasServidor.minhasPertencas();
+        if (lista && user) sincronizarPertencas({ id: user.id, nome: user.name, email: user.email }, lista);
+        r = { resultado: "membro", instituicaoId: aceite.instituicaoId };
+      } else {
+        r = await api.aderir(codigo, { nome: nome.trim(), email: email.trim(), consentimentos: decisoes, comApoio, utilizadorId: user?.id });
+      }
       setResultado({ tipo: r.resultado, instituicaoId: r.instituicaoId });
       if (r.resultado === "membro") {
         try {
@@ -161,14 +194,16 @@ function Aderir() {
             {info.requerAprovacao && (
               <p className="rounded-md bg-primary/10 p-3 text-sm">A administração aprova os pedidos feitos por código antes de dar acesso.</p>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Campo id="ad-nome" rotulo="O teu nome">
-                <Input id="ad-nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
-              </Campo>
-              <Campo id="ad-email" rotulo="Email (opcional para famílias)">
-                <Input id="ad-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </Campo>
-            </div>
+            {!noServidor && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Campo id="ad-nome" rotulo="O teu nome">
+                  <Input id="ad-nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                </Campo>
+                <Campo id="ad-email" rotulo="Email (opcional para famílias)">
+                  <Input id="ad-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </Campo>
+              </div>
+            )}
           </Card>
 
           {info.pedeConsentimento && (
@@ -213,10 +248,10 @@ function Aderir() {
           {erro && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{erro}</p>}
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => { setInfo(null); setErro(null); }}>
+            <Button type="button" variant="outline" onClick={() => { setInfo(null); setNoServidor(false); setErro(null); }}>
               Outro código
             </Button>
-            <Button type="submit" disabled={aEnviar || !nome.trim() || (info.pedeConsentimento && !obrigatoriasOk)}>
+            <Button type="submit" disabled={aEnviar || (!noServidor && !nome.trim()) || (info.pedeConsentimento && !obrigatoriasOk)}>
               {aEnviar ? "A enviar…" : info.requerAprovacao ? "Enviar pedido" : "Aderir"}
             </Button>
           </div>

@@ -71,6 +71,7 @@ urlpatterns = [
     path('professor/', include('apps.professores.urls_api')),
     path('moderacao/', include('apps.moderacao.urls')),
     path('plataforma/', include('apps.plataforma.urls')),
+    path('instituicoes/', include('apps.instituicoes.urls')),
     path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),

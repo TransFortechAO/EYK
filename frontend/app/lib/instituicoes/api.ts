@@ -230,6 +230,43 @@ export function temPertenca(utilizadorId: number): boolean {
   );
 }
 
+/**
+ * Copia para os dados locais as pertenças reais desta conta (vindas do servidor), para a
+ * área da escola funcionar em qualquer computador. As que deixaram de valer saem daqui.
+ */
+export function sincronizarPertencas(
+  utilizador: { id: number; nome: string; email: string },
+  lista: { instituicao: Instituicao; membro: { id: string; papel: Papel; desde: string } }[],
+) {
+  const e = carregar();
+  const ativas = new Set(lista.map((p) => p.membro.id));
+  e.membros = e.membros.filter((m) => !(m.id.startsWith("srv-") && m.utilizadorId === utilizador.id && !ativas.has(m.id)));
+  for (const { instituicao: nova, membro } of lista) {
+    const i = e.instituicoes.findIndex((x) => x.id === nova.id);
+    if (i >= 0) e.instituicoes[i] = { ...e.instituicoes[i], ...nova };
+    else e.instituicoes.push(nova);
+    const existente = e.membros.find((m) => m.id === membro.id);
+    if (existente) {
+      existente.papel = membro.papel;
+      existente.estado = "ativo";
+    } else {
+      e.membros.push({
+        id: membro.id,
+        instituicaoId: nova.id,
+        utilizadorId: utilizador.id,
+        nome: utilizador.nome,
+        email: utilizador.email,
+        papel: membro.papel,
+        estado: "ativo",
+        desde: membro.desde,
+        ultimoAcesso: null,
+        gruposIds: [],
+      });
+    }
+  }
+  guardar();
+}
+
 /** Repõe a pessoa escolhida em "Ver como" (só para a pré-visualização em /instituicao). */
 export function restaurarPessoaDemo(): number {
   if (typeof window === "undefined") return utilizadorDemo;

@@ -1,8 +1,8 @@
 /**
- * A área "Instituição" ainda corre sobre dados de demonstração (o backend
- * não existe). Fica visível em desenvolvimento e, noutros ambientes, só com
- * NEXT_PUBLIC_INSTITUICOES=1 — para não aparecer aos utilizadores reais antes
- * de estar ligada à eyk-api.
+ * Escolas, pertenças e convites já estão no servidor; o resto da área
+ * "Instituição" (turmas, conteúdos…) ainda corre sobre dados locais. Fica visível
+ * em desenvolvimento e, noutros ambientes, só com NEXT_PUBLIC_INSTITUICOES=1 — sem
+ * isso o link do convite por email não abre a área da escola em produção.
  */
 export const INSTITUICOES_ATIVAS =
   process.env.NEXT_PUBLIC_INSTITUICOES === "1" ||

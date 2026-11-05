@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { apiInstituicoes as api, categoriaDoMime, definirPessoaDemo, LIMITE_ANONIMATO, reporDemo, temPertenca, _interno } from "./api";
+import { apiInstituicoes as api, categoriaDoMime, definirPessoaDemo, LIMITE_ANONIMATO, reporDemo, sincronizarPertencas, temPertenca, _interno } from "./api";
 import { deixaSemAdministrador, eDestinatario, gruposVisiveis, pode } from "./permissoes";
 import type { Grupo, Membro } from "./tipos";
 
@@ -270,5 +270,50 @@ describe("administração EYK", () => {
     await expect(api.eyk.consultarAuditoria("inst-1", "")).rejects.toThrow(/motivo/);
     const registos = await api.eyk.consultarAuditoria("inst-1", "Pedido de apoio n.º 20");
     expect(registos[0].acao).toBe("acesso_equipa_eyk");
+  });
+});
+
+describe("pertenças vindas do servidor", () => {
+  const CONTA = { id: 9001, nome: "Diretora Real", email: "diretora@escola.ao" };
+  const pertenca = {
+    instituicao: {
+      id: "srv-7",
+      nome: "Escola Real",
+      tipo: "escola" as const,
+      provincia: "Luanda",
+      estado: "ativa" as const,
+      responsavel: { nome: "Diretora Real", email: "diretora@escola.ao" },
+      criadaEm: "2026-11-05T10:00:00Z",
+      quotas: { armazenamentoMb: 1024, ficheiroMaxMb: 50, utilizadoresMax: 100 },
+      aprovarPedidosPorCodigo: true,
+      canaisAviso: ["plataforma" as const, "email" as const],
+      escola: { comunidadePublicaParaAlunos: false, rankingVisivel: true },
+    },
+    membro: { id: "srv-3", papel: "administrador" as const, desde: "2026-11-05T10:00:00Z" },
+  };
+
+  it("uma conta com pertença real fica administradora da escola nesta sessão", async () => {
+    expect(temPertenca(CONTA.id)).toBe(false);
+    sincronizarPertencas(CONTA, [pertenca]);
+    expect(temPertenca(CONTA.id)).toBe(true);
+    definirPessoaDemo(CONTA.id, false);
+    const [p] = await api.minhasPertencas();
+    expect(p.instituicao.nome).toBe("Escola Real");
+    expect(p.membro.papel).toBe("administrador");
+  });
+
+  it("sincronizar duas vezes não duplica e atualiza o papel", async () => {
+    sincronizarPertencas(CONTA, [pertenca]);
+    sincronizarPertencas(CONTA, [{ ...pertenca, membro: { ...pertenca.membro, papel: "coordenador" as const } }]);
+    definirPessoaDemo(CONTA.id, false);
+    const lista = await api.minhasPertencas();
+    expect(lista).toHaveLength(1);
+    expect(lista[0].membro.papel).toBe("coordenador");
+  });
+
+  it("quando o servidor deixa de a devolver, a pertença sai (ex: escola suspensa)", () => {
+    sincronizarPertencas(CONTA, [pertenca]);
+    sincronizarPertencas(CONTA, []);
+    expect(temPertenca(CONTA.id)).toBe(false);
   });
 });

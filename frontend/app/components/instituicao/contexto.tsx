@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth-gate";
-import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo, temPertenca } from "@/lib/instituicoes/api";
+import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo, sincronizarPertencas, temPertenca } from "@/lib/instituicoes/api";
+import { apiEscolasServidor } from "@/lib/instituicoes/servidor";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { apiLga } from "@/lib/instituicoes/lga";
 import { pode as podeFazer, vePessoais, type Acao } from "@/lib/instituicoes/permissoes";
@@ -194,7 +195,25 @@ export function InstituicaoProvider({ children, identidadeFixa }: { children: Re
  */
 export function EscolaGlobal({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const membro = useMemo(() => !!user && !user.isStaff && INSTITUICOES_ATIVAS && temPertenca(user.id), [user]);
+  const conta = user && !user.isStaff && INSTITUICOES_ATIVAS ? user : null;
+  const [versao, setVersao] = useState(0);
+
+  // As pertenças vêm do servidor; sem ligação ficam as últimas que este browser conhece.
+  useEffect(() => {
+    if (!conta) return;
+    let vivo = true;
+    void apiEscolasServidor.minhasPertencas().then((lista) => {
+      if (!vivo || !lista) return;
+      sincronizarPertencas({ id: conta.id, nome: conta.name, email: conta.email }, lista);
+      setVersao((v) => v + 1);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [conta]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `versao` muda depois de sincronizar
+  const membro = useMemo(() => !!conta && temPertenca(conta.id), [conta, versao]);
   if (!membro || !user) return <>{children}</>;
   return <InstituicaoProvider identidadeFixa={user.id}>{children}</InstituicaoProvider>;
 }

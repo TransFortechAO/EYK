@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, Check, Eye, FlaskConical, Globe, HardDrive, History, Plus, ShieldAlert, SlidersHorizontal, Users, X } from "lucide-react";
+import { Building2, Check, Copy, Eye, Globe, Mail, Plus, Send, ShieldAlert, SlidersHorizontal, Users, X } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,22 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/components/auth-gate";
 import { useConfirm } from "@/components/confirm-dialog";
-import { acao, Barra, Campo, Carregando, celula, dataHora, ErroCarregar, erroTexto, Etiqueta, haQuanto, Seletor, Tabela, tamanho, useCarregar } from "@/components/instituicao/ui";
+import { acao, Campo, Carregando, celula, ErroCarregar, erroTexto, Etiqueta, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
-import { apiInstituicoes as api } from "@/lib/instituicoes/api";
 import { apiLga } from "@/lib/instituicoes/lga";
-import { ROTULO_ACAO, ROTULO_ESTADO_INSTITUICAO, ROTULO_TIPO_INSTITUICAO } from "@/lib/instituicoes/permissoes";
-import type { EstadoInstituicao, Instituicao, RegistoAuditoria, TipoInstituicao } from "@/lib/instituicoes/tipos";
+import { ROTULO_ESTADO_INSTITUICAO, ROTULO_TIPO_INSTITUICAO } from "@/lib/instituicoes/permissoes";
+import { apiEscolasServidor as api, type ConviteResumo, type LinhaInstituicao as Linha } from "@/lib/instituicoes/servidor";
+import type { EstadoInstituicao, Instituicao, TipoInstituicao } from "@/lib/instituicoes/tipos";
 
-type Linha = Awaited<ReturnType<typeof api.eyk.listarInstituicoes>>[number];
+const ROTULO_CONVITE: Record<ConviteResumo["estado"], string> = {
+  pendente: "Convite por aceitar",
+  aceite: "Convite aceite",
+  expirado: "Convite expirado",
+  cancelado: "Convite cancelado",
+};
+
+/** Resultado de criar uma escola ou reenviar o convite. */
+type ConviteEnviado = { escola: string; email: string; link: string | null; emailEnviado: boolean };
 
 const PROVINCIAS = [
   "Bengo", "Benguela", "Bié", "Cabinda", "Cuando", "Cubango", "Cuanza Norte", "Cuanza Sul", "Cunene", "Huambo", "Huíla",
@@ -31,13 +39,23 @@ export default function AdminInstituicoesPage() {
   const confirmar = useConfirm();
   const [nova, setNova] = useState(false);
   const [quotasDe, setQuotasDe] = useState<Linha | null>(null);
-  const [auditoriaDe, setAuditoriaDe] = useState<Linha | null>(null);
+  const [enviado, setEnviado] = useState<ConviteEnviado | null>(null);
 
   useEffect(() => {
     if (!INSTITUICOES_ATIVAS || (user && !user.isStaff)) router.replace("/inicio");
   }, [user, router]);
 
-  const { dados, erro, aCarregar, recarregar } = useCarregar(() => api.eyk.listarInstituicoes(), []);
+  const { dados, erro, aCarregar, recarregar } = useCarregar(() => api.listar(), []);
+
+  const aposEnviar = (i: Linha & { emailEnviado: boolean }) =>
+    setEnviado({ escola: i.nome, email: i.responsavel.email, link: i.convite?.link ?? null, emailEnviado: i.emailEnviado });
+
+  const reenviar = async (i: Linha) => {
+    await acao(async () => {
+      aposEnviar(await api.reenviarConvite(i.id));
+      await recarregar();
+    });
+  };
 
   const mudarEstado = async (i: Linha, novo: EstadoInstituicao) => {
     const textos: Record<EstadoInstituicao, string> = {
@@ -54,7 +72,7 @@ export default function AdminInstituicoesPage() {
       requireText: novo === "encerrada" ? "ENCERRAR" : undefined,
     });
     if (!ok) return;
-    if (await acao(() => api.eyk.mudarEstado(i.id, novo), "Estado alterado.")) await recarregar();
+    if (await acao(() => api.mudarEstado(i.id, novo), "Estado alterado.")) await recarregar();
   };
 
   if (!INSTITUICOES_ATIVAS) return null;
@@ -76,12 +94,6 @@ export default function AdminInstituicoesPage() {
         </Button>
       </PageHeader>
 
-      <p className="flex items-start gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 text-sm text-muted-foreground">
-        <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-        Demonstração com dados fictícios. Acesso restrito à equipa EYK; todas as ações ficam no registo de auditoria da
-        instituição.
-      </p>
-
       {aCarregar && !dados ? (
         <Carregando />
       ) : !dados ? (
@@ -91,20 +103,20 @@ export default function AdminInstituicoesPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={Building2} label="Instituições" value={dados.length} hint={`${dados.filter((i) => i.estado === "ativa").length} ativas`} tone="gold" />
             <StatCard icon={Users} label="Membros" value={dados.reduce((s, i) => s + i.membros, 0)} />
-            <StatCard icon={HardDrive} label="Armazenamento" value={tamanho(dados.reduce((s, i) => s + i.usadoBytes, 0))} />
             <StatCard icon={ShieldAlert} label="Em preparação" value={dados.filter((i) => i.estado === "preparacao").length} hint="à espera do administrador" />
+            <StatCard icon={Mail} label="Convites por aceitar" value={dados.filter((i) => i.convite?.estado === "pendente").length} />
           </div>
 
           <Card className="p-5 shadow-soft">
-            <Tabela cabecalho={["Instituição", "Estado", "Membros", "Armazenamento", "Última atividade", ""]}>
+            <Tabela cabecalho={["Instituição", "Estado", "Membros", "Responsável", ""]}>
               {dados.map((i) => {
-                const quota = i.quotas.armazenamentoMb * 1024 * 1024;
+                const semResposta = i.convite?.estado === "pendente" || i.convite?.estado === "expirado";
                 return (
                   <tr key={i.id}>
                     <td className={celula}>
                       <p className="font-medium">{i.nome}</p>
                       <p className="text-xs text-muted-foreground">
-                        {ROTULO_TIPO_INSTITUICAO[i.tipo]} · {i.provincia} · {i.responsavel.nome}
+                        {ROTULO_TIPO_INSTITUICAO[i.tipo]} · {i.provincia}
                       </p>
                     </td>
                     <td className={celula}>
@@ -129,25 +141,28 @@ export default function AdminInstituicoesPage() {
                       {i.membros}
                       <span className="text-xs text-muted-foreground"> / {i.quotas.utilizadoresMax}</span>
                     </td>
-                    <td className={`${celula} w-44`}>
-                      <p className="mb-1 text-xs tabular-nums text-muted-foreground">
-                        {tamanho(i.usadoBytes)} de {tamanho(quota)}
-                      </p>
-                      <Barra valor={i.usadoBytes} max={quota} rotulo={`Armazenamento de ${i.nome}`} />
+                    <td className={celula}>
+                      <p>{i.responsavel.nome}</p>
+                      <p className="text-xs text-muted-foreground">{i.responsavel.email}</p>
+                      {i.convite && <p className="text-xs text-muted-foreground">{ROTULO_CONVITE[i.convite.estado]}</p>}
                     </td>
-                    <td className={`${celula} whitespace-nowrap text-xs text-muted-foreground`}>{haQuanto(i.ultimaAtividade)}</td>
                     <td className={`${celula} whitespace-nowrap text-right`}>
+                      {semResposta && (
+                        <Button size="icon" variant="ghost" aria-label={`Reenviar o convite de ${i.nome}`} title="Reenviar o convite" onClick={() => void reenviar(i)}>
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button size="icon" variant="ghost" aria-label={`Quotas de ${i.nome}`} title="Quotas" onClick={() => setQuotasDe(i)}>
                         <SlidersHorizontal className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" aria-label={`Auditoria de ${i.nome}`} title="Auditoria" onClick={() => setAuditoriaDe(i)}>
-                        <History className="h-4 w-4" />
                       </Button>
                     </td>
                   </tr>
                 );
               })}
             </Tabela>
+            {dados.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted-foreground">Ainda não há instituições. Cria a primeira em &quot;Nova instituição&quot;.</p>
+            )}
           </Card>
         </>
       )}
@@ -157,8 +172,9 @@ export default function AdminInstituicoesPage() {
       <NovaInstituicao
         aberto={nova}
         aoFechar={() => setNova(false)}
-        aoCriar={async () => {
+        aoCriar={async (criada) => {
           setNova(false);
+          aposEnviar(criada);
           await recarregar();
         }}
       />
@@ -170,7 +186,7 @@ export default function AdminInstituicoesPage() {
           await recarregar();
         }}
       />
-      <AuditoriaEyk instituicao={auditoriaDe} aoFechar={() => setAuditoriaDe(null)} />
+      <ConviteDaEscola enviado={enviado} aoFechar={() => setEnviado(null)} />
     </div>
   );
 }
@@ -216,7 +232,64 @@ function PropostasPlataformaGeral() {
   );
 }
 
-function NovaInstituicao({ aberto, aoFechar, aoCriar }: { aberto: boolean; aoFechar: () => void; aoCriar: () => void }) {
+/** Confirma o envio; se o email não saiu (ou em desenvolvimento), dá o link para o passar à mão. */
+function ConviteDaEscola({ enviado, aoFechar }: { enviado: ConviteEnviado | null; aoFechar: () => void }) {
+  const [copiado, setCopiado] = useState(false);
+  const copiar = async () => {
+    if (!enviado?.link) return;
+    await navigator.clipboard?.writeText(enviado.link);
+    setCopiado(true);
+  };
+  return (
+    <Dialog
+      open={!!enviado}
+      onOpenChange={(v) => {
+        if (!v) {
+          setCopiado(false);
+          aoFechar();
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <div>
+            <DialogTitle>{enviado?.emailEnviado ? "Convite enviado" : "Convite criado"}</DialogTitle>
+            <DialogDescription>{enviado?.escola}</DialogDescription>
+          </div>
+        </DialogHeader>
+        <div className="space-y-3 p-5 text-sm">
+          {enviado?.emailEnviado ? (
+            <p>O convite de administrador seguiu para {enviado.email}.</p>
+          ) : (
+            <p className="rounded-md bg-primary/10 p-3">
+              O email não chegou a sair para {enviado?.email}. Passa este link ao responsável, que tem de entrar com esse email.
+            </p>
+          )}
+          {enviado?.link && (
+            <div className="flex items-center gap-2">
+              <Input readOnly value={enviado.link} aria-label="Link do convite" className="text-xs" />
+              <Button type="button" variant="outline" className="shrink-0 gap-1.5" onClick={() => void copiar()}>
+                {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copiado ? "Copiado" : "Copiar"}
+              </Button>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">Válido 14 dias. Quando o responsável aceitar, a escola fica ativa.</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NovaInstituicao({
+  aberto,
+  aoFechar,
+  aoCriar,
+}: {
+  aberto: boolean;
+  aoFechar: () => void;
+  aoCriar: (criada: Linha & { emailEnviado: boolean }) => void;
+}) {
   const [nome, setNome] = useState("");
   const [tipo, setTipo] = useState<TipoInstituicao>("escola");
   const [provincia, setProvincia] = useState("Luanda");
@@ -228,11 +301,11 @@ function NovaInstituicao({ aberto, aoFechar, aoCriar }: { aberto: boolean; aoFec
     e.preventDefault();
     setErro(null);
     try {
-      await api.eyk.criarInstituicao({ nome, tipo, provincia, responsavelNome: respNome, responsavelEmail: respEmail });
+      const criada = await api.criar({ nome, tipo, provincia, responsavelNome: respNome, responsavelEmail: respEmail });
       setNome("");
       setRespNome("");
       setRespEmail("");
-      aoCriar();
+      aoCriar(criada);
     } catch (err) {
       setErro(erroTexto(err));
     }
@@ -244,7 +317,7 @@ function NovaInstituicao({ aberto, aoFechar, aoCriar }: { aberto: boolean; aoFec
         <DialogHeader>
           <div>
             <DialogTitle>Nova instituição</DialogTitle>
-            <DialogDescription>Depois de assinado o acordo de parceria. Ainda não é enviado email: as escolas estão em demonstração, guardadas só neste browser.</DialogDescription>
+            <DialogDescription>Depois de assinado o acordo de parceria. O responsável recebe um convite por email e fica administrador ao aceitar.</DialogDescription>
           </div>
         </DialogHeader>
         <form onSubmit={submeter} className="flex min-h-0 flex-col">
@@ -284,7 +357,7 @@ function NovaInstituicao({ aberto, aoFechar, aoCriar }: { aberto: boolean; aoFec
             <Button type="button" variant="outline" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit">Criar escola</Button>
+            <Button type="submit">Criar e enviar convite</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -299,7 +372,7 @@ function Quotas({ instituicao, aoFechar, aoGuardar }: { instituicao: Instituicao
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
     if (!instituicao || !q) return;
-    if (await acao(() => api.eyk.ajustarQuotas(instituicao.id, q), "Quotas atualizadas.")) aoGuardar();
+    if (await acao(() => api.ajustarQuotas(instituicao.id, q), "Quotas atualizadas.")) aoGuardar();
   };
 
   return (
@@ -331,74 +404,6 @@ function Quotas({ instituicao, aoFechar, aoGuardar }: { instituicao: Instituicao
               <Button type="submit">Guardar</Button>
             </DialogFooter>
           </form>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function AuditoriaEyk({ instituicao, aoFechar }: { instituicao: Instituicao | null; aoFechar: () => void }) {
-  const [motivo, setMotivo] = useState("");
-  const [registos, setRegistos] = useState<RegistoAuditoria[] | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
-
-  const fechar = () => {
-    setMotivo("");
-    setRegistos(null);
-    setErro(null);
-    aoFechar();
-  };
-
-  const abrir = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!instituicao) return;
-    setErro(null);
-    try {
-      setRegistos(await api.eyk.consultarAuditoria(instituicao.id, motivo));
-    } catch (err) {
-      setErro(erroTexto(err));
-    }
-  };
-
-  return (
-    <Dialog open={!!instituicao} onOpenChange={(v) => !v && fechar()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <div>
-            <DialogTitle>Auditoria · {instituicao?.nome}</DialogTitle>
-            <DialogDescription>O acesso da equipa EYK fica registado e visível à instituição.</DialogDescription>
-          </div>
-        </DialogHeader>
-        {!registos ? (
-          <form onSubmit={abrir} className="space-y-4 p-5">
-            <Campo id="au-motivo" rotulo="Motivo do acesso" ajuda="ex: pedido de apoio n.º 21, investigação de uma denúncia">
-              <Input id="au-motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} required autoFocus />
-            </Campo>
-            {erro && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{erro}</p>}
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={fechar}>
-                Cancelar
-              </Button>
-              <Button type="submit">Registar acesso e abrir</Button>
-            </div>
-          </form>
-        ) : (
-          <div className="overflow-y-auto p-5">
-            <ul className="divide-y divide-border">
-              {registos.map((r) => (
-                <li key={r.id} className="py-2.5 text-sm">
-                  <p className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{ROTULO_ACAO[r.acao]}</span>
-                    {r.origem === "equipa_eyk" && <Etiqueta tom="aviso">Equipa EYK</Etiqueta>}
-                    <span className="text-xs text-muted-foreground">
-                      {dataHora(r.quando)} · {r.quem}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">{r.detalhe}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
         )}
       </DialogContent>
     </Dialog>

@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'apps.gamificacao',
     'apps.moderacao',
     'apps.plataforma',
+    'apps.instituicoes',
     'rest_framework',
     'corsheaders',
     'django_otp',
