@@ -304,9 +304,13 @@ function NovoConvite({
             <LinkConvite codigo={criado.codigo} />
             <p className="text-sm text-muted-foreground">
               {criado.canal === "email"
-                ? `Enviámos o convite para ${criado.destino}.`
+                ? criado.emailEnviado === false
+                  ? `O email não chegou a sair: passa o link a ${criado.destino}.`
+                  : `Enviámos o convite para ${criado.destino}.`
                 : criado.canal === "sms"
-                  ? `Enviámos o código por SMS para ${criado.destino}.`
+                  ? criado.emailEnviado === false
+                    ? `Ainda não enviamos SMS: manda o código por mensagem para ${criado.destino}.`
+                    : `Enviámos o código por SMS para ${criado.destino}.`
                   : `Pode ser usado ${criado.usosMax} vez${criado.usosMax === 1 ? "" : "es"}.`}{" "}
               Expira {haQuanto(criado.expiraEm)}.
             </p>

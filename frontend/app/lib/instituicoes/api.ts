@@ -11,6 +11,9 @@
 // perfil da criança, convites com validade e limite de usos, relatórios sem
 // detalhe de grupos com menos de 5 pessoas, auditoria de ações sensíveis…
 import { criarEstadoDemo, TEXTO_CONSENTIMENTO, type EstadoDemo } from "./demo";
+import { encaminhar } from "./encaminhar";
+import { ErroInstituicao } from "./erros";
+import { apiEscolaReal } from "./servidor";
 import { acessoBloqueado, deixaSemAdministrador, eDestinatario, gruposVisiveis, pode, ROTULO_PAPEL, vePessoais, type Acao } from "./permissoes";
 import type {
   AcaoAuditoria,
@@ -52,7 +55,7 @@ const DIA = 24 * 60 * 60 * 1000;
 const CHAVE_LOCAL = "eyk-instituicoes-demo-v3";
 const ATRASO_MS = 120;
 
-export class ErroInstituicao extends Error {}
+export { ErroInstituicao };
 
 // ── Estado e sessão de demonstração ──
 
@@ -236,7 +239,7 @@ export function temPertenca(utilizadorId: number): boolean {
  */
 export function sincronizarPertencas(
   utilizador: { id: number; nome: string; email: string },
-  lista: { instituicao: Instituicao; membro: { id: string; papel: Papel; desde: string } }[],
+  lista: { instituicao: Instituicao; membro: Pick<Membro, "id" | "papel" | "desde"> & Partial<Membro> }[],
 ) {
   const e = carregar();
   const ativas = new Set(lista.map((p) => p.membro.id));
@@ -247,20 +250,17 @@ export function sincronizarPertencas(
     else e.instituicoes.push(nova);
     const existente = e.membros.find((m) => m.id === membro.id);
     if (existente) {
-      existente.papel = membro.papel;
-      existente.estado = "ativo";
+      Object.assign(existente, membro, { estado: "ativo" });
     } else {
       e.membros.push({
-        id: membro.id,
         instituicaoId: nova.id,
         utilizadorId: utilizador.id,
         nome: utilizador.nome,
         email: utilizador.email,
-        papel: membro.papel,
         estado: "ativo",
-        desde: membro.desde,
         ultimoAcesso: null,
         gruposIds: [],
+        ...membro,
       });
     }
   }
@@ -317,7 +317,7 @@ function projetarEvento(ev: Evento, m: Membro): Evento {
 //  API
 // ════════════════════════════════════════════════════════════════════
 
-export const apiInstituicoes = {
+const demoInstituicoes = {
   // ── 1. Espaço da instituição ──
 
   /** GET /api/instituicoes/minhas/ — as instituições a que o utilizador pertence. */
@@ -548,7 +548,7 @@ export const apiInstituicoes = {
     },
   ): Promise<{ resultado: "membro" | "pendente"; instituicaoId: string }> {
     const quem = dados.utilizadorId ?? utilizadorDemo;
-    const info = await apiInstituicoes.consultarCodigo(codigo, quem);
+    const info = await demoInstituicoes.consultarCodigo(codigo, quem);
     const e = carregar();
     const c = e.convites.find((x) => x.codigo.toUpperCase() === codigo.trim().toUpperCase())!;
     if (info.pedeConsentimento) {
@@ -1317,6 +1317,9 @@ export function calcularRelatorio(instituicaoId: string, agora: number): Relator
     grupos,
   };
 }
+
+/** Instituições reais vão ao servidor; as de demonstração ficam neste ficheiro. */
+export const apiInstituicoes = encaminhar(demoInstituicoes, apiEscolaReal);
 
 // Exposto só para os testes.
 export const _interno = { carregar, eu };

@@ -8,25 +8,18 @@ from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from .models import ConviteInstituicao, Instituicao, MembroInstituicao
-from .servicos import criar_convite_responsavel, enviar_convite_responsavel, link_do_convite
-
-
-def _instituicao_json(i: Instituicao) -> dict:
-    return {
-        'id': i.id,
-        'nome': i.nome,
-        'tipo': i.tipo,
-        'provincia': i.provincia,
-        'estado': i.estado,
-        'responsavel': {'nome': i.responsavel_nome, 'email': i.responsavel_email},
-        'criadaEm': i.criada_em.isoformat(),
-        'quotas': {
-            'armazenamentoMb': i.armazenamento_mb,
-            'ficheiroMaxMb': i.ficheiro_max_mb,
-            'utilizadoresMax': i.utilizadores_max,
-        },
-    }
+from .acesso import Recusa, sid
+from .models import ConviteInstituicao, Instituicao, MembroInstituicao, PedidoAdesao
+from .servicos import (
+    FINALIDADES,
+    FINALIDADES_OBRIGATORIAS,
+    auditar,
+    criar_convite_responsavel,
+    enviar_convite_responsavel,
+    link_do_convite,
+    registar_consentimento,
+)
+from .views_escola import adicionar_membro, instituicao_json, membro_json
 
 
 def _convite_json(c: ConviteInstituicao | None) -> dict | None:
@@ -43,7 +36,8 @@ def _convite_json(c: ConviteInstituicao | None) -> dict | None:
 
 
 def _linha_admin(i: Instituicao) -> dict:
-    return {**_instituicao_json(i), 'membros': i.total_membros, 'convite': _convite_json(i.convites.first())}
+    convite = next((c for c in i.convites.all() if c.papel == 'administrador' and c.canal == 'email'), None)
+    return {**instituicao_json(i), 'membros': i.total_membros, 'convite': _convite_json(convite)}
 
 
 def _com_totais(qs):
@@ -80,9 +74,13 @@ def admin_instituicoes(request):
     with transaction.atomic():
         instituicao = Instituicao.objects.create(
             nome=nome, tipo=tipo, provincia=provincia, responsavel_nome=responsavel_nome,
-            responsavel_email=responsavel_email, criada_por=request.user,
+            responsavel_email=responsavel_email, criada_por=request.user, canais_aviso=['plataforma', 'email'],
         )
         convite = criar_convite_responsavel(instituicao, request.user)
+        auditar(
+            instituicao, 'instituicao_criada', f'Espaço criado; convite de administrador para {responsavel_email}.',
+            'Equipa EYK', 'equipa_eyk',
+        )
     email_enviado = enviar_convite_responsavel(convite)
     linha = _linha_admin(_com_totais(Instituicao.objects).get(pk=instituicao.pk))
     return Response({**linha, 'emailEnviado': email_enviado}, status=status.HTTP_201_CREATED)
@@ -97,7 +95,11 @@ def admin_instituicao(request, pk):
     if 'estado' in request.data:
         if request.data['estado'] not in dict(Instituicao.ESTADOS):
             return _erro('Estado inválido.')
+        antes = instituicao.estado
         instituicao.estado = request.data['estado']
+        auditar(
+            instituicao, 'instituicao_estado', f'Estado: {antes} → {instituicao.estado}.', 'Equipa EYK', 'equipa_eyk',
+        )
     quotas = request.data.get('quotas')
     if quotas is not None:
         try:
@@ -107,6 +109,11 @@ def admin_instituicao(request, pk):
         if min(valores) < 1:
             return _erro('As quotas têm de ser maiores do que zero.')
         instituicao.armazenamento_mb, instituicao.ficheiro_max_mb, instituicao.utilizadores_max = valores
+        auditar(
+            instituicao, 'quotas_alteradas',
+            f'Armazenamento {valores[0]} MB · ficheiro {valores[1]} MB · {valores[2]} utilizadores.',
+            'Equipa EYK', 'equipa_eyk',
+        )
     instituicao.save()
     return Response(_linha_admin(instituicao))
 
@@ -126,36 +133,48 @@ def admin_reenviar_convite(request, pk):
 
 # ── Quem recebe o convite ────────────────────────────────────────────────────
 
-def _convite_valido(request, codigo: str):
-    """Devolve (convite, None) ou (None, resposta de erro). Só depois de confirmar o
-    email da conta se revela a que instituição o convite pertence."""
+def _convite_valido(request, codigo: str) -> ConviteInstituicao:
+    """Só depois de confirmar o email da conta se revela a que instituição o convite pertence."""
     convite = (
-        ConviteInstituicao.objects.select_related('instituicao').filter(codigo__iexact=(codigo or '').strip()).first()
+        ConviteInstituicao.objects.select_related('instituicao', 'grupo', 'aluno')
+        .filter(codigo__iexact=(codigo or '').strip())
+        .first()
     )
     if not convite:
-        return None, _erro('Código não encontrado. Confirma as letras e os números.', status.HTTP_404_NOT_FOUND)
-    if convite.email.lower() != (request.user.email or '').lower():
-        return None, _erro(
-            'Este convite foi enviado para outro email. Entra com a conta desse email.', status.HTTP_403_FORBIDDEN,
-        )
+        raise Recusa('Código não encontrado. Confirma as letras e os números.', status.HTTP_404_NOT_FOUND)
+    # O convite por email é pessoal; os códigos partilháveis servem a quem os receber.
+    if convite.canal == 'email' and convite.email.lower() != (request.user.email or '').lower():
+        raise Recusa('Este convite foi enviado para outro email. Entra com a conta desse email.', status.HTTP_403_FORBIDDEN)
     if convite.estado != ConviteInstituicao.PENDENTE:
-        return None, _erro('Este convite já não está ativo.')
+        raise Recusa('Este convite já não está ativo.')
     if convite.expira_em < timezone.now():
-        return None, _erro('Este convite expirou. Pede um novo à equipa EYK.')
+        raise Recusa('Este convite expirou. Pede um novo à instituição.')
+    if convite.usos >= convite.usos_max:
+        raise Recusa('Este código já atingiu o número máximo de utilizações.')
     if convite.instituicao.estado in (Instituicao.SUSPENSA, Instituicao.ENCERRADA):
-        return None, _erro('A instituição não está a aceitar novos membros.')
-    return convite, None
+        raise Recusa('A instituição não está a aceitar novos membros.')
+    return convite
+
+
+def _requer_aprovacao(convite: ConviteInstituicao) -> bool:
+    return convite.canal == 'codigo' and convite.instituicao.aprovar_pedidos_por_codigo
+
+
+def _pede_consentimento(convite: ConviteInstituicao) -> bool:
+    return convite.papel == 'familia' and convite.aluno_id is not None
 
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def consultar_convite(request, codigo):
-    convite, erro = _convite_valido(request, codigo)
-    if erro:
-        return erro
+    convite = _convite_valido(request, codigo)
     return Response({
         'instituicao': convite.instituicao.nome,
         'papel': convite.papel,
+        'grupo': convite.grupo.nome if convite.grupo else None,
+        'aluno': {'id': sid(convite.aluno_id), 'nome': convite.aluno.nome} if convite.aluno else None,
+        'requerAprovacao': _requer_aprovacao(convite),
+        'pedeConsentimento': _pede_consentimento(convite),
         'jaMembro': convite.instituicao.membros.filter(
             utilizador=request.user, estado=MembroInstituicao.ATIVO,
         ).exists(),
@@ -165,40 +184,71 @@ def consultar_convite(request, codigo):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def aceitar_convite(request, codigo):
+    decisoes = request.data.get('consentimentos') or {}
     with transaction.atomic():
-        convite, erro = _convite_valido(request, codigo)
-        if erro:
-            return erro
-        # Dois cliques seguidos não podem aceitar o mesmo convite duas vezes.
-        convite = ConviteInstituicao.objects.select_for_update().select_related('instituicao').get(pk=convite.pk)
-        if convite.estado != ConviteInstituicao.PENDENTE:
-            return _erro('Este convite já não está ativo.')
-        MembroInstituicao.objects.update_or_create(
-            instituicao=convite.instituicao, utilizador=request.user,
-            defaults={'papel': convite.papel, 'estado': MembroInstituicao.ATIVO},
-        )
-        convite.estado = ConviteInstituicao.ACEITE
+        # Dois cliques seguidos não podem gastar o mesmo convite duas vezes.
+        pk = _convite_valido(request, codigo).pk
+        ConviteInstituicao.objects.select_for_update().get(pk=pk)
+        convite = _convite_valido(request, codigo)
+        instituicao = convite.instituicao
+        if _pede_consentimento(convite) and not all(decisoes.get(f) for f in FINALIDADES_OBRIGATORIAS):
+            raise Recusa('Sem o consentimento de utilização, a criança não pode ter perfil na instituição.')
+
+        ja_pedido = _requer_aprovacao(convite) and instituicao.pedidos_adesao.filter(
+            utilizador=request.user, estado=PedidoAdesao.PENDENTE,
+        ).exists()
+        if ja_pedido:
+            return Response({
+                'resultado': 'pendente', 'instituicaoId': sid(instituicao.id), 'instituicao': instituicao.nome,
+                'papel': convite.papel,
+            })
+
+        convite.usos += 1
+        if convite.usos >= convite.usos_max and convite.canal != 'codigo':
+            convite.estado = ConviteInstituicao.ACEITE
         convite.aceite_por = request.user
         convite.aceite_em = timezone.now()
-        convite.save(update_fields=['estado', 'aceite_por', 'aceite_em'])
-        instituicao = convite.instituicao
-        if instituicao.estado == Instituicao.PREPARACAO:
+        convite.save(update_fields=['usos', 'estado', 'aceite_por', 'aceite_em'])
+
+        if _requer_aprovacao(convite):
+            PedidoAdesao.objects.create(
+                instituicao=instituicao, convite=convite, utilizador=request.user, papel=convite.papel,
+                grupo=convite.grupo,
+            )
+            return Response({
+                'resultado': 'pendente', 'instituicaoId': sid(instituicao.id), 'instituicao': instituicao.nome,
+                'papel': convite.papel,
+            })
+
+        membro = adicionar_membro(instituicao, request.user, convite.papel, convite.grupo)
+        if convite.papel == 'administrador' and membro.papel != 'administrador':
+            membro.papel = 'administrador'
+            membro.save(update_fields=['papel'])
+        nome = request.user.get_display_name()
+        auditar(instituicao, 'membro_adicionado', f'{nome} aderiu como {convite.papel} (convite {convite.codigo}).', nome)
+        if convite.aluno:
+            convite.aluno.tutores.add(membro)
+            auditar(instituicao, 'vinculo_criado', f'{nome} é agora tutor de {convite.aluno.nome}.', nome)
+            com_apoio = bool(request.data.get('comApoio'))
+            for finalidade in FINALIDADES:
+                registar_consentimento(convite.aluno, membro, finalidade, bool(decisoes.get(finalidade)), com_apoio)
+        if instituicao.estado == Instituicao.PREPARACAO and convite.papel == 'administrador':
             instituicao.estado = Instituicao.ATIVA
             instituicao.save(update_fields=['estado'])
-    return Response({'instituicaoId': instituicao.id, 'instituicao': instituicao.nome, 'papel': convite.papel})
+    return Response({
+        'resultado': 'membro', 'instituicaoId': sid(instituicao.id), 'instituicao': instituicao.nome,
+        'papel': membro.papel,
+    })
 
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def minhas_pertencas(request):
     """As instituições ativas a que esta conta pertence."""
-    membros = MembroInstituicao.objects.select_related('instituicao').filter(
-        utilizador=request.user, estado=MembroInstituicao.ATIVO, instituicao__estado=Instituicao.ATIVA,
+    membros = list(
+        MembroInstituicao.objects.select_related('instituicao', 'utilizador').prefetch_related('grupos').filter(
+            utilizador=request.user, estado=MembroInstituicao.ATIVO, instituicao__estado=Instituicao.ATIVA,
+        )
     )
-    return Response([
-        {
-            'instituicao': _instituicao_json(m.instituicao),
-            'membro': {'id': m.id, 'papel': m.papel, 'desde': m.desde.isoformat()},
-        }
-        for m in membros
-    ])
+    MembroInstituicao.objects.filter(pk__in=[m.pk for m in membros]).update(ultimo_acesso=timezone.now())
+    return Response([{'instituicao': instituicao_json(m.instituicao), 'membro': membro_json(m)} for m in membros])

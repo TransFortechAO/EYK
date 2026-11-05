@@ -312,7 +312,11 @@ function ConvidarTutor({ aluno, aoFechar }: { aluno: PerfilAluno | null; aoFecha
             <p className="font-mono text-4xl font-bold tracking-[0.3em] text-primary">{criado.codigo}</p>
             <LinkConvite codigo={criado.codigo} />
             <p className="text-sm text-muted-foreground">
-              {criado.canal === "codigo" ? "Entrega este código ao tutor (em papel ou por mensagem)." : `Enviado para ${criado.destino}.`}
+              {criado.canal === "codigo"
+                ? "Entrega este código ao tutor (em papel ou por mensagem)."
+                : criado.emailEnviado === false
+                  ? `Não foi enviado automaticamente: passa o código a ${criado.destino}.`
+                  : `Enviado para ${criado.destino}.`}
             </p>
             <Button className="w-full" onClick={fechar}>
               Concluir

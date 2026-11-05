@@ -61,6 +61,8 @@ export type CanalConvite = "email" | "sms" | "codigo";
 export type EstadoConvite = "pendente" | "aceite" | "expirado" | "cancelado";
 
 export type Convite = {
+  /** Instituições reais: se o email saiu mesmo para a caixa de correio. */
+  emailEnviado?: boolean;
   id: string;
   instituicaoId: string;
   canal: CanalConvite;

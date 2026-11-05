@@ -47,10 +47,10 @@ function Aderir() {
     try {
       try {
         const c = await apiEscolasServidor.consultarConvite(valor);
-        setInfo({ ...c, grupo: null, aluno: null, requerAprovacao: false, pedeConsentimento: false });
+        setInfo(c);
         setNoServidor(true);
       } catch (err) {
-        // Códigos das turmas ainda vivem nos dados locais.
+        // Códigos das escolas de demonstração ("Ver como").
         if (!(err instanceof ConviteInexistente)) throw err;
         setInfo(await api.consultarCodigo(valor, user?.id));
         setNoServidor(false);
@@ -84,10 +84,10 @@ function Aderir() {
       // A conta com sessão iniciada é a que fica na escola (é assim que a escola "regista" o aluno ou o professor).
       let r: { resultado: "membro" | "pendente"; instituicaoId: string };
       if (noServidor) {
-        const aceite = await apiEscolasServidor.aceitarConvite(codigo);
+        const aceite = await apiEscolasServidor.aceitarConvite(codigo, { consentimentos: decisoes, comApoio });
         const lista = await apiEscolasServidor.minhasPertencas();
         if (lista && user) sincronizarPertencas({ id: user.id, nome: user.name, email: user.email }, lista);
-        r = { resultado: "membro", instituicaoId: aceite.instituicaoId };
+        r = aceite;
       } else {
         r = await api.aderir(codigo, { nome: nome.trim(), email: email.trim(), consentimentos: decisoes, comApoio, utilizadorId: user?.id });
       }

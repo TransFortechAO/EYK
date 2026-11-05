@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth-gate";
 import { apiInstituicoes, definirPessoaDemo, reporDemo, restaurarPessoaDemo, sincronizarPertencas, temPertenca } from "@/lib/instituicoes/api";
-import { apiEscolasServidor } from "@/lib/instituicoes/servidor";
+import { apiEscolasServidor, EVENTO_PERTENCAS } from "@/lib/instituicoes/servidor";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { apiLga } from "@/lib/instituicoes/lga";
 import { pode as podeFazer, vePessoais, type Acao } from "@/lib/instituicoes/permissoes";
@@ -65,6 +65,7 @@ function escreverLocal(chave: string, valor: string) {
  */
 export function InstituicaoProvider({ children, identidadeFixa }: { children: ReactNode; identidadeFixa?: number }) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [aCarregar, setACarregar] = useState(true);
   const [pertencas, setPertencas] = useState<Pertenca[]>([]);
   const [atualId, setAtualId] = useState<string | null>(null);
@@ -82,11 +83,21 @@ export function InstituicaoProvider({ children, identidadeFixa }: { children: Re
   const [versaoContadores, setVersaoContadores] = useState(0);
   const atualizarContadores = useCallback(() => setVersaoContadores((v) => v + 1), []);
 
+  // Conta real: o papel, os grupos e as definições vêm sempre do servidor.
+  const ler = useCallback(async () => {
+    if (identidadeFixa !== undefined && user) {
+      const reais = await apiEscolasServidor.minhasPertencas();
+      if (reais) sincronizarPertencas({ id: user.id, nome: user.name, email: user.email }, reais);
+    }
+    const lista = await apiInstituicoes.minhasPertencas();
+    setPertencas(lista);
+    return lista;
+  }, [identidadeFixa, user]);
+
   const recarregar = useCallback(async () => {
     setACarregar(true);
     try {
-      const lista = await apiInstituicoes.minhasPertencas();
-      setPertencas(lista);
+      const lista = await ler();
       setAtualId((anterior) => {
         const guardada = anterior ?? lerLocal(CHAVE_INSTITUICAO);
         if (guardada && lista.some((p) => p.instituicao.id === guardada)) return guardada;
@@ -95,11 +106,17 @@ export function InstituicaoProvider({ children, identidadeFixa }: { children: Re
     } finally {
       setACarregar(false);
     }
-  }, []);
+  }, [ler]);
 
   useEffect(() => {
     void recarregar();
   }, [recarregar, pessoa]);
+
+  useEffect(() => {
+    const aoMudar = () => void ler();
+    window.addEventListener(EVENTO_PERTENCAS, aoMudar);
+    return () => window.removeEventListener(EVENTO_PERTENCAS, aoMudar);
+  }, [ler]);
 
   const atual = pertencas.find((p) => p.instituicao.id === atualId) ?? null;
   const instituicaoId = atual?.instituicao.id ?? null;
