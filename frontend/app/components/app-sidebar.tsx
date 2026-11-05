@@ -120,7 +120,7 @@ function GrupoNav({
                   >
                     <Link href={item.url} onClick={aoNavegar}>
                       <span className="relative grid shrink-0 place-items-center">
-                        <Icone className="size-[1.125rem]" />
+                        <Icone className="size-[1.375rem]" />
                         {!!item.contador && <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-sidebar" aria-hidden />}
                       </span>
                       <span className="flex-1 truncate">{item.titulo}</span>
@@ -181,7 +181,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar variant="floating" collapsible="icon">
-      <SidebarHeader className="px-4 pb-3 pt-5">
+      {/* Altura fixa: o logótipo muda de tamanho, mas os ícones não sobem nem descem. */}
+      <SidebarHeader className="h-24 shrink-0 justify-center px-4">
         <LogoBarra aoNavegar={closeOnNavigate} />
       </SidebarHeader>
 
@@ -313,7 +314,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* Rodapé: Configurações (penúltimo) e, por baixo, a conta com "Sair" à direita. */}
-      <SidebarFooter className="gap-1 border-t border-sidebar-border p-2">
+      <SidebarFooter className="gap-1 border-t border-sidebar-border px-4 py-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -356,18 +357,21 @@ function RodapeConta({ aoSair, aSair }: { aoSair: () => void; aSair: boolean }) 
   const { state, isMobile } = useSidebar();
   const recolhida = !isMobile && state === "collapsed";
   return (
-    <div className={recolhida ? "flex flex-col items-center gap-1 py-1" : "flex items-center gap-2 rounded-lg px-2 py-1.5"}>
+    // Altura fixa e ícone de perfil sempre no mesmo lugar. Recolhida, "Sair" fica no menu do perfil.
+    <div className="flex h-12 items-center gap-2 pl-px">
       <ProfileMenu aoPassarCursor lado="top" alinhamento="start" />
-      <button
-        type="button"
-        onClick={aoSair}
-        disabled={aSair}
-        title="Sair"
-        className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-sidebar-accent disabled:opacity-60"
-      >
-        <LogOut className="h-4 w-4" />
-        {!recolhida && (aSair ? "A sair…" : "Sair")}
-      </button>
+      {!recolhida && (
+        <button
+          type="button"
+          onClick={aoSair}
+          disabled={aSair}
+          title="Sair"
+          className="ml-auto inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-sidebar-accent disabled:opacity-60"
+        >
+          <LogOut className="size-[1.375rem]" />
+          {aSair ? "A sair…" : "Sair"}
+        </button>
+      )}
     </div>
   );
 }

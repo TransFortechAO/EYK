@@ -201,10 +201,14 @@ export function SidebarGroup({ className, ...props }: React.ComponentProps<"div"
 /** Título de um grupo (ex: "Professor"). Esconde-se com a barra recolhida. */
 export function SidebarGroupLabel({ className, ...props }: React.ComponentProps<"p">) {
   const { state, isMobile } = useSidebar();
-  if (!isMobile && state === "collapsed") return null;
   return (
     <p
-      className={cn("px-3 pb-1.5 text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/60", className)}
+      className={cn(
+        "whitespace-nowrap px-2 pb-1.5 text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/60",
+        // Mantém o espaço, para os ícones não subirem ao recolher.
+        !isMobile && state === "collapsed" && "invisible",
+        className,
+      )}
       {...props}
     />
   );
@@ -240,9 +244,9 @@ export const SidebarMenuButton = React.forwardRef<
       title={!isMobile && state === "collapsed" ? tooltip : undefined}
       className={cn(
         "flex w-full items-center overflow-hidden whitespace-nowrap rounded-lg text-left text-sidebar-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:shrink-0",
-        !isMobile && state === "collapsed"
-          ? "justify-center p-2 text-sm [&>svg]:size-[1.125rem] [&>svg~span]:hidden [&>span~span]:hidden"
-          : "gap-3 px-3 py-2.5 text-[0.9375rem] [&>svg]:size-[1.125rem]",
+        // Igual aberta ou recolhida: o ícone não muda de tamanho nem de lugar; com a
+        // barra recolhida o texto fica simplesmente fora da largura do botão.
+        "h-11 gap-3 px-2 text-[0.9375rem] [&>svg]:size-[1.375rem]",
         className,
       )}
       {...props}
