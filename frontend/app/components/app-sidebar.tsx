@@ -30,7 +30,7 @@ import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { abasTelemovel, restoParaMais, type ItemNav } from "@/lib/instituicoes/navegacao";
 import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { ICONE_NAV } from "@/components/instituicao/icones-nav";
-import { ProfileMenu } from "@/components/profile-menu";
+import { UserAvatar } from "@/components/UserAvatar";
 
 import {
   Sidebar,
@@ -350,14 +350,19 @@ function LogoBarra({ aoNavegar }: { aoNavegar: () => void }) {
   );
 }
 
-/** A conta: só o ícone de perfil (com o menu ao passar o cursor) e "Sair" encostado à direita. */
+/** A conta: o ícone de perfil (leva ao perfil) e "Sair" encostado à direita. */
 function RodapeConta({ aoSair, aSair }: { aoSair: () => void; aSair: boolean }) {
   const { state, isMobile } = useSidebar();
+  const { user } = useAuth();
   const recolhida = !isMobile && state === "collapsed";
   return (
-    // Altura fixa e ícone de perfil sempre no mesmo lugar. Recolhida, "Sair" fica no menu do perfil.
+    // Altura fixa e ícone de perfil sempre no mesmo lugar. Recolhida, "Sair" fica no menu da barra do topo.
     <div className="flex h-12 items-center gap-2 pl-px">
-      <ProfileMenu aoPassarCursor lado="top" alinhamento="start" />
+      {user && (
+        <Link href="/perfil" title="O meu perfil" aria-label="O meu perfil" className="shrink-0 rounded-full">
+          <UserAvatar noLink name={user.name} initials={user.initials} foto={user.foto ?? null} userId={user.id} size={36} />
+        </Link>
+      )}
       {!recolhida && (
         <button
           type="button"

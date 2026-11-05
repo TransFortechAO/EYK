@@ -62,10 +62,12 @@ export function PreviaPost({
   autor,
   iniciais,
   texto,
+  foto,
 }: {
   autor: string;
   iniciais: string;
   texto: string;
+  foto?: string | null;
 }) {
   return (
     <div className="bg-gradient-gold p-4">
@@ -78,8 +80,12 @@ export function PreviaPost({
           <span className="text-xs text-[#7A6A4F]">· comunidade EYK</span>
         </div>
         <p className="line-clamp-3 text-sm leading-relaxed">
-          {texto || "Uma publicação na comunidade EYK"}
+          {texto || (foto ? "" : "Uma publicação na comunidade EYK")}
         </p>
+        {foto && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={foto} alt="" className="max-h-44 w-full rounded-lg object-cover" />
+        )}
       </div>
     </div>
   );

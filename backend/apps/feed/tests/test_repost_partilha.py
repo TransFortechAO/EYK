@@ -151,3 +151,36 @@ class TestFeedAleatorio:
         client.force_login(aluno_user)
         ids = [p["id"] for p in client.get(reverse("api-post-list"), {"post": oculto.id}).json()]
         assert oculto.id not in ids
+
+
+@pytest.mark.django_db
+class TestRepostComFoto:
+    def _original(self, autor, settings, tmp_path):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        settings.MEDIA_ROOT = tmp_path
+        foto = SimpleUploadedFile("foto.png", PNG_1PX, content_type="image/png")
+        return Post.objects.create(autor=autor, conteudo="Legenda da foto", imagem=foto)
+
+    def test_o_repost_traz_a_foto_e_a_legenda(self, client, aluno_user, professor_user, settings, tmp_path):
+        original = self._original(professor_user, settings, tmp_path)
+        client.force_login(aluno_user)
+        resumo = _repostar(client, original.id).json()["repost_de"]
+        assert resumo["conteudo"] == "Legenda da foto"
+        assert resumo["imagem"] == original.imagem.url
+
+    def test_partilhar_o_repost_leva_a_foto_e_a_legenda(self, client, aluno_user, professor_user, settings, tmp_path):
+        original = self._original(professor_user, settings, tmp_path)
+        repost = Post.objects.create(autor=aluno_user, conteudo="Vejam isto", repost_de=original)
+        dados = client.get(reverse("api-partilha-publica", args=["post", repost.id])).json()
+        assert dados["imagem"] == original.imagem.url
+        assert dados["descricao"] == "Vejam isto — Legenda da foto"
+
+    def test_original_ocultado_nao_passa_para_a_partilha(self, client, aluno_user, professor_user, settings, tmp_path):
+        original = self._original(professor_user, settings, tmp_path)
+        original.oculto = True
+        original.save()
+        repost = Post.objects.create(autor=aluno_user, conteudo="", repost_de=original)
+        dados = client.get(reverse("api-partilha-publica", args=["post", repost.id])).json()
+        assert dados["imagem"] is None
+        assert "Legenda" not in dados["descricao"]

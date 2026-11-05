@@ -56,6 +56,7 @@ class PostSerializer(serializers.ModelSerializer):
             'autor_initials': self.get_autor_initials(original),
             'autor_foto': self.get_autor_foto(original),
             'conteudo': original.conteudo,
+            'imagem': original.imagem.url if original.imagem else None,
             'time_ago': self.get_time_ago(original),
         }
 

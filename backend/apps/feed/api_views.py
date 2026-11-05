@@ -137,15 +137,16 @@ def partilha_publica(request, tipo, obj_id):
             Post.objects.select_related('autor', 'repost_de__autor'), pk=obj_id, oculto=False, autor__is_active=True,
         )
         nome = post.autor.get_display_name() or post.autor.username
-        texto = post.conteudo
-        if not texto and post.repost_de and not post.repost_de.oculto:
-            texto = post.repost_de.conteudo
+        # Num repost entram a foto e a legenda da publicação original.
+        original = post.repost_de if post.repost_de and not post.repost_de.oculto else None
+        texto = ' — '.join(t for t in (post.conteudo, original.conteudo if original else '') if t)
+        imagem = post.imagem or (original.imagem if original else None)
         return Response({
             'tipo': 'post',
             'titulo': f'{nome} na comunidade EYK',
             'descricao': _resumo(texto, 220),
             'autor': nome,
-            'imagem': post.imagem.url if post.imagem else None,
+            'imagem': imagem.url if imagem else None,
         })
     if tipo == 'video':
         from apps.professores.models import Video

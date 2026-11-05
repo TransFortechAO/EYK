@@ -29,7 +29,8 @@ async function capaDisponivel(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
     const res = await fetch(url, { method: "HEAD", next: { revalidate: 300 } });
-    return res.ok ? url : null;
+    // O gerador só lê PNG, JPEG e GIF; noutros formatos (ex: WebP) fica sem a foto.
+    return res.ok && /^image\/(png|jpe?g|gif)/.test(res.headers.get("content-type") ?? "") ? url : null;
   } catch {
     return null;
   }
@@ -100,8 +101,9 @@ function ImagemConteudo({ dados, id, capa, selo }: { dados: DadosPartilha; id: s
   );
 }
 
-function ImagemPost({ dados, selo }: { dados: DadosPartilha; selo: string | null }) {
-  const texto = dados.descricao.length > 200 ? `${dados.descricao.slice(0, 199)}…` : dados.descricao;
+function ImagemPost({ dados, selo, foto }: { dados: DadosPartilha; selo: string | null; foto: string | null }) {
+  const maximo = foto ? 120 : 200;
+  const texto = dados.descricao.length > maximo ? `${dados.descricao.slice(0, maximo - 1)}…` : dados.descricao;
   const iniciais = dados.autor
     .split(/\s+/)
     .filter(Boolean)
@@ -116,6 +118,7 @@ function ImagemPost({ dados, selo }: { dados: DadosPartilha; selo: string | null
         width: "100%",
         height: "100%",
         padding: 56,
+        gap: 28,
         backgroundImage: `linear-gradient(135deg, ${DOURADO} 0%, ${DOURADO_CLARO} 100%)`,
       }}
     >
@@ -124,7 +127,7 @@ function ImagemPost({ dados, selo }: { dados: DadosPartilha; selo: string | null
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          width: "100%",
+          width: foto ? 620 : "100%",
           height: "100%",
           padding: "44px 52px",
           borderRadius: 36,
@@ -155,7 +158,7 @@ function ImagemPost({ dados, selo }: { dados: DadosPartilha; selo: string | null
             <div style={{ display: "flex", fontSize: 24, color: "#7A6A4F" }}>na comunidade EYK</div>
           </div>
         </div>
-        <div style={{ display: "flex", fontSize: 40, lineHeight: 1.35, fontWeight: 500 }}>
+        <div style={{ display: "flex", fontSize: foto ? 32 : 40, lineHeight: 1.35, fontWeight: 500 }}>
           {texto ? `“${texto}”` : "Uma publicação na comunidade EYK"}
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -165,6 +168,10 @@ function ImagemPost({ dados, selo }: { dados: DadosPartilha; selo: string | null
           <Selo src={selo} />
         </div>
       </div>
+      {foto && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={foto} alt="" width={440} height={518} style={{ objectFit: "cover", borderRadius: 28 }} />
+      )}
     </div>
   );
 }
@@ -189,7 +196,8 @@ export async function imagemPartilha(tipo: DadosPartilha["tipo"], id: string): P
       </div>
     );
   } else if (dados.tipo === "post") {
-    conteudo = <ImagemPost dados={dados} selo={selo} />;
+    const foto = await capaDisponivel(imagemAbsoluta(dados.imagem));
+    conteudo = <ImagemPost dados={dados} selo={selo} foto={foto} />;
   } else {
     const capa = await capaDisponivel(imagemAbsoluta(dados.imagem));
     conteudo = <ImagemConteudo dados={dados} id={id} capa={capa} selo={selo} />;

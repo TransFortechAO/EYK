@@ -445,6 +445,7 @@ export function PostCard({
   const autorPartilha = partilhaOriginal ? post.repostDe!.author ?? post.author : post.author;
   const textoPartilha = partilhaOriginal ? post.repostDe!.content ?? "" : conteudo;
   const iniciaisPartilha = partilhaOriginal ? post.repostDe!.initials ?? "??" : post.initials;
+  const fotoPartilha = post.imagem ?? (post.repostDe?.indisponivel ? null : post.repostDe?.imagem) ?? null;
 
   const cabecalho = (emModal: boolean) => (
     <div className="flex items-start justify-between gap-4">
@@ -619,7 +620,7 @@ export function PostCard({
         aoMudar={setPartilhaAberta}
         url={`/comunidade/post/${idPartilha}`}
         titulo={`Publicação de ${autorPartilha} na comunidade EYK`}
-        previsualizacao={<PreviaPost autor={autorPartilha} iniciais={iniciaisPartilha} texto={textoPartilha} />}
+        previsualizacao={<PreviaPost autor={autorPartilha} iniciais={iniciaisPartilha} texto={textoPartilha} foto={fotoPartilha} />}
         post={post}
         aoRepostar={onRepostado}
       />
@@ -656,7 +657,18 @@ function PostOriginal({ original }: { original: NonNullable<Post["repostDe"]> })
         )}
         <span className="text-xs text-muted-foreground">· {original.timeAgo}</span>
       </div>
-      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{original.content}</p>
+      {original.content && (
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{original.content}</p>
+      )}
+      {original.imagem && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={original.imagem}
+          alt={`Foto publicada por ${original.author}`}
+          loading="lazy"
+          className="max-h-[480px] w-full rounded-lg bg-surface object-cover"
+        />
+      )}
     </div>
   );
 }

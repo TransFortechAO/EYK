@@ -59,13 +59,13 @@ exceto para bordas/realces descritos abaixo.
 | `computador:` | ≥ 1024px com rato, ou ≥ 1367px | barra lateral |
 
 - **Barra lateral**: logótipo de 48px, igual nos dois estados e alinhado com os ícones; grupos por papel; "Configurações" em penúltimo;
-  rodapé só com o ícone de perfil (menu ao passar o cursor) e "Sair" à direita. Recolhida (72px) só com os ícones; abre ao
+  rodapé com o ícone de perfil (leva ao perfil, sem menu) e "Sair" à direita. Recolhida (72px) só com os ícones; abre ao
   passar o cursor e empurra o conteúdo, sem ficar por cima dele. Como no Instagram, **os ícones têm o
   mesmo tamanho (22px) e o mesmo lugar nos dois estados**: só o texto aparece ou desaparece.
 - **Menu de baixo**: 4 abas + "Mais"; "Configurações" logo antes de "Sair".
 - **Barra do topo** da app: logótipo (só `movel:`), pesquisa da página (só `computador:`), chips de
-  moedas e streak, sino com pré-visualização; o menu de perfil só aparece aqui em `movel:`
-  (no computador está no rodapé da barra lateral, a abrir ao passar o cursor). **Página pública (landing): barra opaca.**
+  moedas e streak, sino com pré-visualização e ícone de perfil, cujo menu abre ao passar
+  o cursor (no ecrã táctil, com um toque). **Página pública (landing): barra opaca.**
 
 ## 4. Regras de componentes
 

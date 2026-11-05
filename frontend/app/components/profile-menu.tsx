@@ -18,20 +18,10 @@ import { api, API_BASE_URL, mediaUrl } from "@/lib/api";
 /**
  * Ícone de perfil partilhado por toda a plataforma. Abre um menu cujo
  * primeiro item ("O meu perfil") leva à página privada do perfil (/perfil),
- * igual para alunos e professores. Com `aoPassarCursor` (barra lateral) o menu
- * abre ao passar o rato; com o teclado continua a abrir com Enter.
+ * igual para alunos e professores. Abre ao passar o rato; no ecrã táctil
+ * abre com um toque e, com o teclado, com Enter.
  */
-export function ProfileMenu({
-  className,
-  aoPassarCursor = false,
-  lado,
-  alinhamento = "end",
-}: {
-  className?: string;
-  aoPassarCursor?: boolean;
-  lado?: "top" | "right" | "bottom" | "left";
-  alinhamento?: "start" | "center" | "end";
-}) {
+export function ProfileMenu({ className }: { className?: string }) {
   const { user } = useAuth();
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [aberto, setAberto] = useState(false);
@@ -39,12 +29,12 @@ export function ProfileMenu({
 
   // Só com rato. O atraso a fechar deixa levar o cursor do ícone até ao menu.
   const manterAberto = (e: React.PointerEvent) => {
-    if (!aoPassarCursor || e.pointerType !== "mouse") return;
+    if (e.pointerType !== "mouse") return;
     if (fecharRef.current) clearTimeout(fecharRef.current);
     setAberto(true);
   };
   const fecharDepois = (e: React.PointerEvent) => {
-    if (!aoPassarCursor || e.pointerType !== "mouse") return;
+    if (e.pointerType !== "mouse") return;
     fecharRef.current = setTimeout(() => setAberto(false), 200);
   };
 
@@ -77,7 +67,7 @@ export function ProfileMenu({
   const perfilLabel = "O meu perfil";
 
   return (
-    <DropdownMenu open={aberto} onOpenChange={setAberto} modal={!aoPassarCursor}>
+    <DropdownMenu open={aberto} onOpenChange={setAberto} modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           className={className ?? "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"}
@@ -86,7 +76,7 @@ export function ProfileMenu({
           onPointerLeave={fecharDepois}
           // O menu já está aberto: um clique com o rato não o deve fechar.
           onPointerDown={(e) => {
-            if (aoPassarCursor && e.pointerType === "mouse") e.preventDefault();
+            if (e.pointerType === "mouse") e.preventDefault();
           }}
         >
           <Avatar className="h-9 w-9 border-2 border-primary/30">
@@ -104,8 +94,7 @@ export function ProfileMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        side={lado}
-        align={alinhamento}
+        align="end"
         className="w-56"
         onPointerEnter={manterAberto}
         onPointerLeave={fecharDepois}

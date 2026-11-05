@@ -532,6 +532,7 @@ export type PostOriginal = {
   initials?: string;
   authorFoto?: string | null;
   content?: string;
+  imagem?: string | null;
   timeAgo?: string;
 };
 
@@ -1081,6 +1082,7 @@ type RawPost = {
     autor_initials?: string | null;
     autor_foto?: string | null;
     conteudo?: string | null;
+    imagem?: string | null;
     time_ago?: string | null;
   } | null;
   reposts?: number | null;
@@ -1463,6 +1465,7 @@ function normalizePost(raw: RawPost): Post {
           initials: raw.repost_de.autor_initials || "??",
           authorFoto: mediaUrl(raw.repost_de.autor_foto) ?? null,
           content: raw.repost_de.conteudo || "",
+          imagem: mediaUrl(raw.repost_de.imagem) ?? null,
           timeAgo: raw.repost_de.time_ago || "",
         }
       : null,
