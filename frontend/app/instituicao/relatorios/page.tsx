@@ -5,6 +5,7 @@ import { Activity, CalendarCheck, EyeOff, Mail, Megaphone, RefreshCw, Users } fr
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 import { StatCard } from "@/components/eyk";
+import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -44,18 +45,11 @@ export default function RelatoriosPage() {
         <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />
       ) : (
         <div className="space-y-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-serif text-2xl font-semibold">Relatório de utilização</h2>
-              <p className="text-sm text-muted-foreground">
-                Indicadores por instituição e por grupo — nunca por criança. Calculado periodicamente a partir dos registos de
-                atividade.
-              </p>
-            </div>
+          <PageHeader title="Relatório de utilização" description="Indicadores por instituição e por grupo — nunca por criança. Calculado periodicamente a partir dos registos de atividade.">
             <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void recarregar()} disabled={aCarregar}>
               <RefreshCw className={aCarregar ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Atualizar
             </Button>
-          </div>
+          </PageHeader>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={Users} label="Utilizadores" value={dados.utilizadores.total} hint="pessoas e crianças com perfil" tone="gold" />

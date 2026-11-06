@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -37,11 +38,8 @@ export default function DefinicoesPage() {
 
   return (
     <Exige permitido={pode("gerir_definicoes")}>
-      <div className="space-y-6">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">Definições</h2>
-          <p className="text-sm text-muted-foreground">Como a instituição funciona no EYK.</p>
-        </div>
+      <div className="space-y-8">
+        <PageHeader title="Definições" description="Como a instituição funciona no EYK." />
 
         <Card className="divide-y divide-border shadow-soft">
           <div className="flex items-start justify-between gap-4 p-5">

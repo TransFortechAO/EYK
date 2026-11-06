@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { CarregarVideo, CartaoGesto } from "@/components/instituicao/lga";
 import { acao, Campo, Carregando, ErroCarregar, erroTexto, Etiqueta, haQuanto, Seletor, useCarregar } from "@/components/instituicao/ui";
@@ -49,21 +49,14 @@ export default function GestuarioPage() {
 
   return (
     <Exige permitido={pode("praticar") || pode("propor_gestos")}>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">Gestuário</h2>
-            <p className="text-sm text-muted-foreground">
-              Os gestos da LGA em vídeo, por tema e com as variantes de cada província. Cada gesto é validado por um educador (de preferência surdo) ou
-              pela coordenação antes de ficar visível a todos — e passa a servir também a Biblioteca LGA.
-            </p>
-          </div>
+      <div className="space-y-8">
+        <PageHeader title="Gestuário" description="Os gestos da LGA em vídeo, por tema e com as variantes de cada província. Cada gesto é validado por um educador (de preferência surdo) ou pela coordenação antes de ficar visível a todos — e passa a servir também a Biblioteca LGA.">
           {pode("propor_gestos") && (
             <Button className="gap-1.5" onClick={() => setPropor(true)}>
               <Plus className="h-4 w-4" /> Propor gesto
             </Button>
           )}
-        </div>
+        </PageHeader>
 
         <Tabs value={vista} onValueChange={(v) => setVista(v as Vista)}>
           <TabsList className="h-auto flex-wrap bg-surface py-1">

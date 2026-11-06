@@ -2,9 +2,8 @@
 // gestuário, prática por competência, conteúdos da escola (com âmbito),
 // comunidade da turma, classificações e desafios.
 //
-// Como ./api.ts, corre em memória sobre os dados de demonstração; cada função
-// corresponde a um endpoint da eyk-api a construir. As regras de privacidade
-// e de âmbito aplicadas aqui têm de ser aplicadas também no backend.
+// Como ./api.ts: as instituições reais vão ao servidor (./servidor-lga.ts) e
+// o que está aqui é a demonstração da pré-visualização "Ver como".
 import { apiInstituicoes, consentimentosAtuais, ErroInstituicao, _nucleo } from "./api";
 import { fimAnoLetivo } from "./demo-lga";
 import { encaminhar } from "./encaminhar";

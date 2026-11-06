@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { apiInstituicoes } from "./api";
 import { encaminhar } from "./encaminhar";
 import { apiLga } from "./lga";
@@ -17,8 +17,8 @@ describe("instituições reais", () => {
   });
 
   it("encaminha pelo id: srv-… vai ao servidor, o resto fica na demonstração", () => {
-    const demo = { listar: vi.fn((_id: string) => "demo") };
-    const real = { listar: vi.fn((_id: string) => "real") };
+    const demo: { listar: (id: string) => string } = { listar: () => "demo" };
+    const real: { listar: (id: string) => string } = { listar: () => "real" };
     const api = encaminhar(demo, real);
     expect(api.listar("srv-1")).toBe("real");
     expect(api.listar("inst-1")).toBe("demo");

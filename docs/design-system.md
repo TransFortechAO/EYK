@@ -32,6 +32,7 @@ ou um componente, segue estas regras; se uma regra não chegar, acrescenta-a aqu
 | `secondary`, `muted`, `muted-foreground` | Elementos secundários e texto de apoio |
 | `accent` | Hover suave |
 | `success`, `destructive`, `streak` | Sucesso, erro/perigo, streak (fogo) |
+| `warning`, `info` | Atenção (limites, avisos) e informação (papel de coordenador) |
 | `border`, `input`, `ring` | Bordas, campos e foco |
 | `sidebar-*` | Barra lateral: a mesma cor e a mesma borda fina dos cartões (`card`, `border`) |
 
@@ -121,6 +122,17 @@ exceto para bordas/realces descritos abaixo.
 - Conteúdo editado: " · editado" junto à data.
 - Vazio: `EmptyState` (ícone + título + o que fazer a seguir). A carregar: texto curto.
 - Erros: `toast.error` com a mensagem do servidor.
+
+### Área da escola (`/instituicao`)
+- **O mesmo Design System da plataforma pública**: não há componentes de página próprios. Título com
+  `PageHeader` (um só H1 por página, com gesto de LGA), pesquisa com `usePesquisaPagina`, listas vazias com
+  `EmptyState`, números com `StatCard`, cartões `shadow-soft`, modais como acima.
+- Por cima da página fica só uma linha com a escola e o papel, nunca outro título.
+- **Tabelas** (`Tabela`, `celula` em `components/instituicao/ui.tsx`): tabela no computador; no telemóvel e
+  no tablet cada linha é um cartão, com o rótulo da coluna junto a cada valor.
+- **Comunidade da turma**: o mesmo compositor compacto com modal e o mesmo cabeçalho de publicação da
+  Comunidade. **Sem partilha externa nem repost**: são publicações de crianças.
+- Faixa de pré-visualização só em "Ver como"; contas de escolas reais nunca vêem a palavra "demonstração".
 
 ## 5. Linguagem
 

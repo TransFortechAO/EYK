@@ -44,7 +44,7 @@ export function PageHeader({
   gesto,
 }: {
   title: string;
-  description?: string;
+  description?: ReactNode;
   children?: ReactNode;
   /** Palavra do gesto de LGA mostrado ao lado do título (por omissão, o próprio título). */
   gesto?: string;

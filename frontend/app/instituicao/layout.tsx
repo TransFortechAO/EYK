@@ -78,28 +78,22 @@ function ativo(pathname: string, url: string) {
 function FaixaDemo() {
   const { pessoa, mudarPessoa, reporDados, podeVerComo } = useInstituicao();
   const { user } = useAuth();
+  // Contas reais: nada de faixa, os dados são os da escola.
+  if (!podeVerComo) return null;
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <p className="flex items-start gap-2 text-muted-foreground">
         <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-        {podeVerComo ? (
-          <span>
+        <span>
             <span className="font-medium text-foreground">Pré-visualização.</span>{" "}
             {user?.isStaff ? "A tua conta da equipa EYK" : "A tua conta"} não pertence a nenhuma escola: aqui vês o espaço como o
             membro escolhido, só nesta área. O menu continua o da plataforma.{" "}
             <Link href={user?.isStaff ? "/configuracoes/administracao/instituicoes" : "/inicio"} className="font-medium text-primary hover:underline">
               Sair da pré-visualização
             </Link>
-          </span>
-        ) : (
-          <span>
-            <span className="font-medium text-foreground">Demonstração.</span> Os dados da escola são fictícios e ficam só neste
-            browser, até a eyk-api estar pronta.
-          </span>
-        )}
+        </span>
       </p>
-      {podeVerComo && (
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
           <label htmlFor="ver-como" className="text-xs font-medium text-muted-foreground">
             Ver como
           </label>
@@ -113,8 +107,7 @@ function FaixaDemo() {
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={reporDados} title="Voltar aos dados iniciais">
             <RotateCcw className="h-3.5 w-3.5" /> Repor
           </Button>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -135,7 +128,7 @@ function Moldura({ children }: { children: ReactNode }) {
 
   if (semInstituicao) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <FaixaDemo />
         {children}
       </div>
@@ -144,7 +137,7 @@ function Moldura({ children }: { children: ReactNode }) {
 
   if (!atual) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <FaixaDemo />
         <EmptyState
           icon={Building2}
@@ -167,20 +160,17 @@ function Moldura({ children }: { children: ReactNode }) {
   const itens = NAV.filter((i) => i.visivel(membro.papel) && !noMenu.has(i.url));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <FaixaDemo />
 
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-gold text-primary-foreground shadow-gold">
-            <Building2 className="h-6 w-6" aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {ROTULO_TIPO_INSTITUICAO[instituicao.tipo]} · {instituicao.provincia}
-            </p>
-            <h1 className="truncate font-serif text-2xl font-semibold sm:text-3xl">{instituicao.nome}</h1>
-          </div>
+      {/* O título (H1) é o da página, com PageHeader; aqui fica só de que escola se trata. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <Building2 className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <p className="truncate text-sm font-medium">{instituicao.nome}</p>
+          <p className="hidden truncate text-xs text-muted-foreground sm:block">
+            {ROTULO_TIPO_INSTITUICAO[instituicao.tipo]} · {instituicao.provincia}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <EtiquetaPapel papel={membro.papel} />
@@ -199,7 +189,7 @@ function Moldura({ children }: { children: ReactNode }) {
             </Seletor>
           )}
         </div>
-      </header>
+      </div>
 
       {acessoBloqueado(instituicao.estado) ? (
         <EmptyState

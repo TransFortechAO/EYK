@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { HandHelping, History, ShieldCheck } from "lucide-react";
+import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { EmptyState, StatCard } from "@/components/eyk";
@@ -52,11 +53,8 @@ function VistaFamilia() {
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="font-serif text-2xl font-semibold">Consentimentos</h2>
-        <p className="text-sm text-muted-foreground">Decides cada finalidade em separado e podes mudar a qualquer momento.</p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader title="Consentimentos" description="Decides cada finalidade em separado e podes mudar a qualquer momento." />
 
       <Card className="space-y-2 p-5 shadow-soft">
         <p className="flex items-center gap-2 font-medium">
@@ -127,19 +125,13 @@ function VistaAdministracao() {
   const comApoio = dados.consentimentos.filter((c) => c.comApoio).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">Registo de consentimentos</h2>
-          <p className="text-sm text-muted-foreground">
-            Quem consentiu, o quê, quando e com que versão do texto. Os registos não se editam: cada mudança acrescenta um novo.
-          </p>
-        </div>
+    <div className="space-y-8">
+      <PageHeader title="Registo de consentimentos" description="Quem consentiu, o quê, quando e com que versão do texto. Os registos não se editam: cada mudança acrescenta um novo.">
         <Seletor aria-label="Vista" className="w-56" value={vista} onChange={(e) => setVista(e.target.value as "atual" | "historico")}>
           <option value="atual">Estado atual por criança</option>
           <option value="historico">Histórico completo</option>
         </Seletor>
-      </div>
+      </PageHeader>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {texto.finalidades.map((f) => (

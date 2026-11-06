@@ -5,7 +5,7 @@ import { Database, Download, FileDown, Info, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
 import { useConfirm } from "@/components/confirm-dialog";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { Campo, Carregando, celula, dataCurta, ErroCarregar, erroTexto, Etiqueta, haQuanto, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
@@ -79,13 +79,8 @@ export default function DadosPage() {
 
   return (
     <Exige permitido={pode("pedir_dados")}>
-      <div className="space-y-6">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">{admin ? "Exportação e eliminação de dados" : "Os meus dados"}</h2>
-          <p className="text-sm text-muted-foreground">
-            Pede uma cópia dos dados ou a sua eliminação. Respondemos em até 30 dias e informamos sempre o prazo.
-          </p>
-        </div>
+      <div className="space-y-8">
+        <PageHeader title={admin ? "Exportação e eliminação de dados" : "Os meus dados"} description="Pede uma cópia dos dados ou a sua eliminação. Respondemos em até 30 dias e informamos sempre o prazo." />
 
         <Card className="p-5 shadow-soft">
           <form onSubmit={submeter} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
@@ -124,7 +119,7 @@ export default function DadosPage() {
             </Button>
           </form>
           {ambito === "instituicao" && tipo === "eliminacao" && (
-            <p className="mt-3 flex items-start gap-2 rounded-md bg-amber-500/10 p-3 text-xs">
+            <p className="mt-3 flex items-start gap-2 rounded-md bg-warning/10 p-3 text-xs">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
               No fim de uma parceria, a instituição recebe uma exportação completa antes de os dados serem eliminados.
             </p>

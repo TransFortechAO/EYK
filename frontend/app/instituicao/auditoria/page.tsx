@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Lock, ShieldAlert } from "lucide-react";
+import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
@@ -44,11 +45,8 @@ export default function AuditoriaPage() {
 
   return (
     <Exige permitido={pode("ver_auditoria")}>
-      <div className="space-y-6">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">Registo de auditoria</h2>
-          <p className="text-sm text-muted-foreground">Quem fez o quê e quando, nas ações sensíveis da instituição.</p>
-        </div>
+      <div className="space-y-8">
+        <PageHeader title="Registo de auditoria" description="Quem fez o quê e quando, nas ações sensíveis da instituição." />
 
         <div className="grid gap-2 sm:grid-cols-[1fr_14rem_12rem] computador:grid-cols-[14rem_12rem] computador:justify-end">
           <CampoPesquisaPagina className="relative computador:hidden" />

@@ -1,7 +1,5 @@
-// Vídeos gravados ou carregados durante a demonstração. Sem backend, ficam
-// só em memória (um URL local por ficheiro) e desaparecem ao recarregar a
-// página; os metadados (nome, tamanho, duração) ficam guardados com o resto.
-// Com a eyk-api, o ficheiro passa a ser enviado para o armazenamento (R2).
+// Vídeos escolhidos ou gravados, em memória até se publicar: nas instituições reais
+// seguem então para o servidor; na demonstração desaparecem ao recarregar a página.
 import { enderecoApi } from "./servidor";
 import type { VideoAnexo } from "./tipos";
 

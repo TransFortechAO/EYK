@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
-import {
-  acao,
+import { contem, acao,
   Barra,
   Caixa,
   Campo,
@@ -23,8 +23,7 @@ import {
   rotuloDestinatarios,
   Seletor,
   tamanho,
-  useCarregar,
-} from "@/components/instituicao/ui";
+  useCarregar, } from "@/components/instituicao/ui";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
 import type { CategoriaFicheiro, Destinatarios, FicheiroInstituicao, Grupo } from "@/lib/instituicoes/tipos";
 
@@ -38,6 +37,7 @@ const ROTULO_CATEGORIA: Record<CategoriaFicheiro, string> = { documento: "Docume
 
 export default function FicheirosPage() {
   const { instituicaoId, pode, atual } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const confirmar = useConfirm();
   const [categoria, setCategoria] = useState<CategoriaFicheiro | "">("");
   const [carregar, setCarregar] = useState(false);
@@ -77,16 +77,12 @@ export default function FicheirosPage() {
   if (aCarregar && !dados) return <Carregando />;
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
 
-  const lista = dados.ficheiros.filter((f) => !categoria || f.categoria === categoria);
+  const lista = dados.ficheiros.filter((f) => (!categoria || f.categoria === categoria) && contem(q, f.nome, f.carregadoPor));
   const podeApagar = (f: FicheiroInstituicao) => pode("gerir_membros") || (pode("carregar_ficheiros") && f.carregadoPor === atual.membro.nome);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">Ficheiros</h2>
-          <p className="text-sm text-muted-foreground">Documentos, imagens, áudio e vídeo partilhados pela instituição.</p>
-        </div>
+    <div className="space-y-8">
+      <PageHeader title="Ficheiros" description="Documentos, imagens, áudio e vídeo partilhados pela instituição.">
         <div className="flex gap-2">
           <Seletor aria-label="Filtrar por tipo" className="w-40" value={categoria} onChange={(e) => setCategoria(e.target.value as CategoriaFicheiro | "")}>
             <option value="">Todos os tipos</option>
@@ -102,7 +98,8 @@ export default function FicheirosPage() {
             </Button>
           )}
         </div>
-      </div>
+      </PageHeader>
+      <CampoPesquisaPagina className="computador:hidden" />
 
       {pode("gerir_definicoes") && (
         <Card className="space-y-2 p-5 shadow-soft">

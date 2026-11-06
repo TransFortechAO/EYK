@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { EyeOff, Flag, Hand, Eye, Send, ShieldCheck, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/eyk";
 import { useConfirm } from "@/components/confirm-dialog";
@@ -14,6 +15,14 @@ import { acao, Carregando, ErroCarregar, Etiqueta, EtiquetaPapel, haQuanto, useC
 import { apiLga } from "@/lib/instituicoes/lga";
 import type { Gesto } from "@/lib/instituicoes/tipos";
 
+function Avatar({ nome }: { nome: string }) {
+  return (
+    <span aria-hidden className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-gold text-sm font-semibold text-primary-foreground">
+      {nome.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
 export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensino: boolean }) {
   const { instituicaoId, pode, atual } = useInstituicaoAtual();
   const confirmar = useConfirm();
@@ -22,6 +31,7 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
   const [comGesto, setComGesto] = useState(false);
   const [gestos, setGestos] = useState<Gesto[]>([]);
   const [aEnviar, setAEnviar] = useState(false);
+  const [compor, setCompor] = useState(false);
   const podePublicar = pode("publicar_na_turma") && atual.membro.gruposIds.includes(turmaId);
   const moderador = ensino || pode("gerir_membros");
 
@@ -39,6 +49,7 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
       setTexto("");
       setGesto([]);
       setComGesto(false);
+      setCompor(false);
       await recarregar();
     }
   };
@@ -59,30 +70,51 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
 
   return (
     <div className="space-y-4">
+      <Dialog open={compor} onOpenChange={setCompor}>
+        <DialogContent>
+          <DialogHeader>
+            <div>
+              <DialogTitle>Nova publicação</DialogTitle>
+              <DialogDescription>Só os membros desta turma vêem esta publicação.</DialogDescription>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 overflow-y-auto p-5">
+            <Textarea
+              aria-label="Nova publicação na turma"
+              rows={4}
+              maxLength={500}
+              placeholder="Partilha com a turma…"
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+            />
+            {comGesto && <EscolherGestos gestos={gestos} valor={gesto} onChange={setGesto} multiplo={false} />}
+            <div className="flex items-center justify-between gap-2">
+              <Button type="button" variant="ghost" size="sm" className="gap-1.5" onClick={() => setComGesto((v) => !v)}>
+                <Hand className="h-4 w-4" /> {comGesto ? "Sem gesto" : "Juntar um gesto"}
+              </Button>
+              <Button className="gap-1.5" disabled={!texto.trim() || aEnviar} onClick={() => void publicar()}>
+                <Send className="h-4 w-4" /> Publicar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
         Só os membros desta turma vêem estas publicações. Quem ensina na turma modera; qualquer pessoa pode denunciar.
       </p>
 
       {podePublicar ? (
-        <Card className="space-y-3 p-4 shadow-soft">
-          <Textarea
-            aria-label="Nova publicação na turma"
-            rows={3}
-            maxLength={500}
-            placeholder="O que aprendeste hoje? Partilha com a turma…"
-            value={texto}
-            onChange={(e) => setTexto(e.target.value)}
-          />
-          {comGesto && <EscolherGestos gestos={gestos} valor={gesto} onChange={setGesto} multiplo={false} />}
-          <div className="flex items-center justify-between gap-2">
-            <Button type="button" variant="ghost" size="sm" className="gap-1.5" onClick={() => setComGesto((v) => !v)}>
-              <Hand className="h-4 w-4" /> {comGesto ? "Sem gesto" : "Juntar um gesto"}
-            </Button>
-            <Button className="gap-1.5" disabled={!texto.trim() || aEnviar} onClick={() => void publicar()}>
-              <Send className="h-4 w-4" /> Publicar
-            </Button>
-          </div>
+        <Card className="flex items-center gap-3 p-3 shadow-soft">
+          <Avatar nome={atual.membro.nome} />
+          <button
+            type="button"
+            onClick={() => setCompor(true)}
+            className="min-h-10 flex-1 rounded-full bg-surface px-4 text-left text-sm text-muted-foreground transition-colors hover:bg-accent"
+          >
+            O que aprendeste hoje?
+          </button>
         </Card>
       ) : (
         <p className="rounded-lg bg-surface p-3 text-sm text-muted-foreground">As famílias acompanham a turma, mas não publicam aqui.</p>
@@ -97,10 +129,15 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
             return (
               <Card key={p.id} className={`space-y-2 p-4 shadow-soft ${p.estado !== "visivel" ? "border-dashed opacity-70" : ""}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{p.autorNome.split(" ")[0]}</span>
-                    <EtiquetaPapel papel={p.papel} />
-                    <span className="text-xs text-muted-foreground">{haQuanto(p.criadoEm)}</span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar nome={p.autorNome} />
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{p.autorNome.split(" ")[0]}</span>
+                        <EtiquetaPapel papel={p.papel} />
+                      </p>
+                      <p className="text-xs text-muted-foreground">{haQuanto(p.criadoEm)}</p>
+                    </div>
                   </div>
                   {p.estado === "oculto" && <Etiqueta tom="neutro">Escondida</Etiqueta>}
                   {p.estado === "denunciado" && <Etiqueta tom="perigo">Denunciada — por rever</Etiqueta>}

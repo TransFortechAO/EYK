@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/confirm-dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
-import {
-  acao,
+import { contem, acao,
   Campo,
   Carregando,
   celula,
@@ -23,8 +23,7 @@ import {
   Seletor,
   Tabela,
   useCarregar,
-  LinkConvite,
-} from "@/components/instituicao/ui";
+  LinkConvite, } from "@/components/instituicao/ui";
 import { apiInstituicoes as api, VALIDADE_CONVITE_DIAS } from "@/lib/instituicoes/api";
 import { ROTULO_PAPEL } from "@/lib/instituicoes/permissoes";
 import type { CanalConvite, Convite, Papel } from "@/lib/instituicoes/tipos";
@@ -45,6 +44,7 @@ function EstadoConvite({ c }: { c: Convite }) {
 
 export default function ConvitesPage() {
   const { instituicaoId, pode, atual } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const confirmar = useConfirm();
   const [novoAberto, setNovoAberto] = useState(false);
   const [copiado, setCopiado] = useState<string | null>(null);
@@ -83,24 +83,19 @@ export default function ConvitesPage() {
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
 
   const ativos = dados.convites.filter((c) => c.estado === "pendente" && c.usos < c.usosMax);
-  const lista = mostrarInativos ? dados.convites : ativos;
+  const lista = (mostrarInativos ? dados.convites : ativos).filter((c) => contem(q, c.destino, c.codigo));
   const pendentes = dados.pedidos.filter((p) => p.estado === "pendente");
 
   return (
     <Exige permitido={pode("convidar")}>
       <div className="space-y-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">Convites e códigos</h2>
-            <p className="text-sm text-muted-foreground">
-              Convida por email ou SMS, ou cria um código curto para partilhar em papel ou por mensagem. Os convites
-              expiram ao fim de {VALIDADE_CONVITE_DIAS} dias.
-            </p>
-          </div>
+        <PageHeader title="Convites e códigos" description={<span>Convida por email ou SMS, ou cria um código curto para partilhar em papel ou por mensagem. Os convites
+              expiram ao fim de {VALIDADE_CONVITE_DIAS} dias.</span>}>
           <Button className="gap-1.5" onClick={() => setNovoAberto(true)}>
             <Plus className="h-4 w-4" /> Novo convite
           </Button>
-        </div>
+        </PageHeader>
+        <CampoPesquisaPagina className="computador:hidden" />
 
         {pode("aprovar_pedidos") && (
           <section id="pedidos" className="scroll-mt-24 space-y-3">

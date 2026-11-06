@@ -1,15 +1,9 @@
 // API da área "Instituição".
 //
-// O backend destas funcionalidades ainda não existe: por agora, tudo corre
-// em memória sobre os dados de demonstração (./demo.ts), guardados no
-// localStorage do browser para sobreviverem a um recarregar. As funções têm
-// já a forma dos pedidos à eyk-api — quando os endpoints existirem, cada uma
-// passa a chamar `request()` de @/lib/api e o resto do frontend não muda.
-//
-// As regras da especificação são aplicadas aqui (e terão de ser aplicadas
-// também no backend): pelo menos um administrador, consentimento antes do
-// perfil da criança, convites com validade e limite de usos, relatórios sem
-// detalhe de grupos com menos de 5 pessoas, auditoria de ações sensíveis…
+// As instituições reais (ids "srv-…") vão ao servidor: ver ./servidor.ts e
+// backend/apps/instituicoes, onde as regras e as permissões valem de facto.
+// Este ficheiro guarda a demonstração da pré-visualização "Ver como": corre em
+// memória sobre ./demo.ts e fica no localStorage deste browser.
 import { criarEstadoDemo, TEXTO_CONSENTIMENTO, type EstadoDemo } from "./demo";
 import { encaminhar } from "./encaminhar";
 import { ErroInstituicao } from "./erros";

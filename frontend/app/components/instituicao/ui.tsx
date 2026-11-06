@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode, type SelectHTMLAttributes } from "react";
+import { Children, cloneElement, isValidElement } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,12 @@ export function tamanho(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+/** A pesquisa da página (?q=) encontra algum destes textos? */
+export function contem(q: string, ...textos: (string | null | undefined)[]): boolean {
+  const termo = q.trim().toLowerCase();
+  return !termo || textos.some((t) => t?.toLowerCase().includes(termo));
 }
 
 export function erroTexto(err: unknown, omissao = "Algo correu mal. Tenta de novo."): string {
@@ -236,7 +243,7 @@ export function rotuloDestinatarios(d: Destinatarios, grupos: Grupo[], membros: 
 
 const TOM_PAPEL: Record<Papel, string> = {
   administrador: "bg-primary/15 text-primary",
-  coordenador: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  coordenador: "bg-info/15 text-info",
   educador: "bg-success/15 text-success",
   familia: "bg-streak/15 text-streak",
   aluno: "bg-secondary text-secondary-foreground",
@@ -254,7 +261,7 @@ export function Etiqueta({ tom = "neutro", children }: { tom?: "neutro" | "suces
   const tons = {
     neutro: "bg-secondary text-secondary-foreground",
     sucesso: "bg-success/15 text-success",
-    aviso: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+    aviso: "bg-warning/15 text-warning",
     perigo: "bg-destructive/15 text-destructive",
     marca: "bg-primary/15 text-primary",
   } as const;
@@ -303,17 +310,24 @@ export function Barra({ valor, max, rotulo }: { valor: number; max: number; rotu
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div className={cn("h-full rounded-full", pct >= 90 ? "bg-destructive" : pct >= 75 ? "bg-amber-500" : "bg-primary")} style={{ width: `${pct}%` }} />
+      <div className={cn("h-full rounded-full", pct >= 90 ? "bg-destructive" : pct >= 75 ? "bg-warning" : "bg-primary")} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-/** Linha de tabela em cartão, consistente com as páginas de administração. */
+/** No computador, tabela; no telemóvel e tablet, cada linha é um cartão com o rótulo de cada valor. */
 export function Tabela({ cabecalho, children }: { cabecalho: string[]; children: ReactNode }) {
+  const linhas = Children.map(children, (linha) => {
+    if (!isValidElement<{ children?: ReactNode }>(linha) || linha.type !== "tr") return linha;
+    const celulas = Children.toArray(linha.props.children).map((c, i) =>
+      isValidElement<{ "data-rotulo"?: string }>(c) ? cloneElement(c, { "data-rotulo": cabecalho[i] ?? "" }) : c,
+    );
+    return cloneElement(linha, undefined, celulas);
+  });
   return (
-    <div className="-mx-5 overflow-x-auto px-5">
-      <table className="min-w-full border-separate border-spacing-y-2 text-sm">
-        <thead>
+    <div className="-mx-5 overflow-x-auto px-5 movel:mx-0 movel:overflow-visible movel:px-0">
+      <table className="min-w-full border-separate border-spacing-y-2 text-sm movel:block">
+        <thead className="movel:hidden">
           <tr className="text-xs uppercase tracking-wider text-muted-foreground">
             {cabecalho.map((c, i) => (
               <th key={i} className="py-2 pr-4 text-left font-medium last:pr-0">
@@ -322,10 +336,11 @@ export function Tabela({ cabecalho, children }: { cabecalho: string[]; children:
             ))}
           </tr>
         </thead>
-        <tbody>{children}</tbody>
+        <tbody className="movel:block movel:space-y-2 [&>tr]:movel:block [&>tr]:movel:rounded-xl [&>tr]:movel:bg-surface/40 [&>tr]:movel:p-3">{linhas}</tbody>
       </table>
     </div>
   );
 }
 
-export const celula = "bg-surface/40 py-2.5 pr-4 align-middle first:rounded-l-xl first:pl-3 last:rounded-r-xl last:pr-3";
+export const celula =
+  "bg-surface/40 py-2.5 pr-4 align-middle first:rounded-l-xl first:pl-3 last:rounded-r-xl last:pr-3 movel:flex movel:items-center movel:justify-between movel:gap-3 movel:bg-transparent movel:!p-1 movel:text-left movel:empty:hidden movel:before:shrink-0 movel:before:text-xs movel:before:text-muted-foreground movel:before:content-[attr(data-rotulo)]";

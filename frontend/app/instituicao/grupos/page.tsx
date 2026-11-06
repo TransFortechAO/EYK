@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useConfirm } from "@/components/confirm-dialog";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
-import { acao, Campo, Carregando, ErroCarregar, erroTexto, Etiqueta, Seletor, useCarregar } from "@/components/instituicao/ui";
+import { contem, acao, Campo, Carregando, ErroCarregar, erroTexto, Etiqueta, Seletor, useCarregar } from "@/components/instituicao/ui";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
 import { ROTULO_TIPO_GRUPO } from "@/lib/instituicoes/permissoes";
 import type { TipoGrupo } from "@/lib/instituicoes/tipos";
@@ -23,6 +24,7 @@ function anoLetivoAtual() {
 
 export default function GruposPage() {
   const { instituicaoId, pode, papel } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const confirmar = useConfirm();
   const [arquivados, setArquivados] = useState(false);
   const [novo, setNovo] = useState(false);
@@ -42,18 +44,12 @@ export default function GruposPage() {
     if (await acao(() => api.arquivarGrupo(instituicaoId, id, valor), valor ? "Grupo arquivado." : "Grupo reativado.")) await recarregar();
   };
 
-  const lista = (dados ?? []).filter((g) => g.arquivado === arquivados);
+  const lista = (dados ?? []).filter((g) => g.arquivado === arquivados && contem(q, g.nome));
 
   return (
     <Exige permitido={gerir || pode("ver_todos_grupos")}>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">Turmas e grupos</h2>
-            <p className="text-sm text-muted-foreground">
-              {papel === "educador" ? "Os grupos a que pertences." : "Turmas, grupos de apoio e grupos de famílias da instituição."}
-            </p>
-          </div>
+      <div className="space-y-8">
+        <PageHeader title="Turmas e grupos" description={<span>{papel === "educador" ? "Os grupos a que pertences." : "Turmas, grupos de apoio e grupos de famílias da instituição."}</span>}>
           <div className="flex gap-2">
             <Button variant="outline" className="gap-1.5" onClick={() => setArquivados((v) => !v)}>
               <Archive className="h-4 w-4" /> {arquivados ? "Ver ativos" : "Arquivados"}
@@ -64,7 +60,8 @@ export default function GruposPage() {
               </Button>
             )}
           </div>
-        </div>
+        </PageHeader>
+        <CampoPesquisaPagina className="computador:hidden" />
 
         {aCarregar && !dados ? (
           <Carregando />

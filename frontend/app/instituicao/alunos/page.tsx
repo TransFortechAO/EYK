@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useConfirm } from "@/components/confirm-dialog";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
-import { acao, Campo, Carregando, celula, ErroCarregar, erroTexto, Etiqueta, haQuanto, LinkConvite, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
+import { contem, acao, Campo, Carregando, celula, ErroCarregar, erroTexto, Etiqueta, haQuanto, LinkConvite, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
 import { apiInstituicoes as api, consentimentosAtuais } from "@/lib/instituicoes/api";
 import type { CanalConvite, Convite, Grupo, PerfilAluno } from "@/lib/instituicoes/tipos";
 
@@ -22,6 +23,7 @@ function EstadoPerfil({ a }: { a: PerfilAluno }) {
 
 export default function AlunosPage() {
   const { instituicaoId, papel, pode } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const confirmar = useConfirm();
   const [novo, setNovo] = useState(false);
   const [convidarPara, setConvidarPara] = useState<PerfilAluno | null>(null);
@@ -63,11 +65,8 @@ export default function AlunosPage() {
   // ── Vista da família ──
   if (papel === "familia") {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">As minhas crianças</h2>
-          <p className="text-sm text-muted-foreground">Vês apenas o que diz respeito às crianças de quem és tutor.</p>
-        </div>
+      <div className="space-y-8">
+        <PageHeader title="As minhas crianças" description="Vês apenas o que diz respeito às crianças de quem és tutor." />
         {dados.alunos.length === 0 ? (
           <EmptyState icon={Baby} title="Sem crianças associadas" description="Quando a escola te enviar um convite ligado à tua criança, ela aparece aqui." />
         ) : (
@@ -102,16 +101,12 @@ export default function AlunosPage() {
     );
   }
 
-  const lista = dados.alunos.filter((a) => !filtroGrupo || a.grupoId === filtroGrupo);
+  const lista = dados.alunos.filter((a) => (!filtroGrupo || a.grupoId === filtroGrupo) && contem(q, a.nome));
 
   return (
     <Exige permitido={permitido}>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">Alunos e tutores</h2>
-            <p className="text-sm text-muted-foreground">Cada família vê apenas o que diz respeito à sua criança.</p>
-          </div>
+      <div className="space-y-8">
+        <PageHeader title="Alunos e tutores" description="Cada família vê apenas o que diz respeito à sua criança.">
           <div className="flex gap-2">
             <Seletor aria-label="Filtrar por grupo" className="w-48" value={filtroGrupo} onChange={(e) => setFiltroGrupo(e.target.value)}>
               <option value="">Todos os grupos</option>
@@ -127,7 +122,8 @@ export default function AlunosPage() {
               </Button>
             )}
           </div>
-        </div>
+        </PageHeader>
+        <CampoPesquisaPagina className="computador:hidden" />
 
         {lista.length === 0 ? (
           <EmptyState icon={Baby} title="Sem perfis de crianças" description="Cria um perfil e convida o tutor para dar o consentimento." />

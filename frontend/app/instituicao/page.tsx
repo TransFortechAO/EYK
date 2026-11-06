@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Baby, CalendarDays, HardDrive, Megaphone, Ticket, UserCheck, Users, UsersRound } from "lucide-react";
-import { SectionHeader, StatCard } from "@/components/eyk";
+import { PageHeader, SectionHeader, StatCard } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { Barra, Carregando, dataHora, diaLuanda, ErroCarregar, Etiqueta, FUSO, haQuanto, tamanho, useCarregar } from "@/components/instituicao/ui";
@@ -38,6 +38,7 @@ export default function PainelInstituicaoPage() {
 
   return (
     <div className="space-y-8">
+      <PageHeader title={atual.instituicao.nome} description="O que se passa hoje na tua escola." gesto="Escola" />
       {(pedidosPendentes.length > 0 || aguardaConsentimento.length > 0 || porConfirmar.length > 0) && (
         <div className="space-y-2">
           {pedidosPendentes.length > 0 && (

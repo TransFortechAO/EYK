@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Info, Ticket, UserMinus } from "lucide-react";
+import { PageHeader } from "@/components/eyk";
 import { Card } from "@/components/ui/card";
 import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Button } from "@/components/ui/button";
@@ -62,18 +63,12 @@ export default function MembrosPage() {
 
   return (
     <Exige permitido={permitido}>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">Membros e papéis</h2>
-            <p className="text-sm text-muted-foreground">
-              {gerir
+      <div className="space-y-8">
+        <PageHeader title="Membros e papéis" description={<span>{gerir
                 ? "Cada pessoa tem um papel nesta instituição. A mesma pessoa pode ter papéis diferentes noutras instituições."
                 : papel === "educador"
                   ? "As pessoas dos teus grupos."
-                  : "Quem faz parte da instituição."}
-            </p>
-          </div>
+                  : "Quem faz parte da instituição."}</span>}>
           {pode("convidar") && (
             <Button asChild className="gap-1.5">
               <Link href="/instituicao/convites">
@@ -81,7 +76,7 @@ export default function MembrosPage() {
               </Link>
             </Button>
           )}
-        </div>
+        </PageHeader>
 
         <div className="flex flex-col gap-2 sm:flex-row">
           <CampoPesquisaPagina className="relative flex-1 computador:hidden" />

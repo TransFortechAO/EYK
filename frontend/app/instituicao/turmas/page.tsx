@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
-import { Campo, Carregando, ErroCarregar, erroTexto, Etiqueta, Seletor, useCarregar } from "@/components/instituicao/ui";
+import { contem, Campo, Carregando, ErroCarregar, erroTexto, Etiqueta, Seletor, useCarregar } from "@/components/instituicao/ui";
 import { apiLga } from "@/lib/instituicoes/lga";
 import { DESCRICAO_PUBLICO_LGA, ROTULO_NIVEL_LGA, ROTULO_PUBLICO_LGA } from "@/lib/instituicoes/permissoes";
 import type { NivelLga, PublicoTurmaLga } from "@/lib/instituicoes/tipos";
@@ -25,29 +26,25 @@ function anoLetivoAtual() {
 
 export default function TurmasLgaPage() {
   const { instituicaoId, pode, papel } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const [nova, setNova] = useState(false);
   const { dados, erro, aCarregar, recarregar } = useCarregar(() => apiLga.listarTurmas(instituicaoId), [instituicaoId]);
 
   return (
     <Exige permitido={pode("ver_turmas_lga")}>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">Turmas LGA</h2>
-            <p className="text-sm text-muted-foreground">
-              {papel === "aluno"
+      <div className="space-y-8">
+        <PageHeader title="Turmas LGA" description={<span>{papel === "aluno"
                 ? "As tuas turmas de Língua Gestual Angolana: aulas, trabalhos e a tua turma."
                 : papel === "familia"
                   ? "As turmas de LGA da tua criança e as turmas para famílias."
-                  : "Turmas dedicadas ao ensino da Língua Gestual Angolana: aulas sinalizadas, trabalhos com resposta em vídeo e progresso por competência."}
-            </p>
-          </div>
+                  : "Turmas dedicadas ao ensino da Língua Gestual Angolana: aulas sinalizadas, trabalhos com resposta em vídeo e progresso por competência."}</span>}>
           {pode("gerir_turmas_lga") && (
             <Button className="gap-1.5" onClick={() => setNova(true)}>
               <Plus className="h-4 w-4" /> Abrir turma LGA
             </Button>
           )}
-        </div>
+        </PageHeader>
+        <CampoPesquisaPagina className="computador:hidden" />
 
         {aCarregar && !dados ? (
           <Carregando />
@@ -61,7 +58,7 @@ export default function TurmasLgaPage() {
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {dados.map((t) => (
+            {dados.filter((t) => contem(q, t.nome, t.lga.descricao)).map((t) => (
               <Link key={t.id} href={`/instituicao/turmas/${t.id}`} className="group">
                 <Card className="flex h-full flex-col gap-4 p-5 shadow-soft transition-shadow group-hover:shadow-elevated">
                   <div className="flex items-start gap-3">

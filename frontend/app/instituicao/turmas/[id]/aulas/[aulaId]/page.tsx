@@ -66,7 +66,7 @@ export default function AulaPage() {
       </Link>
 
       <div>
-        <h2 className="font-serif text-2xl font-semibold">{aula.titulo}</h2>
+        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{aula.titulo}</h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>
             {aula.autor} · {haQuanto(aula.publicadaEm)}
@@ -144,7 +144,7 @@ export default function AulaPage() {
               <p className="rounded-lg bg-primary/10 p-3 text-sm">{aula.enunciado}</p>
               {papel === "aluno" && (
                 <>
-                  {permissao && !permissao.pode && <p className="rounded-md bg-amber-500/10 p-3 text-sm">{permissao.motivo}</p>}
+                  {permissao && !permissao.pode && <p className="rounded-md bg-warning/10 p-3 text-sm">{permissao.motivo}</p>}
                   {podeGravar && (
                     <div className="space-y-2">
                       {ultima?.estado === "repetir" && <p className="text-xs text-muted-foreground">O professor pediu para repetir. Vê o comentário abaixo e grava de novo.</p>}

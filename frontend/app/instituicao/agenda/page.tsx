@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { BellRing, CalendarDays, ChevronLeft, ChevronRight, Link as LinkIcon, MapPin, Plus, Repeat, Users, XCircle } from "lucide-react";
+import { PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
-import {
-  acao,
+import { contem, acao,
   Caixa,
   Campo,
   Carregando,
@@ -24,8 +25,7 @@ import {
   hora,
   rotuloDestinatarios,
   Seletor,
-  useCarregar,
-} from "@/components/instituicao/ui";
+  useCarregar, } from "@/components/instituicao/ui";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
 import type { Destinatarios, Evento, Grupo, Recorrencia, RespostaPresenca } from "@/lib/instituicoes/tipos";
 import { cn } from "@/lib/utils";
@@ -55,6 +55,7 @@ function ocorrencias(ev: Evento, deDia: string, ateDia: string): Ocorrencia[] {
 
 export default function AgendaPage() {
   const { instituicaoId, pode } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const confirmar = useConfirm();
   const hoje = diaLuanda(new Date());
   const [mes, setMes] = useState(() => hoje.slice(0, 7)); // "AAAA-MM"
@@ -108,22 +109,19 @@ export default function AgendaPage() {
   if (aCarregar && !dados) return <Carregando />;
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
 
-  const lista = diaEscolhido ? doMes.filter((o) => o.dia === diaEscolhido) : doMes.filter((o) => o.dia >= (mes === hoje.slice(0, 7) ? hoje : primeiroDia));
+  const lista = (diaEscolhido ? doMes.filter((o) => o.dia === diaEscolhido) : doMes.filter((o) => o.dia >= (mes === hoje.slice(0, 7) ? hoje : primeiroDia))).filter((o) => contem(q, o.evento.titulo, o.evento.descricao, o.evento.local));
   const nomeMes = new Date(Date.UTC(ano, mesN - 1, 15)).toLocaleDateString("pt-PT", { month: "long", year: "numeric", timeZone: "UTC" });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">Agenda</h2>
-          <p className="text-sm text-muted-foreground">Reuniões, atividades e prazos. Horas de Angola (WAT).</p>
-        </div>
+    <div className="space-y-8">
+      <PageHeader title="Agenda" description="Reuniões, atividades e prazos. Horas de Angola (WAT).">
         {pode("criar_eventos") && (
           <Button className="gap-1.5" onClick={() => setNovo(true)}>
             <Plus className="h-4 w-4" /> Novo evento
           </Button>
         )}
-      </div>
+      </PageHeader>
+      <CampoPesquisaPagina className="computador:hidden" />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
         <Card className="h-fit p-4 shadow-soft">

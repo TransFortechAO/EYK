@@ -58,7 +58,7 @@ function TurmaLga() {
           <Hand className="h-6 w-6" aria-hidden />
         </div>
         <div className="min-w-0">
-          <h2 className="font-serif text-2xl font-semibold">{turma.nome}</h2>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{turma.nome}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Etiqueta tom="marca">{ROTULO_PUBLICO_LGA[turma.lga.publico]}</Etiqueta>
             <Etiqueta>{ROTULO_NIVEL_LGA[turma.lga.nivel]}</Etiqueta>

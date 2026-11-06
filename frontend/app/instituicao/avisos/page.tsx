@@ -9,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
-import {
-  acao,
+import { contem, acao,
   Barra,
   Caixa,
   Campo,
@@ -24,8 +24,7 @@ import {
   haQuanto,
   rotuloDestinatarios,
   Seletor,
-  useCarregar,
-} from "@/components/instituicao/ui";
+  useCarregar, } from "@/components/instituicao/ui";
 import { apiInstituicoes as api } from "@/lib/instituicoes/api";
 import type { Aviso, Destinatarios, FicheiroInstituicao, Grupo, Membro } from "@/lib/instituicoes/tipos";
 
@@ -33,6 +32,7 @@ type Filtro = "todos" | "por_ler" | "confirmar" | "meus";
 
 export default function AvisosPage() {
   const { instituicaoId, pode, atual } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [novo, setNovo] = useState(false);
   const [prefs, setPrefs] = useState(false);
@@ -62,7 +62,7 @@ export default function AvisosPage() {
   if (aCarregar && !dados) return <Carregando />;
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
 
-  const lista = dados.avisos.filter((a) => {
+  const lista = dados.avisos.filter((a) => contem(q, a.titulo, a.mensagem, a.autor)).filter((a) => {
     if (filtro === "por_ler") return !a.lidoPorMim && a.autorId !== eu;
     if (filtro === "confirmar") return a.pedirConfirmacao && !a.confirmadoPorMim && a.autorId !== eu;
     if (filtro === "meus") return a.autorId === eu;
@@ -70,12 +70,8 @@ export default function AvisosPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-serif text-2xl font-semibold">Avisos</h2>
-          <p className="text-sm text-muted-foreground">Mensagens da instituição para turmas, grupos ou pessoas.</p>
-        </div>
+    <div className="space-y-8">
+      <PageHeader title="Avisos" description="Mensagens da instituição para turmas, grupos ou pessoas.">
         <div className="flex flex-wrap gap-2">
           <Seletor aria-label="Filtrar avisos" className="w-44" value={filtro} onChange={(e) => setFiltro(e.target.value as Filtro)}>
             <option value="todos">Todos</option>
@@ -92,7 +88,8 @@ export default function AvisosPage() {
             </Button>
           )}
         </div>
-      </div>
+      </PageHeader>
+      <CampoPesquisaPagina className="computador:hidden" />
 
       {lista.length === 0 ? (
         <EmptyState icon={Megaphone} title="Sem avisos" description={filtro === "todos" ? "Ainda não há avisos para ti." : "Nada nesta lista."} />

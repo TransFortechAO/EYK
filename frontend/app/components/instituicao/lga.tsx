@@ -2,9 +2,11 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { Camera, CheckCircle2, Clock, Film, RotateCcw, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LgaSign } from "@/components/lga-sign";
+import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { Etiqueta, tamanho } from "@/components/instituicao/ui";
 import { duracao } from "@/lib/instituicoes/lga";
 import { guardarVideoSessao, urlVideoSessao } from "@/lib/instituicoes/media-sessao";
@@ -116,6 +118,8 @@ export function CarregarVideo({
   const entrada = useRef<HTMLInputElement>(null);
   const [aLer, setALer] = useState(false);
   const url = urlVideoSessao(valor);
+  // Design System: o limite vê-se junto ao botão e valida-se antes de enviar.
+  const maxMb = useInstituicaoOpcional()?.atual?.instituicao.quotas.ficheiroMaxMb;
 
   return (
     <div className="space-y-2">
@@ -129,6 +133,11 @@ export function CarregarVideo({
         onChange={async (e) => {
           const f = e.target.files?.[0];
           if (!f) return;
+          if (maxMb && f.size > maxMb * 1024 * 1024) {
+            toast.error(`O vídeo passa o limite de ${maxMb} MB por ficheiro.`);
+            e.target.value = "";
+            return;
+          }
           setALer(true);
           try {
             onChange(await guardarVideoSessao(f));
@@ -164,6 +173,7 @@ export function CarregarVideo({
           {aLer ? "A preparar…" : rotulo}
         </Button>
       )}
+      {maxMb && !valor && <p className="text-xs text-muted-foreground">Máx. {maxMb} MB por ficheiro.</p>}
     </div>
   );
 }
@@ -291,7 +301,7 @@ export function BarraMestria({ valor, rotulo, className }: { valor: number; rotu
         aria-valuemax={100}
       >
         <div
-          className={cn("h-full rounded-full", valor >= 80 ? "bg-success" : valor >= 50 ? "bg-primary" : "bg-amber-500")}
+          className={cn("h-full rounded-full", valor >= 80 ? "bg-success" : valor >= 50 ? "bg-primary" : "bg-warning")}
           style={{ width: `${valor}%` }}
         />
       </div>

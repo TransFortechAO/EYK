@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Lock, Video } from "lucide-react";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { CartaoResposta } from "@/components/instituicao/turma/respostas";
 import { Carregando, ErroCarregar, Seletor, useCarregar } from "@/components/instituicao/ui";
@@ -33,19 +33,13 @@ export default function RespostasPorReverPage() {
       ) : !dados ? (
         <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />
       ) : (
-        <div className="space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="font-serif text-2xl font-semibold">Respostas em vídeo</h2>
-              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Lock className="h-3.5 w-3.5" aria-hidden /> Das turmas onde ensinas. Só tu, o aluno e a família vêem estes vídeos.
-              </p>
-            </div>
+        <div className="space-y-8">
+          <PageHeader title="Respostas em vídeo" description={<span className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" aria-hidden /> Das turmas onde ensinas. Só tu, o aluno e a família vêem estes vídeos.</span>}>
             <Seletor aria-label="Filtrar respostas" className="w-44" value={filtro} onChange={(e) => setFiltro(e.target.value as typeof filtro)}>
               <option value="por_rever">Por rever</option>
               <option value="todas">Todas</option>
             </Seletor>
-          </div>
+          </PageHeader>
 
           {dados.turmas.map((t) => {
             const lista = dados.respostas.filter((r) => r.turmaId === t.id && (filtro === "todas" || r.estado === "por_rever"));

@@ -55,7 +55,7 @@ export default function PraticarPage() {
       ) : (
         <div className="space-y-8">
           <div>
-            <h2 className="font-serif text-2xl font-semibold">Praticar LGA</h2>
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">Praticar LGA</h1>
             <p className="text-sm text-muted-foreground">
               Exercícios curtos com os gestos validados do gestuário. A mestria conta as tuas últimas 10 respostas em cada competência.
             </p>

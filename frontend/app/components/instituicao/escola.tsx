@@ -32,7 +32,8 @@ import { ListaDesafios } from "@/components/instituicao/desafios";
 import { CartaoGesto } from "@/components/instituicao/lga";
 import { ListaClassificacao } from "@/components/instituicao/turma/classificacao";
 import { SeparadorComunidade } from "@/components/instituicao/turma/comunidade";
-import { dataHora, Etiqueta, haQuanto } from "@/components/instituicao/ui";
+import { contem, dataHora, Etiqueta, haQuanto } from "@/components/instituicao/ui";
+import { usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { apiLga, type TurmaLga } from "@/lib/instituicoes/lga";
 import { apiLgaReal } from "@/lib/instituicoes/servidor-lga";
@@ -92,19 +93,19 @@ export function SoPlataformaGeral({ children }: { children: ReactNode }) {
 export function CartaoConteudoEscola({ conteudo: c, turma }: { conteudo: ConteudoEscola; turma?: string | null }) {
   return (
     <Link href={`/instituicao/conteudos/${c.id}`} className="group block h-full">
-      <Card className="flex h-full flex-col overflow-hidden shadow-soft transition-shadow group-hover:shadow-elevated">
-        <div className="relative grid aspect-video place-items-center bg-gradient-to-br from-primary/15 via-surface to-primary/5">
+      <Card className="flex h-full flex-row overflow-hidden shadow-soft transition-shadow group-hover:shadow-elevated sm:flex-col">
+        <div className="relative grid w-32 shrink-0 place-items-center bg-gradient-to-br from-primary/15 via-surface to-primary/5 sm:aspect-video sm:w-auto">
           {c.tipo === "curso" ? <BookOpen className="h-10 w-10 text-primary" aria-hidden /> : <PlayCircle className="h-10 w-10 text-primary" aria-hidden />}
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-medium backdrop-blur">
+          <span className="absolute left-2 top-2 hidden items-center gap-1 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-medium backdrop-blur sm:inline-flex">
             <Building2 className="h-3 w-3" aria-hidden /> {c.ambito.tipo === "turma" ? turma ?? "Da turma" : "Da escola"}
           </span>
           {c.emLga && (
-            <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground">
+            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground sm:bottom-auto sm:left-auto sm:right-3 sm:top-3">
               <Hand className="h-3 w-3" aria-hidden /> Em LGA
             </span>
           )}
         </div>
-        <div className="flex flex-1 flex-col gap-1.5 p-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3 sm:p-4">
           <p className="font-medium leading-snug group-hover:underline underline-offset-2">{c.titulo}</p>
           <p className="line-clamp-2 text-xs text-muted-foreground">{c.descricao}</p>
           <p className="mt-auto flex flex-wrap items-center gap-x-2 pt-2 text-xs text-muted-foreground">
@@ -130,6 +131,7 @@ type Origem = "todos" | "escola" | "publico";
 function ConteudosComEscolaInterno({ tipo, children }: { tipo: ConteudoEscola["tipo"]; children: ReactNode }) {
   const ctx = useInstituicao();
   const { atual, aCarregar } = ctx;
+  const [q] = usePesquisaPagina();
   const [escolhida, setOrigem] = useState<Origem>("todos");
   const [conteudos, setConteudos] = useState<ConteudoEscola[] | null>(null);
   const [turmas, setTurmas] = useState<TurmaLga[]>([]);
@@ -154,6 +156,8 @@ function ConteudosComEscolaInterno({ tipo, children }: { tipo: ConteudoEscola["t
   const so = soEscola(ctx);
   const origem: Origem = so ? "escola" : escolhida;
   const nomeTurma = (c: ConteudoEscola) => (c.ambito.tipo === "turma" ? turmas.find((t) => t.id === (c.ambito as { turmaId: string }).turmaId)?.nome ?? null : null);
+  // A pesquisa da página de Cursos ou Vídeos filtra também o que é da escola.
+  const encontrados = conteudos?.filter((c) => contem(q, c.titulo, c.descricao, c.autor)) ?? null;
 
   return (
     <div className="space-y-8">
@@ -176,13 +180,15 @@ function ConteudosComEscolaInterno({ tipo, children }: { tipo: ConteudoEscola["t
           <p className="-mt-2 mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
             <Lock className="h-3.5 w-3.5" aria-hidden /> Só os membros da escola (ou da turma) vêem estes {tipo === "curso" ? "cursos" : "vídeos"}.
           </p>
-          {conteudos === null ? (
+          {encontrados === null ? (
             <p className="text-sm text-muted-foreground">A carregar…</p>
-          ) : conteudos.length === 0 ? (
-            <p className="rounded-xl bg-surface/60 p-4 text-sm text-muted-foreground">A escola ainda não publicou {tipo === "curso" ? "cursos" : "vídeos"}.</p>
+          ) : encontrados.length === 0 ? (
+            <p className="rounded-xl bg-surface/60 p-4 text-sm text-muted-foreground">
+              {q ? "Nada encontrado na escola." : `A escola ainda não publicou ${tipo === "curso" ? "cursos" : "vídeos"}.`}
+            </p>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {conteudos.map((c) => (
+              {encontrados.map((c) => (
                 <CartaoConteudoEscola key={c.id} conteudo={c} turma={nomeTurma(c)} />
               ))}
             </div>

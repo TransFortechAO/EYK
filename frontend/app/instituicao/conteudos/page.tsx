@@ -6,16 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/eyk";
+import { EmptyState, PageHeader } from "@/components/eyk";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { Exige, useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { CartaoConteudoEscola } from "@/components/instituicao/escola";
 import { CarregarVideo } from "@/components/instituicao/lga";
-import { acao, Caixa, Campo, Carregando, ErroCarregar, erroTexto, Etiqueta, Seletor, useCarregar } from "@/components/instituicao/ui";
+import { contem, acao, Caixa, Campo, Carregando, ErroCarregar, erroTexto, Etiqueta, Seletor, useCarregar } from "@/components/instituicao/ui";
 import { apiLga, type TurmaLga } from "@/lib/instituicoes/lga";
 import type { ConteudoEscola, VideoAnexo } from "@/lib/instituicoes/tipos";
 
 export default function ConteudosEscolaPage() {
   const { instituicaoId, pode, atual } = useInstituicaoAtual();
+  const [q] = usePesquisaPagina();
   const [tipo, setTipo] = useState<"" | ConteudoEscola["tipo"]>("");
   const [ambito, setAmbito] = useState<"" | "instituicao" | "turma">("");
   const [novo, setNovo] = useState(false);
@@ -31,26 +33,21 @@ export default function ConteudosEscolaPage() {
   if (aCarregar && !dados) return <Carregando />;
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
 
-  const lista = dados.conteudos.filter((c) => (!tipo || c.tipo === tipo) && (!ambito || c.ambito.tipo === ambito));
+  const lista = dados.conteudos.filter((c) => (!tipo || c.tipo === tipo) && (!ambito || c.ambito.tipo === ambito) && contem(q, c.titulo, c.descricao, c.autor));
   const nomeTurma = (c: ConteudoEscola) => (c.ambito.tipo === "turma" ? dados.turmas.find((t) => t.id === (c.ambito as { turmaId: string }).turmaId)?.nome ?? null : null);
   const podeProporEste = (c: ConteudoEscola) => pode("publicar_conteudos") && (c.autorId === atual.membro.id || pode("gerir_membros"));
 
   return (
     <Exige permitido={pode("ver_turmas_lga")}>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">Conteúdos da escola</h2>
-            <p className="text-sm text-muted-foreground">
-              Cursos e vídeos que os professores publicaram só para a escola ou para uma turma. Aparecem também em Cursos e Vídeos, em «Da minha escola», ao lado do catálogo público da EYK.
-            </p>
-          </div>
+      <div className="space-y-8">
+        <PageHeader title="Conteúdos da escola" description="Cursos e vídeos que os professores publicaram só para a escola ou para uma turma. Aparecem também em Cursos e Vídeos, em «Da minha escola», ao lado do catálogo público da EYK.">
           {pode("publicar_conteudos") && (
             <Button className="gap-1.5" onClick={() => setNovo(true)}>
               <Plus className="h-4 w-4" /> Publicar
             </Button>
           )}
-        </div>
+        </PageHeader>
+        <CampoPesquisaPagina className="computador:hidden" />
 
         <div className="flex flex-wrap gap-2">
           <Seletor aria-label="Tipo" className="w-40" value={tipo} onChange={(e) => setTipo(e.target.value as typeof tipo)}>
