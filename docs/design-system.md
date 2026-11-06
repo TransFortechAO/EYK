@@ -130,8 +130,10 @@ exceto para bordas/realces descritos abaixo.
 - Por cima da página fica só uma linha com a escola e o papel, nunca outro título.
 - **Tabelas** (`Tabela`, `celula` em `components/instituicao/ui.tsx`): tabela no computador; no telemóvel e
   no tablet cada linha é um cartão, com o rótulo da coluna junto a cada valor.
-- **Comunidade da turma**: o mesmo compositor compacto com modal e o mesmo cabeçalho de publicação da
-  Comunidade. **Sem partilha externa nem repost**: são publicações de crianças.
+- **Comunidade da turma**: o mesmo compositor compacto com modal, o mesmo cabeçalho de publicação, e
+  **Gosto · Comentar** com os números e comentários num modal, como na Comunidade. **Sem partilha externa
+  nem repost**: são publicações de crianças. Fotografias só de quem ensina (até 5 MB), com o consentimento
+  das crianças verificado. As famílias reagem, mas não publicam nem comentam.
 - Faixa de pré-visualização só em "Ver como"; contas de escolas reais nunca vêem a palavra "demonstração".
 
 ## 5. Linguagem

@@ -325,6 +325,8 @@ class PedidoDados(models.Model):
     pedido_por_nome = models.CharField(max_length=200)
     pedido_em = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=10, default='recebido')
+    # A criança a que o pedido diz respeito (ambito 'crianca').
+    aluno = models.ForeignKey(PerfilAluno, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     prazo = models.DateTimeField()
     nota = models.CharField(max_length=255, blank=True)
 
@@ -453,13 +455,36 @@ class PostTurma(models.Model):
     autor = models.ForeignKey(MembroInstituicao, on_delete=models.CASCADE, related_name='posts_turma')
     autor_nome = models.CharField(max_length=200)
     papel = models.CharField(max_length=15)
-    texto = models.CharField(max_length=500)
+    texto = models.CharField(max_length=500, blank=True)
     gesto_id = models.CharField(max_length=40, blank=True)
+    foto = models.ForeignKey(AnexoEscola, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts_turma')
+    tem_criancas = models.BooleanField(default=False)
     criado_em = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=10, default='visivel')
 
     class Meta:
         ordering = ['-criado_em', '-id']
+
+
+class ComentarioTurma(models.Model):
+    post = models.ForeignKey(PostTurma, on_delete=models.CASCADE, related_name='comentarios')
+    autor = models.ForeignKey(MembroInstituicao, on_delete=models.CASCADE, related_name='comentarios_turma')
+    autor_nome = models.CharField(max_length=200)
+    papel = models.CharField(max_length=15)
+    texto = models.CharField(max_length=300)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=10, default='visivel')
+
+    class Meta:
+        ordering = ['criado_em', 'id']
+
+
+class GostoTurma(models.Model):
+    post = models.ForeignKey(PostTurma, on_delete=models.CASCADE, related_name='gostos')
+    membro = models.ForeignKey(MembroInstituicao, on_delete=models.CASCADE, related_name='+')
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['post', 'membro'], name='gosto_turma_unico')]
 
 
 class Desafio(models.Model):

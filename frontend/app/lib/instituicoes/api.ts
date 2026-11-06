@@ -1021,7 +1021,7 @@ const demoInstituicoes = {
 
   async pedirDados(
     instituicaoId: string,
-    dados: { tipo: PedidoDados["tipo"]; ambito: AmbitoDados; alvo: string },
+    dados: { tipo: PedidoDados["tipo"]; ambito: AmbitoDados; alvo: string; alunoId?: string | null },
   ): Promise<PedidoDados> {
     await esperar();
     const m = exigir(instituicaoId, "pedir_dados");
@@ -1047,6 +1047,16 @@ const demoInstituicoes = {
       dados.tipo === "exportacao" ? "dados_exportados" : "dados_eliminacao_pedida",
       `${dados.tipo === "exportacao" ? "Exportação" : "Eliminação"} pedida: ${dados.alvo}.`,
     );
+    guardar();
+    return p;
+  },
+
+  async decidirPedidoDados(instituicaoId: string, pedidoId: string, aprovar: boolean): Promise<PedidoDados> {
+    await esperar();
+    exigir(instituicaoId, "gerir_pedidos_dados");
+    const p = carregar().pedidosDados.find((x) => x.id === pedidoId && x.instituicaoId === instituicaoId);
+    if (!p) throw new ErroInstituicao("Pedido não encontrado.");
+    p.estado = aprovar ? "concluido" : "recusado";
     guardar();
     return p;
   },

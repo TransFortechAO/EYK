@@ -13,6 +13,7 @@ import { apiLgaReal } from "./servidor-lga";
 import type {
   Ambito,
   Aula,
+  ComentarioTurma,
   Competencia,
   ConteudoAtribuido,
   ConteudoEscola,
@@ -626,10 +627,20 @@ const demoLga = {
     const moderador = ensinaNaTurma(m, turmaId) || pode(m.papel, "gerir_membros");
     return carregar()
       .postsTurma.filter((p) => p.turmaId === turmaId && (p.estado === "visivel" || moderador || p.autorId === m.id))
-      .sort((x, y) => y.criadoEm.localeCompare(x.criadoEm));
+      .sort((x, y) => y.criadoEm.localeCompare(x.criadoEm))
+      .map((p) => {
+        const e = carregar();
+        const gostos = e.gostosTurma?.[p.id] ?? [];
+        const comentarios = (e.comentariosTurma ?? []).filter((c) => c.postId === p.id && (c.estado === "visivel" || moderador || c.autorId === m.id));
+        return { ...p, gostos: gostos.length, gostei: gostos.includes(m.id), comentarios: comentarios.length };
+      });
   },
 
-  async publicarPostTurma(instituicaoId: string, turmaId: string, dados: { texto: string; gestoId: string | null }): Promise<PostTurma> {
+  async publicarPostTurma(
+    instituicaoId: string,
+    turmaId: string,
+    dados: { texto: string; gestoId: string | null; foto?: File | null; temCriancas?: boolean },
+  ): Promise<PostTurma> {
     await esperar();
     const m = exigir(instituicaoId, "publicar_na_turma");
     turmaDe(instituicaoId, turmaId);
@@ -649,6 +660,9 @@ const demoLga = {
       gestoId: dados.gestoId,
       criadoEm: new Date().toISOString(),
       estado: "visivel",
+      gostos: 0,
+      gostei: false,
+      comentarios: 0,
     };
     carregar().postsTurma.push(p);
     guardar();
@@ -673,6 +687,65 @@ const demoLga = {
     const p = carregar().postsTurma.find((x) => x.id === postId && x.instituicaoId === instituicaoId);
     if (!p || !acedeTurma(m, p.turmaId)) throw new ErroInstituicao("Publicação não encontrada.");
     if (p.estado === "visivel") p.estado = "denunciado";
+    guardar();
+  },
+
+  async gostarPostTurma(instituicaoId: string, postId: string): Promise<{ gostei: boolean; gostos: number }> {
+    await esperar();
+    const m = eu(instituicaoId);
+    const e = carregar();
+    const lista = ((e.gostosTurma ??= {})[postId] ??= []);
+    const gostei = !lista.includes(m.id);
+    e.gostosTurma[postId] = gostei ? [...lista, m.id] : lista.filter((x) => x !== m.id);
+    guardar();
+    return { gostei, gostos: e.gostosTurma[postId].length };
+  },
+
+  async listarComentariosTurma(instituicaoId: string, postId: string): Promise<ComentarioTurma[]> {
+    await esperar();
+    const m = eu(instituicaoId);
+    const e = carregar();
+    const post = e.postsTurma.find((p) => p.id === postId);
+    const moderador = !!post && (ensinaNaTurma(m, post.turmaId) || pode(m.papel, "gerir_membros"));
+    return (e.comentariosTurma ?? []).filter((c) => c.postId === postId && (c.estado === "visivel" || moderador || c.autorId === m.id));
+  },
+
+  async comentarPostTurma(instituicaoId: string, postId: string, texto: string): Promise<ComentarioTurma> {
+    await esperar();
+    const m = exigir(instituicaoId, "publicar_na_turma");
+    const limpo = texto.trim();
+    if (!limpo) throw new ErroInstituicao("Escreve alguma coisa.");
+    if (limpo.length > 300) throw new ErroInstituicao("No máximo 300 caracteres.");
+    if (/https?:\/\//i.test(limpo) && m.papel === "aluno") throw new ErroInstituicao("Os alunos não podem publicar links na turma.");
+    const c: ComentarioTurma = {
+      id: novoId("ct"),
+      postId,
+      autorId: m.id,
+      autorNome: m.nome,
+      papel: m.papel,
+      texto: limpo,
+      criadoEm: new Date().toISOString(),
+      estado: "visivel",
+    };
+    (carregar().comentariosTurma ??= []).push(c);
+    guardar();
+    return c;
+  },
+
+  async moderarComentarioTurma(instituicaoId: string, comentarioId: string, visivel: boolean): Promise<void> {
+    await esperar();
+    exigir(instituicaoId, "moderar_turma");
+    const c = carregar().comentariosTurma?.find((x) => x.id === comentarioId);
+    if (!c) throw new ErroInstituicao("Comentário não encontrado.");
+    c.estado = visivel ? "visivel" : "oculto";
+    guardar();
+  },
+
+  async denunciarComentarioTurma(instituicaoId: string, comentarioId: string): Promise<void> {
+    await esperar();
+    eu(instituicaoId);
+    const c = carregar().comentariosTurma?.find((x) => x.id === comentarioId);
+    if (c?.estado === "visivel") c.estado = "denunciado";
     guardar();
   },
 

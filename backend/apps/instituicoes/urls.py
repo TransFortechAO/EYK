@@ -1,6 +1,6 @@
 from django.urls import path, register_converter
 
-from . import views, views_comunicacao, views_escola, views_lga
+from . import views, views_comunicacao, views_dados, views_escola, views_lga
 from .acesso import IdEscola
 
 register_converter(IdEscola, 'sid')
@@ -10,6 +10,8 @@ urlpatterns = [
     path('convites/<str:codigo>/', views.consultar_convite, name='instituicoes-convite'),
     path('convites/<str:codigo>/aceitar/', views.aceitar_convite, name='instituicoes-convite-aceitar'),
     path('gestos-validados/', views_lga.gestos_validados, name='instituicoes-gestos-validados'),
+    path('admin/pedidos-dados/', views_dados.admin_pedidos_dados, name='instituicoes-admin-pedidos-dados'),
+    path('admin/pedidos-dados/<sid:pedido_id>/decidir/', views_dados.admin_pedido_decidir, name='instituicoes-admin-pedido-decidir'),
     path('admin/propostas/', views_lga.admin_propostas, name='instituicoes-admin-propostas'),
     path('admin/propostas/<sid:conteudo_id>/', views_lga.admin_proposta_decidir, name='instituicoes-admin-proposta'),
     path('admin/', views.admin_instituicoes, name='instituicoes-admin'),
@@ -46,7 +48,9 @@ urlpatterns = [
     path('<sid:instituicao_id>/ficheiros/<sid:ficheiro_id>/conteudo/', views_comunicacao.ficheiro_conteudo, name='escola-ficheiro-conteudo'),
     path('<sid:instituicao_id>/relatorio/', views_comunicacao.relatorio, name='escola-relatorio'),
     path('<sid:instituicao_id>/auditoria/', views_comunicacao.auditoria, name='escola-auditoria'),
-    path('<sid:instituicao_id>/pedidos-dados/', views_comunicacao.pedidos_dados, name='escola-pedidos-dados'),
+    path('<sid:instituicao_id>/pedidos-dados/', views_dados.pedidos_dados, name='escola-pedidos-dados'),
+    path('<sid:instituicao_id>/pedidos-dados/<sid:pedido_id>/exportacao/', views_dados.pedido_exportacao, name='escola-pedido-exportacao'),
+    path('<sid:instituicao_id>/pedidos-dados/<sid:pedido_id>/decidir/', views_dados.pedido_decidir, name='escola-pedido-dados-decidir'),
     # Ensino de LGA
     path('<sid:instituicao_id>/anexos/', views_lga.anexos, name='escola-anexos'),
     path('<sid:instituicao_id>/anexos/<sid:anexo_id>/', views_lga.anexo_conteudo, name='escola-anexo'),
@@ -69,6 +73,10 @@ urlpatterns = [
     path('<sid:instituicao_id>/conteudos/<sid:conteudo_id>/propor/', views_lga.conteudo_propor, name='escola-conteudo-propor'),
     path('<sid:instituicao_id>/posts/<sid:post_id>/moderar/', views_lga.post_moderar, name='escola-post-moderar'),
     path('<sid:instituicao_id>/posts/<sid:post_id>/denunciar/', views_lga.post_denunciar, name='escola-post-denunciar'),
+    path('<sid:instituicao_id>/posts/<sid:post_id>/gosto/', views_lga.post_gosto, name='escola-post-gosto'),
+    path('<sid:instituicao_id>/posts/<sid:post_id>/comentarios/', views_lga.post_comentarios, name='escola-post-comentarios'),
+    path('<sid:instituicao_id>/comentarios/<sid:comentario_id>/moderar/', views_lga.comentario_moderar, name='escola-comentario-moderar'),
+    path('<sid:instituicao_id>/comentarios/<sid:comentario_id>/denunciar/', views_lga.comentario_denunciar, name='escola-comentario-denunciar'),
     path('<sid:instituicao_id>/classificacao/', views_lga.classificacao, name='escola-classificacao'),
     path('<sid:instituicao_id>/desafios/', views_lga.desafios, name='escola-desafios'),
     path('<sid:instituicao_id>/ver-geral/', views_lga.ver_geral, name='escola-ver-geral'),

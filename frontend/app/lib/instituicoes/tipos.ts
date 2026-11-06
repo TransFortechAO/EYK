@@ -322,7 +322,9 @@ export type PedidoDados = {
   estado: "recebido" | "em_curso" | "concluido" | "recusado";
   prazo: string;
   ficheiroPronto: boolean;
-  nota?: string;
+  /** Instituições reais: a cópia (ZIP) só responde a quem pediu e à administração. */
+  url?: string | null;
+  nota?: string | null;
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -476,6 +478,22 @@ export type PostTurma = {
   gestoId: string | null;
   criadoEm: string;
   /** Escondido pelo professor, ou à espera de revisão depois de uma denúncia. */
+  estado: "visivel" | "oculto" | "denunciado";
+  /** Fotografia: só de quem ensina, e com o consentimento das crianças verificado. */
+  foto?: VideoAnexo | null;
+  gostos: number;
+  gostei: boolean;
+  comentarios: number;
+};
+
+export type ComentarioTurma = {
+  id: string;
+  postId: string;
+  autorId: string;
+  autorNome: string;
+  papel: Papel;
+  texto: string;
+  criadoEm: string;
   estado: "visivel" | "oculto" | "denunciado";
 };
 

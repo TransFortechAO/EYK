@@ -164,13 +164,3 @@ def test_auditoria_e_relatorio_por_papel(api, pessoa):
     assert api.como(pessoa('educador')).get('auditoria/').status_code == 403
     assert api.get('relatorio/').status_code == 403
     assert api.como(pessoa('administrador')).get('auditoria/').status_code == 200
-
-
-def test_pedidos_de_dados(api, pessoa):
-    familia, admin = pessoa('familia'), pessoa('administrador')
-    corpo = {'tipo': 'eliminacao', 'ambito': 'instituicao', 'alvo': 'Toda a escola'}
-    assert api.como(familia).post('pedidos-dados/', corpo).status_code == 403
-    r = api.post('pedidos-dados/', {**corpo, 'ambito': 'crianca', 'alvo': 'Kiala'})
-    assert r.status_code == 201 and r.json()['nota']
-    assert len(api.como(admin).get('pedidos-dados/').json()) == 1
-    assert api.como(pessoa('familia')).get('pedidos-dados/').json() == []

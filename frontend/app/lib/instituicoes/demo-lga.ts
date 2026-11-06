@@ -396,7 +396,7 @@ export function criarDemoLga(
   // ── Comunidade da turma ──
   const post = (id: string, autorId: string, horas: number, texto: string, gestoId: string | null = null, estado: PostTurma["estado"] = "visivel"): PostTurma => {
     const autor = membro(autorId);
-    return { id, instituicaoId: "inst-1", turmaId: "g-lga1", autorId, autorNome: autor.nome, papel: autor.papel, texto, gestoId, criadoEm: iso(agora - horas * 60 * 60 * 1000), estado };
+    return { id, instituicaoId: "inst-1", turmaId: "g-lga1", autorId, autorNome: autor.nome, papel: autor.papel, texto, gestoId, gostos: 0, gostei: false, comentarios: 0, criadoEm: iso(agora - horas * 60 * 60 * 1000), estado };
   };
   const postsTurma: PostTurma[] = [
     post("pt-1", "m-3", 70, "Bem-vindos à turma de LGA! Aqui partilhamos o que aprendemos. Lembrem-se: respeito por todos e só publicações da turma."),

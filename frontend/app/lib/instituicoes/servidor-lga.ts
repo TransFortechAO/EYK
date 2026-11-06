@@ -8,6 +8,7 @@ import { json, pedido } from "./servidor";
 import type {
   Ambito,
   Aula,
+  ComentarioTurma,
   Competencia,
   ConteudoAtribuido,
   ConteudoEscola,
@@ -227,8 +228,33 @@ export const apiLgaReal = {
     return pedido(`${id}/turmas/${turmaId}/posts/`);
   },
 
-  publicarPostTurma(id: string, turmaId: string, dados: { texto: string; gestoId: string | null }): Promise<PostTurma> {
-    return pedido(`${id}/turmas/${turmaId}/posts/`, json(dados));
+  async publicarPostTurma(
+    id: string,
+    turmaId: string,
+    dados: { texto: string; gestoId: string | null; foto?: File | null; temCriancas?: boolean },
+  ): Promise<PostTurma> {
+    const { foto, ...resto } = dados;
+    return pedido(`${id}/turmas/${turmaId}/posts/`, json({ ...resto, fotoId: foto ? await subir(id, foto) : null }));
+  },
+
+  gostarPostTurma(id: string, postId: string): Promise<{ gostei: boolean; gostos: number }> {
+    return pedido(`${id}/posts/${postId}/gosto/`, { method: "POST" });
+  },
+
+  listarComentariosTurma(id: string, postId: string): Promise<ComentarioTurma[]> {
+    return pedido(`${id}/posts/${postId}/comentarios/`);
+  },
+
+  comentarPostTurma(id: string, postId: string, texto: string): Promise<ComentarioTurma> {
+    return pedido(`${id}/posts/${postId}/comentarios/`, json({ texto }));
+  },
+
+  async moderarComentarioTurma(id: string, comentarioId: string, visivel: boolean): Promise<void> {
+    await pedido(`${id}/comentarios/${comentarioId}/moderar/`, json({ visivel }));
+  },
+
+  async denunciarComentarioTurma(id: string, comentarioId: string): Promise<void> {
+    await pedido(`${id}/comentarios/${comentarioId}/denunciar/`, { method: "POST" });
   },
 
   async moderarPostTurma(id: string, postId: string, visivel: boolean): Promise<void> {

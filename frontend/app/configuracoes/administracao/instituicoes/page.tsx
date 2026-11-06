@@ -167,6 +167,7 @@ export default function AdminInstituicoesPage() {
         </>
       )}
 
+      <EliminacoesPendentes />
       <PropostasPlataformaGeral />
 
       <NovaInstituicao
@@ -188,6 +189,49 @@ export default function AdminInstituicoesPage() {
       />
       <ConviteDaEscola enviado={enviado} aoFechar={() => setEnviado(null)} />
     </div>
+  );
+}
+
+/** Escolas que pediram a eliminação de todos os dados: só a equipa EYK a confirma. */
+function EliminacoesPendentes() {
+  const confirmar = useConfirm();
+  const { dados, recarregar } = useCarregar(() => api.pedidosEliminacao(), []);
+  if (!dados || dados.length === 0) return null;
+  const decidir = async (id: string, escola: string, aprovar: boolean) => {
+    if (aprovar) {
+      const ok = await confirmar({
+        title: `Eliminar ${escola}?`,
+        description: "Apaga a escola, os membros, as crianças, os ficheiros e os vídeos. Não se pode desfazer. Confirma que a escola já descarregou a cópia.",
+        confirmLabel: "Eliminar",
+        destructive: true,
+        requireText: "ELIMINAR",
+      });
+      if (!ok) return;
+    }
+    if (await acao(() => api.decidirEliminacao(id, aprovar), aprovar ? "Instituição eliminada." : "Pedido recusado.")) await recarregar();
+  };
+  return (
+    <Card className="space-y-3 p-5 shadow-soft">
+      <p className="font-serif text-lg font-semibold">Pedidos de eliminação</p>
+      <ul className="space-y-2">
+        {dados.map((p) => (
+          <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface/60 p-3 text-sm">
+            <span>
+              <span className="font-medium">{p.escola}</span>
+              <span className="text-muted-foreground"> · pedido por {p.pedidoPor}</span>
+            </span>
+            <span className="flex gap-1.5">
+              <Button size="sm" variant="destructive" onClick={() => void decidir(p.id, p.escola, true)}>
+                Eliminar
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => void decidir(p.id, p.escola, false)}>
+                Recusar
+              </Button>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
 

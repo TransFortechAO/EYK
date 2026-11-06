@@ -3,6 +3,7 @@
 // estáveis. Substituídos pela eyk-api quando o backend existir.
 import type {
   Aviso,
+  ComentarioTurma,
   Consentimento,
   Convite,
   Evento,
@@ -51,6 +52,9 @@ export type EstadoDemo = {
   registosPratica: RegistoPratica[];
   conteudos: ConteudoEscola[];
   postsTurma: PostTurma[];
+  comentariosTurma?: ComentarioTurma[];
+  /** Quem gostou de cada publicação (por id da publicação). */
+  gostosTurma?: Record<string, string[]>;
   desafios: Desafio[];
   /** Moedas ganhas na escola (prática, respostas certas, desafios) — por membro. */
   pontosEscola: Record<string, number>;

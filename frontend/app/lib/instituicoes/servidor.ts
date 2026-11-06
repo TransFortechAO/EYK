@@ -107,6 +107,15 @@ export const apiEscolasServidor = {
     return pedido(`admin/${id}/reenviar-convite/`, { method: "POST" });
   },
 
+  /** Eliminações de instituições inteiras: só a equipa EYK as confirma. */
+  pedidosEliminacao(): Promise<(PedidoDados & { escola: string })[]> {
+    return pedido("admin/pedidos-dados/");
+  },
+
+  async decidirEliminacao(pedidoId: string, aprovar: boolean): Promise<void> {
+    await pedido(`admin/pedidos-dados/${pedidoId}/decidir/`, json({ aprovar }));
+  },
+
   // ── Quem recebe o convite ──
   consultarConvite(codigo: string): Promise<ConviteConsultado> {
     return pedido(`convites/${encodeURIComponent(codigo.trim())}/`);
@@ -332,7 +341,12 @@ export const apiEscolaReal = {
     return pedido(`${id}/pedidos-dados/`);
   },
 
-  pedirDados(id: string, dados: { tipo: PedidoDados["tipo"]; ambito: AmbitoDados; alvo: string }): Promise<PedidoDados> {
+  pedirDados(id: string, dados: { tipo: PedidoDados["tipo"]; ambito: AmbitoDados; alvo: string; alunoId?: string | null }): Promise<PedidoDados> {
     return pedido(`${id}/pedidos-dados/`, json(dados));
+  },
+
+  /** Eliminar é irreversível: só a administração confirma, depois de haver cópia. */
+  decidirPedidoDados(id: string, pedidoId: string, aprovar: boolean): Promise<PedidoDados> {
+    return pedido(`${id}/pedidos-dados/${pedidoId}/decidir/`, json({ aprovar }));
   },
 };

@@ -3,8 +3,6 @@ As regras e as mensagens são as de frontend/app/lib/instituicoes/api.ts."""
 import datetime
 import json
 
-from django.contrib.auth import get_user_model
-from django.db import transaction
 from django.db.models import Sum
 from django.urls import reverse
 from django.utils import timezone
@@ -24,7 +22,6 @@ from .models import (
     FicheiroInstituicao,
     LeituraAviso,
     MembroInstituicao,
-    PedidoDados,
     PerfilAluno,
     RespostaEvento,
 )
@@ -346,14 +343,27 @@ def _ficheiro_json(f: FicheiroInstituicao) -> dict:
     }
 
 
-def _criancas_sem_fotos(instituicao, destino: dict) -> list[str]:
+def sem_consentimento_fotos(instituicao, criancas) -> list[str]:
     atuais = consentimentos_atuais(instituicao)
+    return [a.nome for a in criancas if not (atuais.get(a.pk, {}).get('fotografias') and atuais[a.pk]['fotografias'].aceite)]
+
+
+def erro_fotos(faltam: list[str]) -> str:
+    n = len(faltam)
+    mostrar = ', '.join(faltam[:3]) + ('…' if n > 3 else '')
+    return (
+        f'Não é possível publicar: {n} criança{"" if n == 1 else "s"} do grupo não '
+        f'{"tem" if n == 1 else "têm"} consentimento para fotografias ({mostrar}).'
+    )
+
+
+def _criancas_sem_fotos(instituicao, destino: dict) -> list[str]:
     alvo = instituicao.alunos.filter(estado=PerfilAluno.ATIVO)
     if destino['dest_tipo'] == 'grupo':
         alvo = alvo.filter(grupo=destino['dest_grupo'])
     elif destino['dest_tipo'] != 'instituicao':
         return []
-    return [a.nome for a in alvo if not (atuais.get(a.pk, {}).get('fotografias') and atuais[a.pk]['fotografias'].aceite)]
+    return sem_consentimento_fotos(instituicao, alvo)
 
 
 @api_view(['GET', 'POST'])
@@ -387,12 +397,7 @@ def ficheiros(request, membro):
     if tem_criancas:
         faltam = _criancas_sem_fotos(instituicao, destino)
         if faltam:
-            n = len(faltam)
-            mostrar = ', '.join(faltam[:3]) + ('…' if n > 3 else '')
-            raise Recusa(
-                f'Não é possível publicar: {n} criança{"" if n == 1 else "s"} do grupo não '
-                f'{"tem" if n == 1 else "têm"} consentimento para fotografias ({mostrar}).',
-            )
+            raise Recusa(erro_fotos(faltam))
     f = FicheiroInstituicao.objects.create(
         instituicao=instituicao, ficheiro=enviado, nome=enviado.name[:255], categoria=categoria,
         tamanho_bytes=enviado.size, tem_criancas=tem_criancas, carregado_por=membro, carregado_por_nome=_nome(membro),
@@ -543,54 +548,3 @@ def auditoria(request, membro):
         }
         for r in membro.instituicao.auditoria.all()[:500]
     ])
-
-
-def _pedido_dados_json(p: PedidoDados) -> dict:
-    return {
-        'id': sid(p.id),
-        'instituicaoId': sid(p.instituicao_id),
-        'tipo': p.tipo,
-        'ambito': p.ambito,
-        'alvo': p.alvo,
-        'pedidoPor': p.pedido_por_nome,
-        'pedidoEm': p.pedido_em.isoformat(),
-        'estado': p.estado,
-        'prazo': p.prazo.isoformat(),
-        'ficheiroPronto': False,
-        'nota': p.nota or None,
-    }
-
-
-@api_view(['GET', 'POST'])
-@permission_classes([permissions.IsAuthenticated])
-@com_membro('pedir_dados')
-def pedidos_dados(request, membro):
-    instituicao = membro.instituicao
-    if request.method == 'GET':
-        todos = instituicao.pedidos_dados.all()
-        if not pode(membro.papel, 'gerir_pedidos_dados'):
-            todos = todos.filter(pedido_por=membro)
-        return Response([_pedido_dados_json(p) for p in todos])
-
-    tipo, ambito = request.data.get('tipo'), request.data.get('ambito')
-    alvo = (request.data.get('alvo') or '').strip()
-    if tipo not in ('exportacao', 'eliminacao') or ambito not in ('crianca', 'familia', 'instituicao') or not alvo:
-        raise Recusa('Pedido inválido.')
-    if ambito == 'instituicao' and not pode(membro.papel, 'gerir_pedidos_dados'):
-        raise Recusa('Só a administração pode pedir os dados da instituição inteira.', status.HTTP_403_FORBIDDEN)
-    with transaction.atomic():
-        p = PedidoDados.objects.create(
-            instituicao=instituicao, tipo=tipo, ambito=ambito, alvo=alvo[:200], pedido_por=membro,
-            pedido_por_nome=_nome(membro), prazo=timezone.now() + datetime.timedelta(days=30),
-            nota='Antes de eliminar, enviamos uma exportação completa.' if tipo == 'eliminacao' else '',
-        )
-        nome_tipo = 'Exportação' if tipo == 'exportacao' else 'Eliminação'
-        acao = 'dados_exportados' if tipo == 'exportacao' else 'dados_eliminacao_pedida'
-        auditar(instituicao, acao, f'{nome_tipo} pedida: {alvo}.', _nome(membro))
-    # Estes pedidos são tratados pela equipa EYK dentro do prazo.
-    for conta in get_user_model().objects.filter(is_staff=True, is_active=True):
-        notificar(
-            conta, 'novidade', f'{instituicao.nome}: {nome_tipo.lower()} de dados pedida ({alvo}).',
-            link='/configuracoes/administracao/instituicoes', enviar_por_email=False,
-        )
-    return Response(_pedido_dados_json(p), status=status.HTTP_201_CREATED)

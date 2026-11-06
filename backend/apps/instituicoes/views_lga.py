@@ -20,10 +20,12 @@ from .armazenamento import categoria_de, servir
 from .models import (
     AnexoEscola,
     Aula,
+    ComentarioTurma,
     ConteudoEscola,
     ConviteInstituicao,
     Desafio,
     Gesto,
+    GostoTurma,
     GrupoInstituicao,
     MembroInstituicao,
     PerfilAluno,
@@ -33,13 +35,14 @@ from .models import (
     RespostaVideo,
 )
 from .servicos import TAMANHO_CODIGO_PARTILHADO, auditar, consentimentos_atuais, gerar_codigo
-from .views_comunicacao import avisos_de, eventos_de, validar_quota
+from .views_comunicacao import avisos_de, erro_fotos, eventos_de, sem_consentimento_fotos, validar_quota
 from .views_escola import convite_json, grupo_json, membro_json
 
 PONTOS_ACERTO = 2
 PONTOS_RESPOSTA_CORRETA = 10
 DURACAO_MAX_RESPOSTA_SEG = 90
 JANELA_MESTRIA = 10
+TAMANHO_MAX_FOTO_MB = 5
 COMPETENCIAS = ('alfabeto', 'numeros', 'vocabulario', 'frases')
 GLYPH_TEMA = {
     'alfabeto': '✋', 'numeros': '🔢', 'saudacoes': '👋', 'escola': '🏫', 'familia': '👪', 'emocoes': '😊',
@@ -162,6 +165,12 @@ def _contas_dos_filhos(membro) -> list[int]:
     return list(membro.criancas.filter(conta__isnull=False).values_list('conta_id', flat=True))
 
 
+def _ve_post(membro, p: PostTurma) -> bool:
+    if p.instituicao_id != membro.instituicao_id or not acede_turma(membro, p.turma_id):
+        return False
+    return p.estado == 'visivel' or p.autor_id == membro.pk or _gere_turma(membro, p.turma_id)
+
+
 def ve_conteudo(membro, c: ConteudoEscola) -> bool:
     if c.instituicao_id != membro.instituicao_id:
         return False
@@ -184,6 +193,8 @@ def pode_ver_anexo(membro, anexo: AnexoEscola) -> bool:
     if any(acede_turma(membro, a.turma_id) for a in [*anexo.aulas.all(), *anexo.aulas_recurso.all()]):
         return True
     if any(pode_ver_resposta(membro, r) for r in [*anexo.respostas.all(), *anexo.feedbacks.all()]):
+        return True
+    if any(_ve_post(membro, p) for p in anexo.posts_turma.all()):
         return True
     return any(ve_conteudo(membro, c) for c in anexo.conteudos.all())
 
@@ -845,7 +856,9 @@ def admin_proposta_decidir(request, conteudo_id):
 
 # ── Comunidade da turma ──────────────────────────────────────────────────────
 
-def _post_json(p: PostTurma) -> dict:
+def _post_json(p: PostTurma, membro) -> dict:
+    gostos = list(p.gostos.all())
+    gere = _gere_turma(membro, p.turma_id)
     return {
         'id': sid(p.id),
         'instituicaoId': sid(p.instituicao_id),
@@ -855,9 +868,53 @@ def _post_json(p: PostTurma) -> dict:
         'papel': p.papel,
         'texto': p.texto,
         'gestoId': p.gesto_id or None,
+        'foto': anexo_json(p.foto, membro.instituicao_id),
         'criadoEm': p.criado_em.isoformat(),
         'estado': p.estado,
+        'gostos': len(gostos),
+        'gostei': any(g.membro_id == membro.pk for g in gostos),
+        'comentarios': sum(1 for c in p.comentarios.all() if c.estado == 'visivel' or gere or c.autor_id == membro.pk),
     }
+
+
+def _comentario_json(c: ComentarioTurma) -> dict:
+    return {
+        'id': sid(c.id),
+        'postId': sid(c.post_id),
+        'autorId': sid(c.autor_id),
+        'autorNome': c.autor_nome,
+        'papel': c.papel,
+        'texto': c.texto,
+        'criadoEm': c.criado_em.isoformat(),
+        'estado': c.estado,
+    }
+
+
+def _sem_links(membro, texto: str) -> None:
+    if membro.papel == 'aluno' and re.search(r'https?://', texto, re.IGNORECASE):
+        raise Recusa('Os alunos não podem publicar links na turma.')
+
+
+def _foto_do_post(membro, turma, dados):
+    """Fotos só de quem ensina: é quem responde pelo consentimento das crianças que aparecem."""
+    if not dados.get('fotoId'):
+        return None, False
+    if not ensina_na_turma(membro, turma.pk):
+        raise _proibido('Só quem ensina na turma pode juntar fotografias.')
+    foto = _anexo_meu(membro, dados['fotoId'])
+    if categoria_de(foto.nome) != 'imagem':
+        raise Recusa('Escolhe uma imagem.')
+    if foto.tamanho_bytes > TAMANHO_MAX_FOTO_MB * 1024 * 1024:
+        raise Recusa(f'A fotografia pode ter até {TAMANHO_MAX_FOTO_MB} MB.')
+    tem_criancas = bool(dados.get('temCriancas'))
+    if tem_criancas:
+        criancas = membro.instituicao.alunos.filter(
+            Q(grupo=turma) | Q(conta__grupos=turma), estado=PerfilAluno.ATIVO,
+        ).distinct()
+        faltam = sem_consentimento_fotos(membro.instituicao, criancas)
+        if faltam:
+            raise Recusa(erro_fotos(faltam))
+    return foto, tem_criancas
 
 
 @api_view(['GET', 'POST'])
@@ -866,27 +923,27 @@ def _post_json(p: PostTurma) -> dict:
 def turma_posts(request, membro, turma_id):
     if request.method == 'GET':
         turma = _exigir_turma(membro, turma_id)
-        todos = turma.posts.all()
+        todos = turma.posts.select_related('foto').prefetch_related('gostos', 'comentarios')
         if not _gere_turma(membro, turma.pk):
             todos = todos.filter(Q(estado='visivel') | Q(autor=membro))
-        return Response([_post_json(p) for p in todos])
+        return Response([_post_json(p, membro) for p in todos])
 
     _exigir(membro, 'publicar_na_turma')
     turma = _turma(membro, turma_id)
     if turma.pk not in _grupos(membro):
         raise _proibido('Só os membros da turma publicam aqui.')
     texto = (request.data.get('texto') or '').strip()
-    if not texto:
+    foto, tem_criancas = _foto_do_post(membro, turma, request.data)
+    if not texto and not foto:
         raise Recusa('Escreve alguma coisa.')
     if len(texto) > 500:
         raise Recusa('No máximo 500 caracteres.')
-    if membro.papel == 'aluno' and re.search(r'https?://', texto, re.IGNORECASE):
-        raise Recusa('Os alunos não podem publicar links na turma.')
+    _sem_links(membro, texto)
     p = PostTurma.objects.create(
         instituicao=membro.instituicao, turma=turma, autor=membro, autor_nome=_nome(membro), papel=membro.papel,
-        texto=texto, gesto_id=str(request.data.get('gestoId') or '')[:40],
+        texto=texto, gesto_id=str(request.data.get('gestoId') or '')[:40], foto=foto, tem_criancas=tem_criancas,
     )
-    return Response(_post_json(p), status=status.HTTP_201_CREATED)
+    return Response(_post_json(p, membro), status=status.HTTP_201_CREATED)
 
 
 def _post(membro, post_id) -> PostTurma:
@@ -922,6 +979,87 @@ def post_denunciar(request, membro, post_id):
     if p.estado == 'visivel':
         p.estado = 'denunciado'
         p.save(update_fields=['estado'])
+    return Response({'ok': True})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+@com_membro()
+def post_gosto(request, membro, post_id):
+    p = _post(membro, post_id)
+    if not _ve_post(membro, p):
+        raise Recusa('Publicação não encontrada.', status.HTTP_404_NOT_FOUND)
+    gosto, criado = GostoTurma.objects.get_or_create(post=p, membro=membro)
+    if not criado:
+        gosto.delete()
+    return Response({'gostei': criado, 'gostos': p.gostos.count()})
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([permissions.IsAuthenticated])
+@com_membro()
+def post_comentarios(request, membro, post_id):
+    p = _post(membro, post_id)
+    if not _ve_post(membro, p):
+        raise Recusa('Publicação não encontrada.', status.HTTP_404_NOT_FOUND)
+    if request.method == 'GET':
+        todos = p.comentarios.all()
+        if not _gere_turma(membro, p.turma_id):
+            todos = todos.filter(Q(estado='visivel') | Q(autor=membro))
+        return Response([_comentario_json(c) for c in todos])
+
+    _exigir(membro, 'publicar_na_turma')
+    if p.turma_id not in _grupos(membro):
+        raise _proibido('Só os membros da turma comentam aqui.')
+    texto = (request.data.get('texto') or '').strip()
+    if not texto:
+        raise Recusa('Escreve alguma coisa.')
+    if len(texto) > 300:
+        raise Recusa('No máximo 300 caracteres.')
+    _sem_links(membro, texto)
+    c = ComentarioTurma.objects.create(post=p, autor=membro, autor_nome=_nome(membro), papel=membro.papel, texto=texto)
+    if p.autor_id != membro.pk:
+        notificar(
+            p.autor.utilizador, 'comunidade', f'{_nome(membro).split(" ")[0]} comentou a tua publicação na turma.',
+            link=f'/instituicao/turmas/srv-{p.turma_id}?separador=comunidade', enviar_por_email=False,
+        )
+    return Response(_comentario_json(c), status=status.HTTP_201_CREATED)
+
+
+def _comentario(membro, comentario_id) -> ComentarioTurma:
+    c = ComentarioTurma.objects.select_related('post').filter(
+        pk=pid(comentario_id), post__instituicao=membro.instituicao,
+    ).first()
+    if not c:
+        raise Recusa('Comentário não encontrado.', status.HTTP_404_NOT_FOUND)
+    return c
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+@com_membro('moderar_turma')
+def comentario_moderar(request, membro, comentario_id):
+    c = _comentario(membro, comentario_id)
+    if not _gere_turma(membro, c.post.turma_id):
+        raise _proibido('Só quem ensina na turma modera os comentários.')
+    visivel = bool(request.data.get('visivel'))
+    c.estado = 'visivel' if visivel else 'oculto'
+    c.save(update_fields=['estado'])
+    if not visivel:
+        auditar(membro.instituicao, 'post_turma_oculto', f'Comentário de {c.autor_nome} escondido.', _nome(membro))
+    return Response({'ok': True})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+@com_membro()
+def comentario_denunciar(request, membro, comentario_id):
+    c = _comentario(membro, comentario_id)
+    if not acede_turma(membro, c.post.turma_id):
+        raise Recusa('Comentário não encontrado.', status.HTTP_404_NOT_FOUND)
+    if c.estado == 'visivel':
+        c.estado = 'denunciado'
+        c.save(update_fields=['estado'])
     return Response({'ok': True})
 
 
