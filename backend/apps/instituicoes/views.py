@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from .acesso import Recusa, sid
-from .models import ConviteInstituicao, Instituicao, MembroInstituicao, PedidoAdesao
+from .models import AcessoDia, ConviteInstituicao, Instituicao, MembroInstituicao, PedidoAdesao
 from .servicos import (
     FINALIDADES,
     FINALIDADES_OBRIGATORIAS,
@@ -250,5 +250,9 @@ def minhas_pertencas(request):
             utilizador=request.user, estado=MembroInstituicao.ATIVO, instituicao__estado=Instituicao.ATIVA,
         )
     )
-    MembroInstituicao.objects.filter(pk__in=[m.pk for m in membros]).update(ultimo_acesso=timezone.now())
+    agora = timezone.now()
+    MembroInstituicao.objects.filter(pk__in=[m.pk for m in membros]).update(ultimo_acesso=agora)
+    AcessoDia.objects.bulk_create(
+        [AcessoDia(instituicao=m.instituicao, membro=m, dia=agora.date()) for m in membros], ignore_conflicts=True,
+    )
     return Response([{'instituicao': instituicao_json(m.instituicao), 'membro': membro_json(m)} for m in membros])

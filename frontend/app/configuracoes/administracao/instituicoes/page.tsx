@@ -13,7 +13,7 @@ import { useAuth } from "@/components/auth-gate";
 import { useConfirm } from "@/components/confirm-dialog";
 import { acao, Campo, Carregando, celula, ErroCarregar, erroTexto, Etiqueta, Seletor, Tabela, useCarregar } from "@/components/instituicao/ui";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
-import { apiLga } from "@/lib/instituicoes/lga";
+import { apiLgaReal } from "@/lib/instituicoes/servidor-lga";
 import { ROTULO_ESTADO_INSTITUICAO, ROTULO_TIPO_INSTITUICAO } from "@/lib/instituicoes/permissoes";
 import { apiEscolasServidor as api, type ConviteResumo, type LinhaInstituicao as Linha } from "@/lib/instituicoes/servidor";
 import type { EstadoInstituicao, Instituicao, TipoInstituicao } from "@/lib/instituicoes/tipos";
@@ -193,10 +193,10 @@ export default function AdminInstituicoesPage() {
 
 /** Cursos e vídeos que os professores das escolas quiseram publicar também na plataforma geral. */
 function PropostasPlataformaGeral() {
-  const { dados, recarregar } = useCarregar(() => apiLga.listarPropostasPublicas(), []);
+  const { dados, recarregar } = useCarregar(() => apiLgaReal.listarPropostasPublicas(), []);
   if (!dados || dados.length === 0) return null;
   const decidir = async (id: string, aceitar: boolean) => {
-    if (await acao(() => apiLga.decidirPropostaPublica(id, aceitar), aceitar ? "Publicado na plataforma geral." : "Proposta recusada.")) await recarregar();
+    if (await acao(() => apiLgaReal.decidirPropostaPublica(id, aceitar), aceitar ? "Publicado na plataforma geral." : "Proposta recusada.")) await recarregar();
   };
   return (
     <section className="space-y-3">

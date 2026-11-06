@@ -701,6 +701,19 @@ const demoInstituicoes = {
     return a;
   },
 
+  /** Liga o perfil à conta de aluno da criança: faz valer os consentimentos nas respostas em vídeo. */
+  async ligarConta(instituicaoId: string, alunoId: string, contaId: string | null): Promise<PerfilAluno> {
+    await esperar();
+    exigir(instituicaoId, "gerir_alunos");
+    const e = carregar();
+    const a = e.alunos.find((x) => x.id === alunoId && x.instituicaoId === instituicaoId);
+    if (!a) throw new ErroInstituicao("Aluno não encontrado.");
+    if (contaId && e.alunos.some((x) => x.contaId === contaId && x.id !== alunoId)) throw new ErroInstituicao("Esta conta já está ligada a outra criança.");
+    a.contaId = contaId ?? undefined;
+    guardar();
+    return a;
+  },
+
   async removerVinculo(instituicaoId: string, alunoId: string, tutorId: string): Promise<void> {
     await esperar();
     exigir(instituicaoId, "gerir_membros");
@@ -915,7 +928,7 @@ const demoInstituicoes = {
    */
   async carregarFicheiro(
     instituicaoId: string,
-    dados: { nome: string; tamanhoBytes: number; mime: string; visibilidade: Destinatarios; temCriancas: boolean },
+    dados: { nome: string; tamanhoBytes: number; mime: string; visibilidade: Destinatarios; temCriancas: boolean; ficheiro?: File },
   ): Promise<FicheiroInstituicao> {
     await esperar();
     const m = exigir(instituicaoId, "carregar_ficheiros");

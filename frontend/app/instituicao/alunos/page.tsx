@@ -51,6 +51,10 @@ export default function AlunosPage() {
     if (await acao(() => api.removerVinculo(instituicaoId, aluno.id, tutorId), "Vínculo desfeito.")) await recarregar();
   };
 
+  const ligar = async (aluno: PerfilAluno, contaId: string) => {
+    if (await acao(() => api.ligarConta(instituicaoId, aluno.id, contaId || null), contaId ? "Conta ligada à criança." : "Conta desligada.")) await recarregar();
+  };
+
   if (aCarregar && !dados) return <Carregando />;
   if (!dados) return <ErroCarregar erro={erro ?? "Erro"} recarregar={recarregar} />;
 
@@ -129,7 +133,7 @@ export default function AlunosPage() {
           <EmptyState icon={Baby} title="Sem perfis de crianças" description="Cria um perfil e convida o tutor para dar o consentimento." />
         ) : (
           <Card className="p-5 shadow-soft">
-            <Tabela cabecalho={["Criança", "Grupo", "Estado", "Tutores", ""]}>
+            <Tabela cabecalho={["Criança", "Grupo", "Estado", "Tutores", "Conta de aluno", ""]}>
               {lista.map((a) => (
                 <tr key={a.id}>
                   <td className={celula}>
@@ -166,6 +170,27 @@ export default function AlunosPage() {
                           );
                         })}
                       </ul>
+                    )}
+                  </td>
+                  <td className={celula}>
+                    {pode("gerir_alunos") ? (
+                      <Seletor
+                        aria-label={`Conta de aluno de ${a.nome}`}
+                        className="w-44"
+                        value={a.contaId ?? ""}
+                        onChange={(e) => void ligar(a, e.target.value)}
+                      >
+                        <option value="">Sem conta</option>
+                        {dados.membros
+                          .filter((m) => m.papel === "aluno" && (m.id === a.contaId || !dados.alunos.some((x) => x.contaId === m.id)))
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.nome}
+                            </option>
+                          ))}
+                      </Seletor>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{dados.membros.find((m) => m.id === a.contaId)?.nome ?? "Sem conta"}</span>
                     )}
                   </td>
                   <td className={`${celula} text-right`}>

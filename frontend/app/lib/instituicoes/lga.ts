@@ -7,8 +7,10 @@
 // e de âmbito aplicadas aqui têm de ser aplicadas também no backend.
 import { apiInstituicoes, consentimentosAtuais, ErroInstituicao, _nucleo } from "./api";
 import { fimAnoLetivo } from "./demo-lga";
+import { encaminhar } from "./encaminhar";
 import { registarNoProgresso, mestria, nivelMestria, type NivelMestria } from "./exercicios";
 import { competenciaDoTema, ensina, pode, ROTULO_PUBLICO_LGA } from "./permissoes";
+import { apiLgaReal } from "./servidor-lga";
 import type {
   Ambito,
   Aula,
@@ -130,7 +132,7 @@ const GLYPH_TEMA: Record<TemaGesto, string> = {
 
 // ════════════════════════════════════════════════════════════════════
 
-export const apiLga = {
+const demoLga = {
   // ── Turmas LGA ──
 
   async listarTurmas(instituicaoId: string): Promise<(TurmaLga & { aprendizes: number; professores: number; aulas: number; porRever: number; pendentes: number })[]> {
@@ -352,7 +354,7 @@ export const apiLga = {
   },
 
   async enviarResposta(instituicaoId: string, aulaId: string, video: VideoAnexo): Promise<RespostaVideo> {
-    const permissao = await apiLga.podeResponder(instituicaoId);
+    const permissao = await demoLga.podeResponder(instituicaoId);
     if (!permissao.pode) throw new ErroInstituicao(permissao.motivo ?? "Não podes enviar respostas.");
     const m = eu(instituicaoId);
     const e = carregar();
@@ -797,7 +799,7 @@ export const apiLga = {
             .filter((x): x is { aula: Aula; turma: string; estado: "por_fazer" | "repetir" } => !!x)
         : [];
     const [desafios, avisos, eventos] = await Promise.all([
-      apiLga.listarDesafios(instituicaoId),
+      demoLga.listarDesafios(instituicaoId),
       pode(m.papel, "ver_avisos") ? apiInstituicoes.listarAvisos(instituicaoId) : Promise.resolve([]),
       pode(m.papel, "ver_agenda") ? apiInstituicoes.listarEventos(instituicaoId) : Promise.resolve([]),
     ]);
@@ -816,6 +818,9 @@ export const apiLga = {
     };
   },
 };
+
+/** Instituições reais vão ao servidor; as de demonstração ficam neste ficheiro. */
+export const apiLga = encaminhar(demoLga, apiLgaReal);
 
 /** Duração em "m:ss". */
 export function duracao(seg: number | null | undefined): string {

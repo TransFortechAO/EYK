@@ -35,6 +35,7 @@ import { SeparadorComunidade } from "@/components/instituicao/turma/comunidade";
 import { dataHora, Etiqueta, haQuanto } from "@/components/instituicao/ui";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
 import { apiLga, type TurmaLga } from "@/lib/instituicoes/lga";
+import { apiLgaReal } from "@/lib/instituicoes/servidor-lga";
 import { ROTULO_TEMA } from "@/lib/instituicoes/permissoes";
 import type { ConteudoEscola, Gesto } from "@/lib/instituicoes/tipos";
 import { cn } from "@/lib/utils";
@@ -555,7 +556,7 @@ export function GestosValidadosBiblioteca({ pesquisa }: { pesquisa: string }) {
   const [gestos, setGestos] = useState<Gesto[]>([]);
   useEffect(() => {
     if (!INSTITUICOES_ATIVAS) return;
-    void apiLga.listarGestos(null).then((g) => setGestos(g.filter((x) => x.instituicaoId || x.variante !== "Comum" || x.tema === "numeros" || x.tema === "frases")));
+    void apiLgaReal.gestosBiblioteca().then((g) => setGestos(g.filter((x) => x.instituicaoId || x.variante !== "Comum" || x.tema === "numeros" || x.tema === "frases")));
   }, []);
   const termo = pesquisa.trim().toLowerCase();
   const lista = gestos.filter((g) => !termo || g.palavra.toLowerCase().includes(termo));

@@ -213,6 +213,8 @@ export type FicheiroInstituicao = {
   estado: EstadoFicheiro;
   carregadoPor: string;
   carregadoEm: string;
+  /** Instituições reais: endereço protegido (só responde a quem tem acesso). */
+  url?: string;
 };
 
 // ── 9. Consentimentos ──
@@ -333,9 +335,19 @@ export type VideoAnexo = {
   tamanhoBytes: number;
   duracaoSeg: number | null;
   sessaoId?: string | null;
+  /** Depois de enviado ao servidor: id do anexo e endereço protegido. */
+  id?: string;
+  url?: string;
 };
 
-export type RecursoAula = { nome: string; tamanhoBytes: number };
+export type RecursoAula = {
+  nome: string;
+  tamanhoBytes: number;
+  /** Antes de publicar: o ficheiro escolhido. */
+  ficheiro?: File;
+  id?: string;
+  url?: string;
+};
 
 /** Conteúdo da EYK (catálogo público ou da escola) atribuído a uma turma. */
 export type ConteudoAtribuido = {

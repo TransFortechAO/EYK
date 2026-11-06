@@ -115,6 +115,18 @@ def enviar_convite_membro(convite: ConviteInstituicao) -> bool:
     return _enviar_convite(convite, f'EYK · Convite da {instituicao.nome}', corpo)
 
 
+def consentimentos_atuais(instituicao) -> dict:
+    """Estado atual de cada finalidade, por criança. Com vários tutores, basta um ter
+    recusado para não haver consentimento."""
+    atuais: dict = {}
+    for c in instituicao.consentimentos.all():
+        da_crianca = atuais.setdefault(c.aluno_id, {})
+        anterior = da_crianca.get(c.finalidade)
+        if not anterior or anterior.tutor_id == c.tutor_id or not c.aceite:
+            da_crianca[c.finalidade] = c
+    return atuais
+
+
 def registar_consentimento(aluno: PerfilAluno, tutor, finalidade: str, aceite: bool, com_apoio: bool = False) -> None:
     """Guarda sempre um registo novo — nunca edita. Sem o consentimento de utilização a
     criança não tem perfil ativo."""

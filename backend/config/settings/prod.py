@@ -90,6 +90,11 @@ STORAGES = {
 #   servido pelo Django (SERVIR_MEDIA, com suporte a Range para os vídeos);
 # - Bucket S3-compatível (Cloudflare R2, AWS S3…) se AWS_STORAGE_BUCKET_NAME
 #   estiver definido — recomendado com muitos alunos a ver vídeos ao mesmo tempo.
+# Com disco persistente, os ficheiros privados das escolas ficam ao lado da media (nunca dentro).
+_MEDIA_ENV = os.getenv('MEDIA_ROOT', '').strip().rstrip('/')
+PRIVADO_ROOT = os.getenv('PRIVADO_ROOT', '').strip() or (
+    os.path.join(os.path.dirname(_MEDIA_ENV), 'privado') if _MEDIA_ENV else os.path.join(BASE_DIR, 'privado')
+)
 MEDIA_ROOT = os.getenv('MEDIA_ROOT', '').strip() or os.path.join(BASE_DIR, 'mediafiles')  # noqa: F405
 AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME', '').strip()
 if AWS_STORAGE_BUCKET_NAME:

@@ -266,7 +266,7 @@ function NovaAula({ turma, aberto, aoFechar, aoPublicar }: { turma: TurmaLga; ab
                 multiple
                 accept=".pdf,.doc,.docx,image/*"
                 className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2 file:text-sm file:font-medium"
-                onChange={(e) => setRecursos(Array.from(e.target.files ?? []).map((f) => ({ nome: f.name, tamanhoBytes: f.size })))}
+                onChange={(e) => setRecursos(Array.from(e.target.files ?? []).map((f) => ({ nome: f.name, tamanhoBytes: f.size, ficheiro: f })))}
               />
             </Campo>
             {recursos.length > 0 && (

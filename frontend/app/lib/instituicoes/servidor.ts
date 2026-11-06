@@ -1,19 +1,30 @@
 // A área da escola guardada no servidor (apps.instituicoes). As regras e as permissões
 // valem lá: aqui só se fazem os pedidos. Os ids reais começam por "srv-".
-import { fetchAPI } from "@/lib/api";
+import { API_BASE_URL, fetchAPI } from "@/lib/api";
 import { ErroInstituicao } from "./erros";
 import type {
+  AmbitoDados,
+  Aviso,
   CanalConvite,
   Consentimento,
   Convite,
+  Destinatarios,
   EstadoInstituicao,
+  Evento,
+  FicheiroInstituicao,
   FinalidadeConsentimento,
   Grupo,
   Instituicao,
   Membro,
   Papel,
   PedidoAdesao,
+  PedidoDados,
   PerfilAluno,
+  PreferenciasAviso,
+  Recorrencia,
+  RegistoAuditoria,
+  RelatorioUtilizacao,
+  RespostaPresenca,
   TipoGrupo,
   TipoInstituicao,
 } from "./tipos";
@@ -61,6 +72,10 @@ export async function pedido<T>(caminho: string, opcoes: RequestInit = {}): Prom
     throw status === 404 ? new ConviteInexistente(mensagem) : new ErroInstituicao(mensagem);
   }
 }
+
+/** Endereço completo de um ficheiro servido pela API. */
+export const enderecoApi = (caminho?: string | null): string | undefined =>
+  caminho ? `${API_BASE_URL}${caminho}` : undefined;
 
 export const json = (dados: unknown, method = "POST"): RequestInit => ({ method, body: JSON.stringify(dados) });
 
@@ -202,6 +217,10 @@ export const apiEscolaReal = {
     return pedido(`${id}/alunos/`, json(dados));
   },
 
+  ligarConta(id: string, alunoId: string, contaId: string | null): Promise<PerfilAluno> {
+    return pedido(`${id}/alunos/${alunoId}/conta/`, json({ contaId }, "PATCH"));
+  },
+
   async removerVinculo(id: string, alunoId: string, tutorId: string): Promise<void> {
     await pedido(`${id}/alunos/${alunoId}/tutores/${tutorId}/`, { method: "DELETE" });
   },
@@ -212,5 +231,108 @@ export const apiEscolaReal = {
 
   registarConsentimento(id: string, alunoId: string, finalidade: FinalidadeConsentimento, aceite: boolean): Promise<PerfilAluno> {
     return pedido(`${id}/consentimentos/`, json({ alunoId, finalidade, aceite }));
+  },
+
+  // ── Avisos ──
+  listarAvisos(id: string): Promise<Aviso[]> {
+    return pedido(`${id}/avisos/`);
+  },
+
+  publicarAviso(
+    id: string,
+    dados: { titulo: string; mensagem: string; destinatarios: Destinatarios; pedirConfirmacao: boolean; anexosIds: string[] },
+  ): Promise<Aviso> {
+    return pedido(`${id}/avisos/`, json(dados));
+  },
+
+  async marcarAvisoLido(id: string, avisoId: string, confirmar = false): Promise<void> {
+    await pedido(`${id}/avisos/${avisoId}/lido/`, json({ confirmar }));
+  },
+
+  preferenciasAviso(id: string): Promise<{ preferencias: PreferenciasAviso; disponiveis: Instituicao["canaisAviso"] }> {
+    return pedido(`${id}/preferencias-aviso/`);
+  },
+
+  async guardarPreferenciasAviso(id: string, preferencias: PreferenciasAviso): Promise<void> {
+    await pedido(`${id}/preferencias-aviso/`, json(preferencias, "PUT"));
+  },
+
+  // ── Agenda ──
+  listarEventos(id: string): Promise<Evento[]> {
+    return pedido(`${id}/eventos/`);
+  },
+
+  criarEvento(
+    id: string,
+    dados: {
+      titulo: string;
+      descricao: string;
+      inicio: string;
+      fim: string;
+      local: string;
+      ligacao: string;
+      destinatarios: Destinatarios;
+      recorrencia: Recorrencia;
+      lembretes: ("1d" | "1h")[];
+    },
+  ): Promise<Evento> {
+    return pedido(`${id}/eventos/`, json(dados));
+  },
+
+  async cancelarEvento(id: string, eventoId: string): Promise<void> {
+    await pedido(`${id}/eventos/${eventoId}/cancelar/`, { method: "POST" });
+  },
+
+  async responderPresenca(id: string, eventoId: string, resposta: RespostaPresenca): Promise<void> {
+    await pedido(`${id}/eventos/${eventoId}/presenca/`, json({ resposta }));
+  },
+
+  // ── Ficheiros ──
+  listarFicheiros(id: string): Promise<FicheiroInstituicao[]> {
+    return pedido(`${id}/ficheiros/`);
+  },
+
+  usoArmazenamento(id: string): Promise<{ usadoBytes: number; quotaBytes: number; ficheiroMaxBytes: number }> {
+    return pedido(`${id}/ficheiros/uso/`);
+  },
+
+  carregarFicheiro(
+    id: string,
+    dados: { ficheiro?: File; visibilidade: Destinatarios; temCriancas: boolean },
+  ): Promise<FicheiroInstituicao> {
+    if (!dados.ficheiro) throw new ErroInstituicao("Escolhe um ficheiro.");
+    const corpo = new FormData();
+    corpo.append("ficheiro", dados.ficheiro);
+    corpo.append("visibilidade", JSON.stringify(dados.visibilidade));
+    corpo.append("temCriancas", String(dados.temCriancas));
+    return pedido(`${id}/ficheiros/`, { method: "POST", body: corpo });
+  },
+
+  /** O ficheiro nunca é público: o endereço só responde a quem tem acesso (o servidor verifica). */
+  async abrirFicheiro(id: string, ficheiroId: string): Promise<FicheiroInstituicao> {
+    const f = (await apiEscolaReal.listarFicheiros(id)).find((x) => x.id === ficheiroId);
+    if (!f) throw new ErroInstituicao("Não tens acesso a este ficheiro.");
+    return { ...f, url: enderecoApi(f.url) };
+  },
+
+  async removerFicheiro(id: string, ficheiroId: string): Promise<void> {
+    await pedido(`${id}/ficheiros/${ficheiroId}/`, { method: "DELETE" });
+  },
+
+  // ── Relatório, auditoria e dados ──
+  relatorio(id: string): Promise<RelatorioUtilizacao> {
+    return pedido(`${id}/relatorio/`);
+  },
+
+  listarAuditoria(id: string): Promise<RegistoAuditoria[]> {
+    return pedido(`${id}/auditoria/`);
+  },
+
+  listarPedidosDados(id: string): Promise<PedidoDados[]> {
+    return pedido(`${id}/pedidos-dados/`);
+  },
+
+  pedirDados(id: string, dados: { tipo: PedidoDados["tipo"]; ambito: AmbitoDados; alvo: string }): Promise<PedidoDados> {
+    return pedido(`${id}/pedidos-dados/`, json(dados));
   },
 };

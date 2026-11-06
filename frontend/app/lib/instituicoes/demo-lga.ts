@@ -62,6 +62,36 @@ const FRASES: [string, string, string, Gesto["motion"]][] = [
   ["Preciso de ajuda", "🙏", "Mão fechada sobre a palma da outra, ambas sobem.", "updown"],
 ];
 
+/** O gestuário da plataforma: existe para todas as escolas, reais ou de demonstração. */
+export function gestosPlataforma(agora: number): Gesto[] {
+  const gestos: Gesto[] = [];
+  const plataforma = (g: Omit<Gesto, "estado" | "instituicaoId" | "propostoPor" | "propostoEm" | "validacao" | "video" | "variante"> & { variante?: string }) => {
+    gestos.push({
+      variante: "Comum",
+      video: null,
+      estado: "validado",
+      instituicaoId: null,
+      propostoPor: "Equipa EYK",
+      propostoEm: iso(agora - 90 * DIA),
+      validacao: { por: "Domingos Sapalo (educador surdo)", em: iso(agora - 85 * DIA), nota: "" },
+      ...g,
+    });
+  };
+  for (const l of lgaAlphabet) {
+    plataforma({ id: `ge-l-${l.letter}`, palavra: l.letter, tema: "alfabeto", descricao: l.hint, glyph: l.glyph, motion: l.motion });
+  }
+  for (const [n, glyph, descricao] of NUMEROS) {
+    plataforma({ id: `ge-n-${n}`, palavra: n, tema: "numeros", descricao, glyph, motion: "static" });
+  }
+  for (const w of lgaWords) {
+    plataforma({ id: `ge-${w.id}`, palavra: w.word, tema: TEMA_DA_CATEGORIA[w.category], descricao: w.description, glyph: w.glyph, motion: w.motion });
+  }
+  FRASES.forEach(([palavra, glyph, descricao, motion], i) => {
+    plataforma({ id: `ge-f-${i + 1}`, palavra, tema: "frases", descricao, glyph, motion });
+  });
+  return gestos;
+}
+
 export function criarDemoLga(
   agora: number,
   base: { membros: Membro[]; alunos: PerfilAluno[]; convites: Convite[]; grupos: Grupo[] },
@@ -195,31 +225,7 @@ export function criarDemoLga(
   for (const id of ["m-14", "m-15"]) juntar(id, "g-lga2");
 
   // ── Gestuário ──
-  const gestos: Gesto[] = [];
-  const plataforma = (g: Omit<Gesto, "estado" | "instituicaoId" | "propostoPor" | "propostoEm" | "validacao" | "video" | "variante"> & { variante?: string }) => {
-    gestos.push({
-      variante: "Comum",
-      video: null,
-      estado: "validado",
-      instituicaoId: null,
-      propostoPor: "Equipa EYK",
-      propostoEm: iso(agora - 90 * DIA),
-      validacao: { por: "Domingos Sapalo (educador surdo)", em: iso(agora - 85 * DIA), nota: "" },
-      ...g,
-    });
-  };
-  for (const l of lgaAlphabet) {
-    plataforma({ id: `ge-l-${l.letter}`, palavra: l.letter, tema: "alfabeto", descricao: l.hint, glyph: l.glyph, motion: l.motion });
-  }
-  for (const [n, glyph, descricao] of NUMEROS) {
-    plataforma({ id: `ge-n-${n}`, palavra: n, tema: "numeros", descricao, glyph, motion: "static" });
-  }
-  for (const w of lgaWords) {
-    plataforma({ id: `ge-${w.id}`, palavra: w.word, tema: TEMA_DA_CATEGORIA[w.category], descricao: w.description, glyph: w.glyph, motion: w.motion });
-  }
-  FRASES.forEach(([palavra, glyph, descricao, motion], i) => {
-    plataforma({ id: `ge-f-${i + 1}`, palavra, tema: "frases", descricao, glyph, motion });
-  });
+  const gestos = gestosPlataforma(agora);
   // Contributos da escola: variantes regionais à espera de validação.
   gestos.push(
     {

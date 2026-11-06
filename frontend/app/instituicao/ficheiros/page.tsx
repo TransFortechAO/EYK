@@ -61,8 +61,9 @@ export default function FicheirosPage() {
 
   const abrir = async (f: FicheiroInstituicao) => {
     try {
-      await api.abrirFicheiro(instituicaoId, f.id);
-      toast.info(`«${f.nome}»`, { description: "Na demonstração o ficheiro não é descarregado. A permissão foi verificada." });
+      const aberto = await api.abrirFicheiro(instituicaoId, f.id);
+      if (aberto.url) window.open(aberto.url, "_blank", "noopener");
+      else toast.info(`«${f.nome}»`, { description: "Na demonstração o ficheiro não é descarregado. A permissão foi verificada." });
     } catch (err) {
       toast.error(erroTexto(err));
     }
@@ -213,7 +214,8 @@ function CarregarFicheiro({
     setErro(null);
     setAEnviar(true);
     try {
-      await api.carregarFicheiro(instituicaoId, {
+      const novo = await api.carregarFicheiro(instituicaoId, {
+        ficheiro,
         nome: ficheiro.name,
         tamanhoBytes: ficheiro.size,
         mime: ficheiro.type,
@@ -223,7 +225,7 @@ function CarregarFicheiro({
       setFicheiro(null);
       setTemCriancas(false);
       if (entrada.current) entrada.current.value = "";
-      toast.success("Ficheiro carregado. Fica disponível depois da verificação automática.");
+      toast.success(novo.estado === "disponivel" ? "Ficheiro carregado." : "Ficheiro carregado. Fica disponível depois da verificação automática.");
       aoCarregar();
     } catch (err) {
       setErro(erroTexto(err));

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, BookOpen, CalendarClock, Camera, Captions, Dumbbell, Lock, Paperclip, PlayCircle, Send } from "lucide-react";
 import { toast } from "sonner";
+import { enderecoApi } from "@/lib/instituicoes/servidor";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
@@ -117,7 +118,11 @@ export default function AulaPage() {
                   <li key={r.nome}>
                     <button
                       type="button"
-                      onClick={() => toast.info("Na demonstração o ficheiro não é descarregado.")}
+                      onClick={() => {
+                        const url = enderecoApi(r.url);
+                        if (url) window.open(url, "_blank", "noopener");
+                        else toast.info("Na demonstração o ficheiro não é descarregado.");
+                      }}
                       className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                     >
                       <Paperclip className="h-3.5 w-3.5" aria-hidden /> {r.nome}

@@ -1,6 +1,6 @@
 from django.urls import path, register_converter
 
-from . import views, views_escola
+from . import views, views_comunicacao, views_escola, views_lga
 from .acesso import IdEscola
 
 register_converter(IdEscola, 'sid')
@@ -9,6 +9,9 @@ urlpatterns = [
     path('minhas/', views.minhas_pertencas, name='instituicoes-minhas'),
     path('convites/<str:codigo>/', views.consultar_convite, name='instituicoes-convite'),
     path('convites/<str:codigo>/aceitar/', views.aceitar_convite, name='instituicoes-convite-aceitar'),
+    path('gestos-validados/', views_lga.gestos_validados, name='instituicoes-gestos-validados'),
+    path('admin/propostas/', views_lga.admin_propostas, name='instituicoes-admin-propostas'),
+    path('admin/propostas/<sid:conteudo_id>/', views_lga.admin_proposta_decidir, name='instituicoes-admin-proposta'),
     path('admin/', views.admin_instituicoes, name='instituicoes-admin'),
     path('admin/<sid:pk>/', views.admin_instituicao, name='instituicoes-admin-detalhe'),
     path('admin/<sid:pk>/reenviar-convite/', views.admin_reenviar_convite, name='instituicoes-admin-reenviar'),
@@ -28,5 +31,46 @@ urlpatterns = [
         '<sid:instituicao_id>/alunos/<sid:aluno_id>/tutores/<sid:tutor_id>/', views_escola.aluno_tutor,
         name='escola-aluno-tutor',
     ),
+    path('<sid:instituicao_id>/alunos/<sid:aluno_id>/conta/', views_escola.aluno_conta, name='escola-aluno-conta'),
     path('<sid:instituicao_id>/consentimentos/', views_escola.consentimentos, name='escola-consentimentos'),
+    # Comunicação, ficheiros e dados
+    path('<sid:instituicao_id>/avisos/', views_comunicacao.avisos, name='escola-avisos'),
+    path('<sid:instituicao_id>/avisos/<sid:aviso_id>/lido/', views_comunicacao.aviso_lido, name='escola-aviso-lido'),
+    path('<sid:instituicao_id>/preferencias-aviso/', views_comunicacao.preferencias_aviso, name='escola-preferencias'),
+    path('<sid:instituicao_id>/eventos/', views_comunicacao.eventos, name='escola-eventos'),
+    path('<sid:instituicao_id>/eventos/<sid:evento_id>/cancelar/', views_comunicacao.evento_cancelar, name='escola-evento-cancelar'),
+    path('<sid:instituicao_id>/eventos/<sid:evento_id>/presenca/', views_comunicacao.evento_presenca, name='escola-evento-presenca'),
+    path('<sid:instituicao_id>/ficheiros/', views_comunicacao.ficheiros, name='escola-ficheiros'),
+    path('<sid:instituicao_id>/ficheiros/uso/', views_comunicacao.ficheiros_uso, name='escola-ficheiros-uso'),
+    path('<sid:instituicao_id>/ficheiros/<sid:ficheiro_id>/', views_comunicacao.ficheiro_detalhe, name='escola-ficheiro'),
+    path('<sid:instituicao_id>/ficheiros/<sid:ficheiro_id>/conteudo/', views_comunicacao.ficheiro_conteudo, name='escola-ficheiro-conteudo'),
+    path('<sid:instituicao_id>/relatorio/', views_comunicacao.relatorio, name='escola-relatorio'),
+    path('<sid:instituicao_id>/auditoria/', views_comunicacao.auditoria, name='escola-auditoria'),
+    path('<sid:instituicao_id>/pedidos-dados/', views_comunicacao.pedidos_dados, name='escola-pedidos-dados'),
+    # Ensino de LGA
+    path('<sid:instituicao_id>/anexos/', views_lga.anexos, name='escola-anexos'),
+    path('<sid:instituicao_id>/anexos/<sid:anexo_id>/', views_lga.anexo_conteudo, name='escola-anexo'),
+    path('<sid:instituicao_id>/turmas/', views_lga.turmas, name='escola-turmas'),
+    path('<sid:instituicao_id>/turmas/<sid:turma_id>/', views_lga.turma_detalhe, name='escola-turma'),
+    path('<sid:instituicao_id>/turmas/<sid:turma_id>/aulas/', views_lga.turma_aulas, name='escola-turma-aulas'),
+    path('<sid:instituicao_id>/turmas/<sid:turma_id>/progresso/', views_lga.turma_progresso, name='escola-turma-progresso'),
+    path('<sid:instituicao_id>/turmas/<sid:turma_id>/posts/', views_lga.turma_posts, name='escola-turma-posts'),
+    path('<sid:instituicao_id>/aulas/<sid:aula_id>/', views_lga.aula_detalhe, name='escola-aula'),
+    path('<sid:instituicao_id>/aulas/<sid:aula_id>/respostas/', views_lga.aula_responder, name='escola-aula-responder'),
+    path('<sid:instituicao_id>/respostas/', views_lga.respostas, name='escola-respostas'),
+    path('<sid:instituicao_id>/respostas/pode/', views_lga.resposta_pode, name='escola-resposta-pode'),
+    path('<sid:instituicao_id>/respostas/<sid:resposta_id>/feedback/', views_lga.resposta_feedback, name='escola-resposta-feedback'),
+    path('<sid:instituicao_id>/gestos/', views_lga.gestos, name='escola-gestos'),
+    path('<sid:instituicao_id>/gestos/<sid:gesto_id>/validar/', views_lga.gesto_validar, name='escola-gesto-validar'),
+    path('<sid:instituicao_id>/pratica/', views_lga.pratica, name='escola-pratica'),
+    path('<sid:instituicao_id>/progresso/', views_lga.meu_progresso, name='escola-progresso'),
+    path('<sid:instituicao_id>/conteudos/', views_lga.conteudos, name='escola-conteudos'),
+    path('<sid:instituicao_id>/conteudos/<sid:conteudo_id>/', views_lga.conteudo_detalhe, name='escola-conteudo'),
+    path('<sid:instituicao_id>/conteudos/<sid:conteudo_id>/propor/', views_lga.conteudo_propor, name='escola-conteudo-propor'),
+    path('<sid:instituicao_id>/posts/<sid:post_id>/moderar/', views_lga.post_moderar, name='escola-post-moderar'),
+    path('<sid:instituicao_id>/posts/<sid:post_id>/denunciar/', views_lga.post_denunciar, name='escola-post-denunciar'),
+    path('<sid:instituicao_id>/classificacao/', views_lga.classificacao, name='escola-classificacao'),
+    path('<sid:instituicao_id>/desafios/', views_lga.desafios, name='escola-desafios'),
+    path('<sid:instituicao_id>/ver-geral/', views_lga.ver_geral, name='escola-ver-geral'),
+    path('<sid:instituicao_id>/resumo/', views_lga.resumo, name='escola-resumo'),
 ]

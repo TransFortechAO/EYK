@@ -75,7 +75,7 @@ def membro_json(m: MembroInstituicao) -> dict:
 
 
 def grupo_json(g: GrupoInstituicao) -> dict:
-    return {
+    dados = {
         'id': sid(g.id),
         'instituicaoId': sid(g.instituicao_id),
         'nome': g.nome,
@@ -84,6 +84,15 @@ def grupo_json(g: GrupoInstituicao) -> dict:
         'arquivado': g.arquivado,
         'criadoEm': g.criado_em.isoformat(),
     }
+    if g.lga_publico:
+        dados['lga'] = {
+            'publico': g.lga_publico,
+            'nivel': g.lga_nivel,
+            'descricao': g.lga_descricao,
+            'conviteAlunosId': sid(g.convite_alunos_id),
+            'conviteFamiliasId': sid(g.convite_familias_id),
+        }
+    return dados
 
 
 def aluno_json(a: PerfilAluno) -> dict:
@@ -382,7 +391,7 @@ def pedido_decidir(request, membro, pedido_id):
         decisao = 'aprovado' if aprovar else 'rejeitado'
         auditar(instituicao, 'pedido_decidido', f'Pedido de {nome} ({ROTULO_PAPEL[pedido.papel]}) {decisao}.', _nome(membro))
     notificar(
-        pedido.utilizador, 'sistema',
+        pedido.utilizador, 'novidade',
         f'O teu pedido para entrar na {instituicao.nome} foi {decisao}.', link='/instituicao' if aprovar else '',
     )
     return Response({'ok': True})
@@ -489,6 +498,31 @@ def alunos(request, membro):
     aluno = PerfilAluno.objects.create(instituicao=instituicao, nome=nome, grupo=grupo)
     auditar(instituicao, 'aluno_criado', f'Perfil de {aluno.nome} criado (à espera do consentimento do tutor).', _nome(membro))
     return Response(aluno_json(aluno), status=status.HTTP_201_CREATED)
+
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+@com_membro('gerir_alunos')
+def aluno_conta(request, membro, aluno_id):
+    """Liga o perfil da criança à conta de aluno com que ela entra: é o que faz valer os
+    consentimentos nas respostas em vídeo e dá à família acesso ao que a criança envia."""
+    instituicao = membro.instituicao
+    aluno = _aluno(instituicao, aluno_id)
+    if aluno.grupo:
+        _exigir_grupo_meu(membro, aluno.grupo)
+    conta_id = request.data.get('contaId')
+    conta = None
+    if conta_id:
+        conta = _alvo(instituicao, conta_id)
+        if conta.papel != 'aluno' or conta.estado != MembroInstituicao.ATIVO:
+            raise Recusa('Escolhe uma conta de aluno ativa.')
+        if instituicao.alunos.filter(conta=conta).exclude(pk=aluno.pk).exists():
+            raise Recusa('Esta conta já está ligada a outra criança.')
+    aluno.conta = conta
+    aluno.save(update_fields=['conta'])
+    detalhe = f'Conta de {_nome(conta)} ligada a' if conta else 'Conta desligada de'
+    auditar(instituicao, 'vinculo_criado', f'{detalhe} {aluno.nome}.', _nome(membro))
+    return Response(aluno_json(aluno))
 
 
 @api_view(['DELETE'])

@@ -75,6 +75,7 @@ Thumbs.db
 # MEDIA & UPLOADS (Django)
 # ============================================
 media/
+backend/privado/
 staticfiles/
 static/CACHE/
 

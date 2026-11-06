@@ -108,6 +108,7 @@ export default function RelatoriosPage() {
 
             <Card className="p-5 shadow-soft">
               <p className="mb-3 text-sm font-medium">Conteúdos mais usados</p>
+              {dados.conteudosMaisUsados.length === 0 && <p className="text-sm text-muted-foreground">Ainda não há dados de utilização.</p>}
               <ol className="space-y-3">
                 {dados.conteudosMaisUsados.map((c, i) => {
                   const max = dados.conteudosMaisUsados[0]?.acessos || 1;
@@ -169,7 +170,7 @@ export default function RelatoriosPage() {
             </Tabela>
           </Card>
 
-          {papel === "administrador" && (
+          {papel === "administrador" && !instituicaoId.startsWith("srv-") && (
             <Card className="flex items-center justify-between gap-4 p-5 shadow-soft">
               <div>
                 <label htmlFor="resumo-email" className="flex items-center gap-2 text-sm font-medium">
@@ -188,7 +189,7 @@ export default function RelatoriosPage() {
             </Card>
           )}
 
-          <p className="text-xs text-muted-foreground">Gerado às {hora(dados.geradoEm)}. Valores de demonstração.</p>
+          <p className="text-xs text-muted-foreground">Gerado às {hora(dados.geradoEm)}.{instituicaoId.startsWith("srv-") ? "" : " Valores de demonstração."}</p>
         </div>
       )}
     </Exige>

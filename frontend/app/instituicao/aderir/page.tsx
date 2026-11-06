@@ -168,7 +168,9 @@ function Aderir() {
               {aEnviar ? "A verificar…" : "Continuar"}
             </Button>
           </form>
-          <p className="text-center text-xs text-muted-foreground">Na demonstração, experimenta TURMA3A, MAOS2026 ou P4X8D2.</p>
+          {process.env.NODE_ENV !== "production" && (
+            <p className="text-center text-xs text-muted-foreground">Na demonstração, experimenta TURMA3A, MAOS2026 ou P4X8D2.</p>
+          )}
         </Card>
       ) : (
         <form onSubmit={aderir} className="space-y-6">
