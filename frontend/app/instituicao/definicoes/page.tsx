@@ -48,8 +48,8 @@ export default function DefinicoesPage() {
                 Aprovar pedidos feitos por código
               </label>
               <p className="text-xs text-muted-foreground">
-                Quem usa um código partilhável fica à espera da tua aprovação antes de ganhar acesso. Os convites por email ou
-                SMS são pessoais e não precisam de aprovação.
+                Quem usa um código partilhável fica à espera da tua aprovação antes de ganhar acesso. Os convites por email
+                são pessoais e não precisam de aprovação.
               </p>
             </div>
             <Switch id="def-aprovar" checked={aprovar} onCheckedChange={setAprovar} />

@@ -141,17 +141,16 @@ class PerfilAluno(models.Model):
 
 
 class ConviteInstituicao(models.Model):
-    """Convite por email, SMS ou código partilhável. O convite por email é pessoal: só serve
+    """Convite por email ou código partilhável. O convite por email é pessoal: só serve
     à conta com o mesmo email."""
     PENDENTE, ACEITE, CANCELADO = 'pendente', 'aceite', 'cancelado'
     ESTADOS = [(PENDENTE, 'Pendente'), (ACEITE, 'Aceite'), (CANCELADO, 'Cancelado')]
-    CANAIS = [('email', 'Email'), ('sms', 'SMS'), ('codigo', 'Código')]
+    CANAIS = [('email', 'Email'), ('codigo', 'Código')]
 
     instituicao = models.ForeignKey(Instituicao, on_delete=models.CASCADE, related_name='convites')
     canal = models.CharField(max_length=6, choices=CANAIS, default='email')
     codigo = models.CharField(max_length=16, unique=True)
     email = models.EmailField(blank=True)
-    telefone = models.CharField(max_length=30, blank=True)
     papel = models.CharField(max_length=15, choices=MembroInstituicao.PAPEIS)
     grupo = models.ForeignKey(GrupoInstituicao, on_delete=models.SET_NULL, null=True, blank=True)
     aluno = models.ForeignKey(PerfilAluno, on_delete=models.SET_NULL, null=True, blank=True)

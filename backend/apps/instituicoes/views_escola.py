@@ -1,7 +1,6 @@
 """Vida interna de uma instituição: definições, membros, convites, grupos, alunos e consentimentos.
 As regras e as mensagens são as de frontend/app/lib/instituicoes/api.ts."""
 import datetime
-import re
 
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -114,7 +113,7 @@ def convite_json(c: ConviteInstituicao) -> dict:
         'id': sid(c.id),
         'instituicaoId': sid(c.instituicao_id),
         'canal': c.canal,
-        'destino': c.email or c.telefone,
+        'destino': c.email,
         'codigo': c.codigo,
         'link': link_do_convite(c),
         'papel': c.papel,
@@ -266,7 +265,7 @@ def convites(request, membro):
 
     dados = request.data
     canal, papel = dados.get('canal'), dados.get('papel')
-    if canal not in ('email', 'sms', 'codigo') or papel not in ROTULO_PAPEL:
+    if canal not in ('email', 'codigo') or papel not in ROTULO_PAPEL:
         raise Recusa('Convite inválido.')
     if not pode(membro.papel, 'gerir_membros') and papel not in ('familia', 'aluno'):
         raise Recusa('Educadores só podem convidar famílias e alunos.', status.HTTP_403_FORBIDDEN)
@@ -282,8 +281,6 @@ def convites(request, membro):
             validate_email(destino)
         except ValidationError:
             raise Recusa('Email inválido.') from None
-    if canal == 'sms' and len(re.sub(r'\D', '', destino)) < 9:
-        raise Recusa('Número de telemóvel inválido.')
     try:
         validade = int(dados.get('validadeDias') or VALIDADE_CONVITE_DIAS)
         usos_max = int(dados.get('usosMax') or 1)
@@ -295,7 +292,6 @@ def convites(request, membro):
         canal=canal,
         codigo=gerar_codigo(TAMANHO_CODIGO_PARTILHADO),
         email=destino if canal == 'email' else '',
-        telefone=destino if canal == 'sms' else '',
         papel=papel,
         grupo=grupo,
         aluno=aluno,

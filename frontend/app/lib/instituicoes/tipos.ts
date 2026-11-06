@@ -57,7 +57,7 @@ export type Pertenca = {
 };
 
 // ── 3. Convites e códigos ──
-export type CanalConvite = "email" | "sms" | "codigo";
+export type CanalConvite = "email" | "codigo";
 export type EstadoConvite = "pendente" | "aceite" | "expirado" | "cancelado";
 
 export type Convite = {

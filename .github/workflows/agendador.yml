@@ -5,6 +5,9 @@
 #
 # Secrets do repositório (Settings → Secrets and variables → Actions):
 #   DATABASE_URL, DJANGO_SECRET_KEY, NEXT_PUBLIC_URL, BREVO_API_KEY, DEFAULT_FROM_EMAIL
+#   Para apagar os vídeos expirados das escolas: AWS_STORAGE_BUCKET_NAME, AWS_ACCESS_KEY_ID,
+#   AWS_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URL, AWS_S3_REGION_NAME, PRIVADO_BUCKET
+#   (e PRIVADO_ACCESS_KEY_ID, PRIVADO_SECRET_ACCESS_KEY, se o bucket privado tiver chave própria)
 # Sem DATABASE_URL, o workflow não faz nada (não falha).
 
 name: Agendador
@@ -33,6 +36,14 @@ jobs:
       NEXT_PUBLIC_URL: ${{ secrets.NEXT_PUBLIC_URL }}
       BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
       DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
+      AWS_STORAGE_BUCKET_NAME: ${{ secrets.AWS_STORAGE_BUCKET_NAME }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_S3_ENDPOINT_URL: ${{ secrets.AWS_S3_ENDPOINT_URL }}
+      AWS_S3_REGION_NAME: ${{ secrets.AWS_S3_REGION_NAME }}
+      PRIVADO_BUCKET: ${{ secrets.PRIVADO_BUCKET }}
+      PRIVADO_ACCESS_KEY_ID: ${{ secrets.PRIVADO_ACCESS_KEY_ID }}
+      PRIVADO_SECRET_ACCESS_KEY: ${{ secrets.PRIVADO_SECRET_ACCESS_KEY }}
     steps:
       - name: Verificar configuração
         id: cfg
@@ -63,6 +74,11 @@ jobs:
         if: steps.cfg.outputs.ativo == 'true' && github.event.schedule != '5 23 * * *'
         working-directory: backend
         run: python manage.py shell -c "from apps.plataforma.tasks import ciclo_agendador; ciclo_agendador()"
+
+      - name: Escolas (lembretes da agenda e vídeos expirados)
+        if: steps.cfg.outputs.ativo == 'true' && github.event.schedule != '5 23 * * *'
+        working-directory: backend
+        run: python manage.py shell -c "from apps.instituicoes.tasks import tarefas_escolas; print(tarefas_escolas())"
 
       - name: Repor ofensivas quebradas
         if: steps.cfg.outputs.ativo == 'true' && github.event.schedule == '5 23 * * *'

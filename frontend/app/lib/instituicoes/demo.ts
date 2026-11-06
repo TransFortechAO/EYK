@@ -289,7 +289,7 @@ export function criarEstadoDemo(agora = Date.now()): EstadoDemo {
       criadoEm: iso(agora - 2 * DIA), expiraEm: iso(agora + 12 * DIA), estado: "pendente",
     },
     {
-      id: "cv-3", instituicaoId: "inst-1", canal: "sms", destino: "+244 923 000 111", codigo: "P4X8D2", papel: "familia",
+      id: "cv-3", instituicaoId: "inst-1", canal: "email", destino: "familia.demo@exemplo.ao", codigo: "P4X8D2", papel: "familia",
       grupoId: "g-3", alunoId: "a-14", usos: 0, usosMax: 1, criadoPor: "Maria Kiala",
       criadoEm: iso(agora - 1 * DIA), expiraEm: iso(agora + 13 * DIA), estado: "pendente",
     },

@@ -166,7 +166,7 @@ describe("vínculo família-aluno e consentimentos", () => {
     definirPessoaDemo(MARIA);
     const aluno = await api.criarAluno("inst-1", { nome: "Nkosi", grupoId: "g-1" });
     expect(aluno.estado).toBe("aguarda_consentimento");
-    const convite = await api.criarConvite("inst-1", { canal: "sms", destino: "+244 923 456 789", papel: "familia", grupoId: "g-1", alunoId: aluno.id, usosMax: 1 });
+    const convite = await api.criarConvite("inst-1", { canal: "email", destino: "t@exemplo.ao", papel: "familia", grupoId: "g-1", alunoId: aluno.id, usosMax: 1 });
 
     definirPessoaDemo(9003);
     await expect(api.aderir(convite.codigo, { nome: "Tutor Nkosi", email: "t@exemplo.ao", consentimentos: { utilizacao: false } })).rejects.toThrow(

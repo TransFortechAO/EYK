@@ -124,7 +124,7 @@ def gerar_zip(pedido):
                 with campo.storage.open(campo.name, 'rb') as origem, z.open(caminho, 'w', force_zip64=True) as destino:
                     while bloco := origem.read(1024 * 1024):
                         destino.write(bloco)
-            except OSError:
+            except Exception:
                 logger.warning('Ficheiro em falta na exportação do pedido %s: %s', pedido.pk, campo.name)
                 faltam.append(caminho)
         z.writestr('dados.json', json.dumps(

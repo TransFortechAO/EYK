@@ -58,6 +58,13 @@ services:
         sync: false
       - key: AWS_S3_REGION_NAME
         value: auto
+      # Ficheiros das escolas: bucket PRIVADO no B2 (ver docs/DEPLOY_RENDER.md).
+      - key: PRIVADO_BUCKET
+        sync: false
+      - key: PRIVADO_ACCESS_KEY_ID
+        sync: false
+      - key: PRIVADO_SECRET_ACCESS_KEY
+        sync: false
       - key: CONFIAR_X_FORWARDED_FOR
         value: "True"
       # 512 MB de RAM: um só processo do gunicorn (com 8 threads).

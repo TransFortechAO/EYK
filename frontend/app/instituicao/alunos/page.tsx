@@ -294,7 +294,7 @@ function NovoPerfil({
 
 function ConvidarTutor({ aluno, aoFechar }: { aluno: PerfilAluno | null; aoFechar: () => void }) {
   const { instituicaoId } = useInstituicaoAtual();
-  const [canal, setCanal] = useState<CanalConvite>("sms");
+  const [canal, setCanal] = useState<CanalConvite>("email");
   const [destino, setDestino] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [criado, setCriado] = useState<Convite | null>(null);
@@ -348,14 +348,13 @@ function ConvidarTutor({ aluno, aoFechar }: { aluno: PerfilAluno | null; aoFecha
             <div className="space-y-4 overflow-y-auto p-5">
               <Campo id="ct-canal" rotulo="Como enviar">
                 <Seletor id="ct-canal" value={canal} onChange={(e) => setCanal(e.target.value as CanalConvite)}>
-                  <option value="sms">SMS</option>
                   <option value="email">Email</option>
                   <option value="codigo">Código para entregar em mão</option>
                 </Seletor>
               </Campo>
               {canal !== "codigo" && (
-                <Campo id="ct-destino" rotulo={canal === "sms" ? "Telemóvel" : "Email"}>
-                  <Input id="ct-destino" type={canal === "sms" ? "tel" : "email"} value={destino} onChange={(e) => setDestino(e.target.value)} required />
+                <Campo id="ct-destino" rotulo="Email">
+                  <Input id="ct-destino" type="email" value={destino} onChange={(e) => setDestino(e.target.value)} required />
                 </Campo>
               )}
               {erro && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{erro}</p>}

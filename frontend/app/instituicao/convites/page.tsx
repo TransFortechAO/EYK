@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Check, Copy, Mail, MessageSquare, Plus, QrCode, Ticket, UserCheck, X } from "lucide-react";
+import { Check, Copy, Mail, Plus, QrCode, Ticket, UserCheck, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +28,8 @@ import { apiInstituicoes as api, VALIDADE_CONVITE_DIAS } from "@/lib/instituicoe
 import { ROTULO_PAPEL } from "@/lib/instituicoes/permissoes";
 import type { CanalConvite, Convite, Papel } from "@/lib/instituicoes/tipos";
 
-const ICONE_CANAL = { email: Mail, sms: MessageSquare, codigo: QrCode } as const;
-const ROTULO_CANAL: Record<CanalConvite, string> = { email: "Email", sms: "SMS", codigo: "Código partilhável" };
+const ICONE_CANAL = { email: Mail, codigo: QrCode } as const;
+const ROTULO_CANAL: Record<CanalConvite, string> = { email: "Email", codigo: "Código partilhável" };
 
 function EstadoConvite({ c }: { c: Convite }) {
   if (c.estado === "pendente" && c.usos >= c.usosMax) return <Etiqueta tom="neutro">Esgotado</Etiqueta>;
@@ -89,7 +89,7 @@ export default function ConvitesPage() {
   return (
     <Exige permitido={pode("convidar")}>
       <div className="space-y-8">
-        <PageHeader title="Convites e códigos" description={<span>Convida por email ou SMS, ou cria um código curto para partilhar em papel ou por mensagem. Os convites
+        <PageHeader title="Convites e códigos" description={<span>Convida por email ou cria um código curto para partilhar em papel ou por mensagem. Os convites
               expiram ao fim de {VALIDADE_CONVITE_DIAS} dias.</span>}>
           <Button className="gap-1.5" onClick={() => setNovoAberto(true)}>
             <Plus className="h-4 w-4" /> Novo convite
@@ -302,11 +302,7 @@ function NovoConvite({
                 ? criado.emailEnviado === false
                   ? `O email não chegou a sair: passa o link a ${criado.destino}.`
                   : `Enviámos o convite para ${criado.destino}.`
-                : criado.canal === "sms"
-                  ? criado.emailEnviado === false
-                    ? `Ainda não enviamos SMS: manda o código por mensagem para ${criado.destino}.`
-                    : `Enviámos o código por SMS para ${criado.destino}.`
-                  : `Pode ser usado ${criado.usosMax} vez${criado.usosMax === 1 ? "" : "es"}.`}{" "}
+                : `Pode ser usado ${criado.usosMax} vez${criado.usosMax === 1 ? "" : "es"}.`}{" "}
               Expira {haQuanto(criado.expiraEm)}.
             </p>
             <Button
@@ -324,7 +320,7 @@ function NovoConvite({
             <div className="space-y-4 overflow-y-auto p-5">
               <fieldset className="space-y-2">
                 <legend className="text-sm font-medium">Como enviar</legend>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {(Object.keys(ROTULO_CANAL) as CanalConvite[]).map((k) => {
                     const Icone = ICONE_CANAL[k];
                     return (
@@ -339,9 +335,6 @@ function NovoConvite({
                     );
                   })}
                 </div>
-                {canal === "sms" && (
-                  <p className="text-xs text-muted-foreground">Útil para famílias que não usam email regularmente.</p>
-                )}
               </fieldset>
 
               {canal !== "codigo" && (

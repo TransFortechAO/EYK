@@ -39,9 +39,11 @@ def apagar_respostas_expiradas(agora=None) -> int:
     apagadas = 0
     for r in RespostaVideo.objects.select_related('video', 'feedback_video').filter(apagar_em__lte=agora):
         anexos = [a for a in (r.video, r.feedback_video) if a]
-        r.delete()
+        # O ficheiro primeiro: se o bucket falhar, o registo fica e a próxima volta tenta de novo.
         for anexo in anexos:
             anexo.ficheiro.delete(save=False)
+        r.delete()
+        for anexo in anexos:
             anexo.delete()
         apagadas += 1
     return apagadas

@@ -269,7 +269,7 @@ export function Etiqueta({ tom = "neutro", children }: { tom?: "neutro" | "suces
 }
 
 /**
- * O link do convite (o que segue por email/SMS): quem o abre, com sessão
+ * O link do convite (o que segue por email): quem o abre, com sessão
  * iniciada, fica membro da escola com esta conta.
  */
 export function LinkConvite({ codigo }: { codigo: string }) {

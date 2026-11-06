@@ -97,15 +97,11 @@ def test_educador_so_convida_familias_e_alunos_para_os_seus_grupos(api, pessoa, 
     assert api.post('convites/', {'canal': 'codigo', 'papel': 'aluno', 'grupoId': f'srv-{meu.pk}'}).status_code == 201
 
 
-def test_convite_por_email_sai_e_por_sms_nao_finge(api, pessoa):
+def test_convite_por_email_sai_e_nao_ha_sms(api, pessoa):
     api.como(pessoa('administrador'))
     r = api.post('convites/', {'canal': 'email', 'destino': 'pai@mail.ao', 'papel': 'familia'})
     assert r.status_code == 201 and len(mail.outbox) == 1 and 'pai@mail.ao' in mail.outbox[0].to
-    r = api.post('convites/', {'canal': 'sms', 'destino': '923 000 000', 'papel': 'familia'})
-    assert r.status_code == 201 and r.json()['emailEnviado'] is False and len(mail.outbox) == 1
-    assert api.post('convites/', {'canal': 'sms', 'destino': '12', 'papel': 'familia'}).json()['detail'] == (
-        'Número de telemóvel inválido.'
-    )
+    assert api.post('convites/', {'canal': 'sms', 'destino': '923 000 000', 'papel': 'familia'}).status_code == 400
     assert api.post('convites/', {'canal': 'email', 'destino': 'x', 'papel': 'familia'}).json()['detail'] == (
         'Email inválido.'
     )

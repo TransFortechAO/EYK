@@ -158,6 +158,21 @@ O Render faz deploy automático dos dois serviços: o `eyk-api` corre as migraç
 
 O `API_INTERNO` e o `NEXT_PUBLIC_API_URL` são lidos no build do Next. Se mudares algum deles, faz um novo deploy do `eyk-web`.
 
+## Ficheiros privados das escolas (Backblaze B2)
+
+Os vídeos das crianças e os ficheiros das escolas **não podem** ir para o bucket dos cursos, que é público.
+
+1. No Backblaze, em **Buckets → Create a Bucket**, cria `eyk-privado` com **Files in Bucket: Private**.
+2. Em **Application Keys**, usa uma chave com acesso a esse bucket (leitura e escrita). Se a chave dos
+   cursos só tiver acesso ao bucket público, cria uma nova e guarda-a em `PRIVADO_ACCESS_KEY_ID` e
+   `PRIVADO_SECRET_ACCESS_KEY`.
+3. No `eyk-api`, define `PRIVADO_BUCKET=eyk-privado` e confirma que `AWS_S3_REGION_NAME` é a região do
+   endpoint do B2 (ex: `us-west-004`, não `auto`).
+4. No GitHub (**Settings → Secrets and variables → Actions**), acrescenta os mesmos valores: é o agendador
+   que apaga os vídeos expirados e envia os lembretes da agenda (ver `.github/workflows/agendador.yml`).
+
+Sem `PRIVADO_BUCKET`, o plano gratuito perde estes ficheiros no reinício seguinte, porque não tem disco.
+
 ## Domínio próprio (ex: `eyk.ao`)
 
 1. No `eyk-web`, abre **Settings → Custom Domains** e adiciona `eyk.ao`. Configura o DNS como o Render indicar.

@@ -1,16 +1,18 @@
 """Ficheiros privados da escola: nunca ficam em /media (público). Só saem por views que
-verificam quem pede. Com PRIVADO_BUCKET vão para um bucket sem acesso público; sem ele,
-para o disco em PRIVADO_ROOT."""
+verificam quem pede. Com PRIVADO_BUCKET vão para um bucket PRIVADO (Backblaze B2), separado
+do bucket público dos cursos; sem ele, para o disco em PRIVADO_ROOT."""
 import os
 import re
 
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, HttpResponseRedirect
 from django.utils.http import content_disposition_header
 
 _RANGE = re.compile(r'bytes=(\d*)-(\d*)')
 _BLOCO_MAX = 4 * 1024 * 1024
+# O link assinado só serve para abrir o ficheiro agora; não é uma forma de o partilhar.
+VALIDADE_LINK_SEG = 5 * 60
 
 # Só estes tipos abrem no browser; tudo o resto descarrega, para um ficheiro carregado
 # nunca correr como página do site.
@@ -33,7 +35,20 @@ def storage_privado():
     if bucket:
         from storages.backends.s3 import S3Storage
 
-        return S3Storage(bucket_name=bucket, custom_domain=None, querystring_auth=True, file_overwrite=False)
+        opcoes = {
+            'bucket_name': bucket,
+            'custom_domain': None,
+            'querystring_auth': True,
+            'querystring_expire': VALIDADE_LINK_SEG,
+            'file_overwrite': False,
+            # O B2 só aceita assinaturas v4.
+            'signature_version': 's3v4',
+            'object_parameters': {'CacheControl': 'private, no-store'},
+        }
+        # Chave própria do bucket privado, se a do bucket público não lhe chegar.
+        if settings.PRIVADO_ACCESS_KEY_ID:
+            opcoes.update(access_key=settings.PRIVADO_ACCESS_KEY_ID, secret_key=settings.PRIVADO_SECRET_ACCESS_KEY)
+        return S3Storage(**opcoes)
     return FileSystemStorage(location=settings.PRIVADO_ROOT)
 
 
@@ -54,6 +69,16 @@ def caminho_ficheiro(instancia, nome: str) -> str:
 def servir(request, campo, nome: str) -> HttpResponse:
     """Entrega o ficheiro já autorizado, com suporte a Range (vídeos)."""
     tipo = TIPO_SEGURO.get(extensao(nome))
+    disposicao = content_disposition_header(not tipo, nome)
+    if getattr(settings, 'PRIVADO_BUCKET', ''):
+        # Num bucket, ler um trecho por aqui descarregaria o ficheiro inteiro a cada pedido. A
+        # autorização já foi feita: o browser recebe um link que expira e fala com o B2.
+        resposta = HttpResponseRedirect(campo.storage.url(campo.name, expire=VALIDADE_LINK_SEG, parameters={
+            'ResponseContentDisposition': disposicao,
+            'ResponseContentType': tipo or 'application/octet-stream',
+        }))
+        resposta['Cache-Control'] = 'private, no-store'
+        return resposta
     tamanho = campo.size
     rango = _RANGE.fullmatch(request.headers.get('Range', '').strip())
     if rango and tipo:
@@ -79,7 +104,7 @@ def servir(request, campo, nome: str) -> HttpResponse:
         resposta = FileResponse(campo.storage.open(campo.name, 'rb'), content_type=tipo or 'application/octet-stream')
         resposta['Content-Length'] = tamanho
     resposta['Accept-Ranges'] = 'bytes'
-    resposta['Content-Disposition'] = content_disposition_header(not tipo, nome)
+    resposta['Content-Disposition'] = disposicao
     resposta['X-Content-Type-Options'] = 'nosniff'
     resposta['Cache-Control'] = 'private, no-store'
     return resposta

@@ -66,7 +66,7 @@ utilizadores antes de existir backend. `NEXT_PUBLIC_INSTITUICOES=0` desliga-a ta
 |---|---|---|
 | `/instituicao` | Painel adaptado ao papel; seletor de instituição (1) | Todos |
 | `/instituicao/membros` | Membros e papéis (2) | Administrador, coordenador, educador (só os seus grupos) |
-| `/instituicao/convites` | Convites por email, SMS ou código; aprovação de pedidos (3) | Administrador, educador (famílias e alunos dos seus grupos) |
+| `/instituicao/convites` | Convites por email ou código; aprovação de pedidos (3) | Administrador, educador (famílias e alunos dos seus grupos) |
 | `/instituicao/aderir` | Aderir com um código, com consentimento para famílias (3, 9) | Qualquer utilizador autenticado |
 | `/instituicao/grupos`, `/instituicao/grupos/[id]` | Turmas e grupos; arquivo no fim do ano (4) | Administrador, coordenador, educador |
 | `/instituicao/alunos` | Perfis de crianças e vínculos com tutores (5) | Administrador, coordenador, educador; família vê só as suas |
@@ -192,7 +192,7 @@ resposta.
 **Só quem a escola registou vê funcionalidades de escola:** contas criadas de forma normal (alunos e professores da
 plataforma) e a equipa EYK (`isStaff`) vêem a EYK pública — barra lateral, menu de baixo e páginas principais sem nada
 de escolas. Uma conta passa a ter as funcionalidades da escola quando aceita um convite da escola: abre o link que
-recebeu por email/SMS (`/instituicao/aderir?codigo=…`, com sessão iniciada) ou usa o código. O contexto da escola fica
+recebeu por email (`/instituicao/aderir?codigo=…`, com sessão iniciada) ou usa o código. O contexto da escola fica
 preso a essa conta (`EscolaGlobal` → `temPertenca(user.id)`).
 
 A demonstração ("Ver como") é só uma **pré-visualização dentro de `/instituicao`** para quem não pertence a nenhuma
@@ -220,7 +220,7 @@ Cada função de `apiInstituicoes` corresponde a um endpoint (o comentário de a
 
 ## Fica para depois
 
-- Envio real de emails e SMS (convites, avisos, lembretes) — hoje só se simula.
+- Envio de SMS: fica para mais tarde (os convites são por email ou por código).
 - Guardar os vídeos (hoje ficam em memória durante a visita).
 - Vídeos reais no gestuário: os gestos de demonstração usam emoji animado no lugar do vídeo.
 - "LGA em casa" automático (a turma "LGA em casa — famílias" existe, mas a seleção semanal dos gestos é manual) e

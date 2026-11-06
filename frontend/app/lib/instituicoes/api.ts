@@ -421,9 +421,6 @@ const demoInstituicoes = {
     if (dados.canal === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dados.destino)) {
       throw new ErroInstituicao("Email inválido.");
     }
-    if (dados.canal === "sms" && dados.destino.replace(/\D/g, "").length < 9) {
-      throw new ErroInstituicao("Número de telemóvel inválido.");
-    }
     if (dados.alunoId && dados.papel !== "familia") {
       throw new ErroInstituicao("Só convites de família podem ficar ligados a uma criança.");
     }

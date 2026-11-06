@@ -90,6 +90,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Ficheiros das escolas (vídeos de crianças incluídos): nunca dentro de MEDIA_ROOT, que é público.
 PRIVADO_ROOT = os.getenv('PRIVADO_ROOT', '').strip() or os.path.join(BASE_DIR, 'privado')
 PRIVADO_BUCKET = os.getenv('PRIVADO_BUCKET', '').strip()
+PRIVADO_ACCESS_KEY_ID = os.getenv('PRIVADO_ACCESS_KEY_ID', '').strip()
+PRIVADO_SECRET_ACCESS_KEY = os.getenv('PRIVADO_SECRET_ACCESS_KEY', '').strip()
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.User'
 LOGIN_URL = '/accounts/login/'
