@@ -332,12 +332,12 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
                       onClick={() => void gostar(p.id)}
                     >
                       <Hand className={cn("h-4 w-4", p.gostei && "fill-primary")} />
-                      <span className="hidden sm:inline">Gosto</span>
+                      <span className="hidden sm:inline">Reações</span>
                       <span className="tabular-nums">{p.gostos}</span>
                     </Button>
                     <Button variant="ghost" size="sm" className="gap-2 text-xs sm:text-sm" aria-label={`Ver comentários (${p.comentarios})`} onClick={() => setComentariosDe(p)}>
                       <MessageCircle className="h-4 w-4" />
-                      <span className="hidden sm:inline">Comentar</span>
+                      <span className="hidden sm:inline">Comentários</span>
                       <span className="tabular-nums">{p.comentarios}</span>
                     </Button>
                     <BotaoSalvar tipo="post_turma" id={p.id} variante="acao" />

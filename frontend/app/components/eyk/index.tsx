@@ -560,7 +560,7 @@ export function PostCard({
               aria-label={liked ? "Retirar reação" : "Reagir"}
             >
               <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
-              <span className="hidden sm:inline">Gosto</span>
+              <span className="hidden sm:inline">Reações</span>
               <span className="tabular-nums">{likes}</span>
             </Button>
             <Button
@@ -571,7 +571,7 @@ export function PostCard({
               aria-label={`Ver comentários (${comentarios})`}
             >
               <MessageCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Comentar</span>
+              <span className="hidden sm:inline">Comentários</span>
               <span className="tabular-nums">{comentarios}</span>
             </Button>
             <Button

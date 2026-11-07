@@ -102,7 +102,7 @@ exceto para bordas/realces descritos abaixo.
 - Curso/vídeo: **horizontal e compacto no telemóvel**, vertical a partir do tablet; grelha de 2–3 colunas.
 - O Início mostra até **8 cursos e 8 vídeos**, em faixas no meio do feed; o resto está nas páginas de Cursos e Vídeos.
 - Publicação (feed): cabeçalho (autor, tempo, "editado"), texto, foto, repost; ações
-  **Gosto · Comentar · Partilhar** com os números; comentários num modal.
+  **Reações · Comentários · Partilhar** com os números (e o marcador dos Salvos); comentários num modal.
 
 ### Salvos (`components/ds/botao-salvar.tsx`)
 - Guardar para ver depois, com o marcador (`Bookmark`), igual nas duas partes da plataforma. Preenchido a dourado quando está guardado.
@@ -142,7 +142,7 @@ exceto para bordas/realces descritos abaixo.
 - **Tabelas** (`Tabela`, `celula` em `components/instituicao/ui.tsx`): tabela no computador; no telemóvel e
   no tablet cada linha é um cartão, com o rótulo da coluna junto a cada valor.
 - **Comunidade da turma**: o mesmo compositor compacto com modal, o mesmo cabeçalho de publicação, e
-  **Gosto · Comentar** com os números e comentários num modal, como na Comunidade. **Sem partilha externa
+  **Reações · Comentários** com os números e comentários num modal, como na Comunidade. **Sem partilha externa
   nem repost**: são publicações de crianças. Fotografias só de quem ensina (até 5 MB), com o consentimento
   das crianças verificado. As famílias reagem, mas não publicam nem comentam.
 - Faixa de pré-visualização só em "Ver como"; contas de escolas reais nunca vêem a palavra "demonstração".
