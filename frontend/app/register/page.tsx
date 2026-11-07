@@ -17,12 +17,14 @@ import {
   ArrowRight,
   Check,
   X,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, type NomeUtilizador } from "@/lib/api";
 import { guardarDestinoDoEndereco } from "@/lib/destino";
+import { FormularioProfessor } from "@/components/registo/formulario-professor";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
@@ -60,6 +62,8 @@ function RegisterConteudo() {
   useEffect(() => guardarDestinoDoEndereco(), []);
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref") || undefined;
+  // Dois formulários: aluno (conta criada já) e professor (pedido confirmado por email).
+  const [tipo, setTipo] = useState<"aluno" | "professor">(searchParams.get("tipo") === "professor" ? "professor" : "aluno");
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -242,11 +246,45 @@ function RegisterConteudo() {
         <div
           className="w-full max-w-[460px] rounded-[28px] border border-white/[0.07] bg-white/[0.02] backdrop-blur-sm p-8 sm:p-10 shadow-[0_0_0_1px_rgba(212,162,74,0.04),0_30px_60px_-30px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-3 duration-700"
         >
-          <h2 className="font-serif font-bold text-white text-3xl mb-3">Cria a tua conta.</h2>
-          <p className="text-sm text-white/60 mb-9 leading-relaxed">
-            Preenche os dados abaixo para começares a tua jornada na EYK.
+          <h2 className="font-serif font-bold text-white text-3xl mb-3">
+            {tipo === "aluno" ? "Cria a tua conta." : "Quero ensinar na EYK."}
+          </h2>
+          <p className="text-sm text-white/60 mb-6 leading-relaxed">
+            {tipo === "aluno"
+              ? "Preenche os dados abaixo para começares a tua jornada na EYK."
+              : "Preenche os teus dados. Enviamos-te um email para confirmares o endereço e escolheres a palavra-passe."}
           </p>
 
+          {/* Logo no início: quem quer ensinar não tem de chegar ao fim do formulário para o descobrir. */}
+          <div role="tablist" aria-label="Tipo de conta" className="mb-8 grid grid-cols-2 gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+            {([
+              { id: "aluno", rotulo: "Aluno", icone: User },
+              { id: "professor", rotulo: "Professor", icone: GraduationCap },
+            ] as const).map((op) => (
+              <button
+                key={op.id}
+                type="button"
+                role="tab"
+                aria-selected={tipo === op.id}
+                onClick={() => {
+                  setTipo(op.id);
+                  setErrorMsg(null);
+                }}
+                className={
+                  "flex h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold transition-colors " +
+                  (tipo === op.id ? "text-black" : "text-white/60 hover:text-white")
+                }
+                style={tipo === op.id ? { background: `linear-gradient(135deg, ${EYK_GOLD}, ${EYK_GOLD_LIGHT})` } : undefined}
+              >
+                <op.icone className="h-4 w-4" aria-hidden />
+                {op.rotulo}
+              </button>
+            ))}
+          </div>
+
+          {tipo === "professor" ? (
+            <FormularioProfessor />
+          ) : (
           <form onSubmit={handleSubmit} method="post" className="space-y-5" noValidate>
             <div className="space-y-2">
               <Label htmlFor="nome" className="text-white/85 text-sm">
@@ -506,6 +544,7 @@ function RegisterConteudo() {
               .
             </p>
           </form>
+          )}
 
           <p className="mt-8 text-center text-sm text-white/55">
             Já tens conta?{" "}
@@ -515,14 +554,6 @@ function RegisterConteudo() {
             </Link>
           </p>
 
-          <div className="mt-6 border-t border-white/[0.08] pt-6 text-center">
-            <Link
-              href="/ser-professor"
-              className="hit text-sm font-medium text-white/55 hover:text-white/80 hover:underline"
-            >
-              Quer ser professor no EYK?
-            </Link>
-          </div>
         </div>
       </main>
     </div>
