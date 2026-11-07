@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PlayCircle } from "lucide-react";
-import { PageHeader, SectionHeader, VideoCard, EmptyState } from "@/components/eyk";
+import { PageHeader, VideoCard, EmptyState } from "@/components/eyk";
 import { api, type Video } from "@/lib/api";
 import { ConteudosComEscola } from "@/components/instituicao/escola";
 import { usePesquisaPagina } from "@/components/pesquisa-pagina";
@@ -103,7 +103,6 @@ export default function VideosPage() {
         />
 
         <section>
-          <SectionHeader title={`${filtrados.length} vídeo${filtrados.length === 1 ? "" : "s"} encontrado${filtrados.length === 1 ? "" : "s"}`} />
           {filtrados.length > 0 ? (
             <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
               {filtrados.map((v) => (

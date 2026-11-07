@@ -585,6 +585,18 @@ export type LeaderRow = {
   isMe?: boolean;
 };
 
+/** Sugestão de professor para seguir (coluna lateral do Início). */
+export type ProfessorSugerido = {
+  professorId: number;
+  userId: number;
+  nome: string;
+  iniciais: string;
+  foto: string | null;
+  area: string;
+  seguidores: number;
+  cursos: number;
+};
+
 export type ProfessorLeaderRow = {
   rank: number;
   userId: number | null;
@@ -2462,6 +2474,10 @@ export const api = {
   },
   apagarRecursoCurso: async (cursoId: string | number, recursoId: number): Promise<void> => {
     await fetchAPI(`/api/cursos/${cursoId}/recursos/${recursoId}/`, { method: 'DELETE' });
+  },
+  professoresSugeridos: async (): Promise<ProfessorSugerido[]> => {
+    const lista = await fetchAPI<ProfessorSugerido[]>('/api/professores/sugeridos/');
+    return lista.map((p) => ({ ...p, foto: mediaUrl(p.foto) }));
   },
   seguirProfessor: async (professorId: string | number) => {
     return await fetchAPI<{ seguindo: boolean; seguidores: number }>(

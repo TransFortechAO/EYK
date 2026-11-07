@@ -96,6 +96,9 @@ exceto para bordas/realces descritos abaixo.
   (antigas e recentes, para quem entra não sentir que perdeu nada) e, pelo meio, faixas de 4 cursos ou 4 vídeos.
   Sem separadores. O catálogo completo, com filtros, está em Cursos e Vídeos. `/comunidade` leva ao Início
   (links antigos). No menu, o lugar da Comunidade é dos **Salvos**.
+- Coluna lateral do Início (só no computador), como nas redes sociais: **Em destaque** (publicações, um curso
+  e um vídeo), **Professores para seguir** e **No topo da classificação**. Cada bloco desaparece se estiver vazio.
+- Cursos e Vídeos não dizem "x encontrados": a lista fala por si.
 - Separadores das Configurações: 3 por linha no telemóvel, 6 numa linha a partir do tablet.
 
 ### Cartões de conteúdo

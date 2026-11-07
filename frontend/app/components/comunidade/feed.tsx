@@ -18,7 +18,17 @@ const POSICOES_FAIXAS = [2, 7, 12, 17];
  * quem entra não sentir que perdeu nada) e, pelo meio, faixas de cursos e vídeos.
  * `?post=ID` (link partilhado, notificação) abre essa publicação primeiro.
  */
-export function FeedComunidade({ faixas = [] }: { faixas?: ReactNode[] }) {
+export function FeedComunidade({
+  faixas = [],
+  destaques: destaquesExtra,
+  lateral,
+}: {
+  faixas?: ReactNode[];
+  /** Mais destaques, no mesmo cartão "Em destaque" (ex: um curso e um vídeo). */
+  destaques?: ReactNode;
+  /** Mais blocos na coluna lateral (ex: professores para seguir). */
+  lateral?: ReactNode;
+}) {
   const searchParams = useSearchParams();
   const postPartilhado = searchParams.get("post");
   const [posts, setPosts] = useState<Post[] | null>(null);
@@ -97,12 +107,13 @@ export function FeedComunidade({ faixas = [] }: { faixas?: ReactNode[] }) {
       </div>
 
       <aside className="hidden space-y-5 computador:block">
-        <div className="sticky top-24 space-y-5">
+        {/* Fica à vista ao descer o feed; se for mais alta que o ecrã, desliza por dentro. */}
+        <div className="sticky top-24 max-h-[calc(100dvh-7rem)] space-y-5 overflow-y-auto pb-2">
           <Card className="space-y-3 p-4 shadow-soft">
             <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
               <Flame className="h-4 w-4 text-primary" /> Em destaque
             </h2>
-            {destaques.length === 0 ? (
+            {destaques.length === 0 && !destaquesExtra ? (
               <p className="text-sm text-muted-foreground">Ainda sem destaques.</p>
             ) : (
               <ul className="space-y-3">
@@ -118,7 +129,9 @@ export function FeedComunidade({ faixas = [] }: { faixas?: ReactNode[] }) {
                 ))}
               </ul>
             )}
+            {destaquesExtra}
           </Card>
+          {lateral}
         </div>
       </aside>
     </div>

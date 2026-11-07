@@ -6,6 +6,7 @@ import { api, type Course, type Video } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 import { ComunidadeComEscola, InicioEscola } from "@/components/instituicao/escola";
 import { FeedComunidade } from "@/components/comunidade/feed";
+import { DestaquesCatalogo, LateralInicio } from "@/components/comunidade/lateral";
 import { PesquisaGlobal } from "@/components/pesquisa-global";
 import { pesquisaDaPagina } from "@/components/pesquisa-pagina";
 import { BoasVindasProfessor } from "@/components/boas-vindas-professor";
@@ -68,7 +69,17 @@ function Feed() {
     ),
   ].filter(Boolean);
 
-  return <FeedComunidade faixas={faixas} />;
+  // Em destaque: o curso com mais alunos (desempata a avaliação) e o vídeo mais visto.
+  const cursoDestaque = [...cursos].sort((a, b) => b.students - a.students || (b.rating ?? 0) - (a.rating ?? 0))[0] ?? null;
+  const videoDestaque = [...videos].sort((a, b) => b.views - a.views)[0] ?? null;
+
+  return (
+    <FeedComunidade
+      faixas={faixas}
+      destaques={<DestaquesCatalogo curso={cursoDestaque} video={videoDestaque} />}
+      lateral={<LateralInicio />}
+    />
+  );
 }
 
 export default function InicioPage() {

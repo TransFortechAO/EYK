@@ -25,6 +25,7 @@ from apps.gamificacao.api_views import (
     leaderboard_list,
     leaderboard_professores_mensal,
 )
+from apps.professores.api_sugestoes import professores_sugeridos
 from apps.professores.api_views import professor_toggle_seguir
 
 from .views import (
@@ -74,6 +75,7 @@ urlpatterns = [
     path('moderacao/', include('apps.moderacao.urls')),
     path('plataforma/', include('apps.plataforma.urls')),
     path('instituicoes/', include('apps.instituicoes.urls')),
+    path('professores/sugeridos/', professores_sugeridos, name='api-professores-sugeridos'),
     path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),

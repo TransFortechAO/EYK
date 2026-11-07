@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen } from "lucide-react";
-import { PageHeader, SectionHeader, CourseCard, EmptyState } from "@/components/eyk";
+import { PageHeader, CourseCard, EmptyState } from "@/components/eyk";
 import { api, type Course } from "@/lib/api";
 import { ConteudosComEscola } from "@/components/instituicao/escola";
 import { usePesquisaPagina } from "@/components/pesquisa-pagina";
@@ -104,7 +104,6 @@ export default function CursosPage() {
         />
 
         <section>
-          <SectionHeader title={`${filtered.length} curso${filtered.length === 1 ? "" : "s"} encontrado${filtered.length === 1 ? "" : "s"}`} />
           {filtered.length > 0 ? (
             <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
               {filtered.map((course) => (
