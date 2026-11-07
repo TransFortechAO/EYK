@@ -41,7 +41,7 @@ def _notificar_comentario(request, post, comentario, parent):
     original (resposta) — nunca a própria pessoa nem quem a bloqueou."""
     autor = request.user
     nome = autor.get_display_name() or autor.username
-    link = f'/comunidade?post={post.id}'
+    link = f'/inicio?post={post.id}'
     avisados = {autor.id}
     if parent and parent.autor_id not in avisados and not estao_bloqueados(autor, parent.autor):
         notificar(
@@ -121,7 +121,7 @@ def post_repostar(request, post_id):
         nome = request.user.get_display_name() or request.user.username
         notificar(
             original.autor, 'comunidade', f'{nome} repostou a tua publicação: "{_resumo(original.conteudo)}"',
-            link=f'/comunidade?post={post.id}',
+            link=f'/inicio?post={post.id}',
         )
     return Response(PostSerializer(post, context=_contexto(request)).data, status=status.HTTP_201_CREATED)
 

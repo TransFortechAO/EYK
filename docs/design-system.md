@@ -73,7 +73,10 @@ exceto para bordas/realces descritos abaixo.
 ### Pesquisa (`components/pesquisa-pagina.tsx`)
 - **Computador**: o campo está só na barra do topo. **Telemóvel/tablet**: só dentro da página.
 - O texto de ajuda diz o que se pesquisa naquela página (ex.: Vídeos → "Pesquisar vídeos ou professores…").
-- Início: pesquisa **geral** (cursos, vídeos, professores) com resultados por baixo.
+- Início: pesquisa **geral** (cursos, vídeos, professores) com resultados por baixo. **Enter** ou
+  "Ver todos os resultados" abre a página **Pesquisa** (`/pesquisa?q=`): tudo o que se relaciona com o termo
+  (cursos, vídeos, publicações, pessoas e, para membros, os conteúdos da escola), com um separador por tipo e
+  os filtros de cada tipo (os mesmos `BarraFiltros` dos Cursos e Vídeos).
   Restantes páginas: pesquisa **da página** (filtra a lista, via `?q=` no endereço).
 - Páginas sem pesquisa: Configurações, Leaderboard, Gamificação, Notificações, Perfil.
 - Para dar pesquisa a uma página nova: acrescentar a rota em `PAGINAS` e usar
@@ -89,13 +92,15 @@ exceto para bordas/realces descritos abaixo.
 - Aplicado em: Perfil e Gamificação.
 - A Leaderboard usa separadores em **todos** os ecrãs, porque são vistas alternativas da mesma
   lista (Classificação / Streak / Moedas / Professores).
-- A Comunidade **não** tem separadores: o feed é aleatório entre todas as publicações, antigas e
-  recentes, para quem entra não sentir que perdeu nada.
+- **O Início é a Comunidade** (`components/comunidade/feed.tsx`): compositor, publicações por ordem aleatória
+  (antigas e recentes, para quem entra não sentir que perdeu nada) e, pelo meio, faixas de 4 cursos ou 4 vídeos.
+  Sem separadores. O catálogo completo, com filtros, está em Cursos e Vídeos. `/comunidade` leva ao Início
+  (links antigos). No menu, o lugar da Comunidade é dos **Salvos**.
 - Separadores das Configurações: 3 por linha no telemóvel, 6 numa linha a partir do tablet.
 
 ### Cartões de conteúdo
 - Curso/vídeo: **horizontal e compacto no telemóvel**, vertical a partir do tablet; grelha de 2–3 colunas.
-- Início mostra **12 cursos e 12 vídeos**; o resto está nas páginas de Cursos e Vídeos.
+- O Início mostra até **8 cursos e 8 vídeos**, em faixas no meio do feed; o resto está nas páginas de Cursos e Vídeos.
 - Publicação (feed): cabeçalho (autor, tempo, "editado"), texto, foto, repost; ações
   **Gosto · Comentar · Partilhar** com os números; comentários num modal.
 

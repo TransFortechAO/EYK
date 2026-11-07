@@ -571,7 +571,7 @@ export type Notification = {
   body: string;
   timeAgo: string;
   read?: boolean;
-  /** Página a abrir ao clicar (ex: "/comunidade?post=3"). */
+  /** Página a abrir ao clicar (ex: "/inicio?post=3"). */
   link?: string | null;
 };
 
@@ -1524,6 +1524,12 @@ export const api = {
   // =========================================================================
   //  SALVOS (guardar para ver depois)
   // =========================================================================
+  /** Pesquisa em toda a plataforma (as pessoas vêm de pesquisarUtilizadores). */
+  pesquisar: async (q: string): Promise<{ cursos: Course[]; videos: Video[]; posts: Post[] }> => {
+    const r = await fetchAPI<{ cursos: RawCourse[]; videos: RawVideo[]; posts: RawPost[] }>(`/api/pesquisa/?q=${encodeURIComponent(q)}`);
+    return { cursos: r.cursos.map(normalizeCourse), videos: r.videos.map(normalizeVideo), posts: r.posts.map(normalizePost) };
+  },
+
   salvos: {
     ids: async (): Promise<string[]> => (await fetchAPI<{ ids: string[] }>('/api/salvos/ids/')).ids,
 

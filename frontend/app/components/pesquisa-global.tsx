@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BookOpen, GraduationCap, PlayCircle, Search, X } from "lucide-react";
 import { api, type Course, type UtilizadorPesquisa, type Video } from "@/lib/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +27,7 @@ export function PesquisaGlobal({
   /** Mostra o botão de fechar (telemóvel, quando a pesquisa abre por cima do topo). */
   aoFechar?: () => void;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [mostrarResultados, setMostrarResultados] = useState(false);
   const [aPesquisar, setAPesquisar] = useState(false);
@@ -97,7 +99,16 @@ export function PesquisaGlobal({
 
   return (
     <div ref={searchWrapRef} className={cn("relative flex min-w-0 items-center gap-2", className)}>
-      <div className="relative min-w-0 flex-1">
+      <form
+        role="search"
+        className="relative min-w-0 flex-1"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (query.trim().length < 2) return;
+          setMostrarResultados(false);
+          router.push(`/pesquisa?q=${encodeURIComponent(query.trim())}`);
+        }}
+      >
         <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           autoFocus={autoFocus}
@@ -109,9 +120,11 @@ export function PesquisaGlobal({
           }}
           onFocus={() => setMostrarResultados(true)}
           // Tema claro: sem borda nem sombra; no escuro mantém a borda.
+          type="search"
+          enterKeyHint="search"
           className="h-10 rounded-full border-transparent bg-surface pl-4 pr-10 shadow-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-border/70"
         />
-      </div>
+      </form>
       {aoFechar && (
         <Button
           type="button"
@@ -133,7 +146,7 @@ export function PesquisaGlobal({
           {aPesquisar ? (
             <div className="px-3 py-4 text-center text-sm text-muted-foreground">A pesquisar…</div>
           ) : semResultados ? (
-            <div className="px-3 py-4 text-center text-sm text-muted-foreground">Nenhum resultado encontrado.</div>
+            <div className="px-3 py-4 text-center text-sm text-muted-foreground">Nada nos cursos, vídeos e professores.</div>
           ) : (
             <>
               {cursosEncontrados.length > 0 && (
@@ -223,6 +236,15 @@ export function PesquisaGlobal({
                 </div>
               )}
             </>
+          )}
+          {!aPesquisar && query.trim().length >= 2 && (
+            <Link
+              href={`/pesquisa?q=${encodeURIComponent(query.trim())}`}
+              onClick={() => setMostrarResultados(false)}
+              className="mt-1 flex items-center justify-center gap-2 rounded-lg border-t border-border/60 px-3 py-3 text-sm font-medium text-primary transition-colors hover:bg-surface"
+            >
+              <Search className="h-4 w-4" aria-hidden /> Ver todos os resultados para «{query.trim()}»
+            </Link>
           )}
         </Card>
       )}

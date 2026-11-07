@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 export function AbrirPost({ id }: { id: string }) {
   const router = useRouter();
   useEffect(() => {
-    router.replace(`/comunidade?post=${encodeURIComponent(id)}`);
+    router.replace(`/inicio?post=${encodeURIComponent(id)}`);
   }, [id, router]);
   return <p className="py-10 text-center text-sm text-muted-foreground">A abrir a publicação…</p>;
 }

@@ -6,7 +6,6 @@ import {
   Home,
   BookOpen,
   PlayCircle,
-  Users,
   Bell,
   Bookmark,
   Trophy,
@@ -52,11 +51,10 @@ const primary = [
   { title: "Início", url: "/inicio", icon: Home },
   { title: "Cursos", url: "/cursos", icon: BookOpen },
   { title: "Vídeos", url: "/videos", icon: PlayCircle },
-  { title: "Comunidade", url: "/comunidade", icon: Users },
+  { title: "Salvos", url: "/salvos", icon: Bookmark },
 ];
 
 const secondary = [
-  { title: "Salvos", url: "/salvos", icon: Bookmark },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },

@@ -69,7 +69,7 @@ export function PublicacoesPerfil({
                   <MessageCircle className="h-3.5 w-3.5" /> {p.comentarios}
                 </span>
                 {!p.oculto && (
-                  <Link href={`/comunidade?post=${p.id}`} className="hit ml-auto font-medium text-primary hover:underline">
+                  <Link href={`/inicio?post=${p.id}`} className="hit ml-auto font-medium text-primary hover:underline">
                     Ver na comunidade
                   </Link>
                 )}

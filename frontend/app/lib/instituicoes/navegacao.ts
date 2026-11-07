@@ -6,7 +6,7 @@ export type IconeNav =
   | "inicio"
   | "cursos"
   | "videos"
-  | "comunidade"
+  | "salvos"
   | "escola"
   | "turmas"
   | "praticar"
@@ -55,7 +55,7 @@ const GERAL: ItemNav[] = [
   { id: "inicio", titulo: "Início", url: "/inicio", icone: "inicio" },
   { id: "cursos", titulo: "Cursos", url: "/cursos", icone: "cursos" },
   { id: "videos", titulo: "Vídeos", url: "/videos", icone: "videos" },
-  { id: "comunidade", titulo: "Comunidade", url: "/comunidade", icone: "comunidade" },
+  { id: "salvos", titulo: "Salvos", url: "/salvos", icone: "salvos" },
 ];
 
 /** As funcionalidades da escola na barra lateral, pela ordem de uso de cada papel. */
@@ -77,14 +77,14 @@ export function navegacaoEscola(papel: Papel, c: Contadores): ItemNav[] {
 
 /**
  * As abas de baixo no telemóvel: as quatro coisas mais usadas por cada papel.
- * Sem escola, ficam as de sempre (Início, Cursos, Vídeos, Comunidade).
+ * Sem escola: Início (que é também a Comunidade), Cursos, Vídeos e Salvos.
  */
 export function abasTelemovel(papel: Papel | null, c: Contadores): ItemNav[] {
-  const [inicio, cursos, videos, comunidade] = GERAL;
+  const [inicio, cursos, videos, salvos] = GERAL;
   const com = (item: ItemNav, n: number): ItemNav => (n > 0 ? { ...item, contador: n } : item);
   switch (papel) {
     case "aluno":
-      return [inicio, com({ ...I.minhasTurmas, titulo: "Turmas" }, c.trabalhos), { ...I.praticar, titulo: "Praticar" }, comunidade];
+      return [inicio, com({ ...I.minhasTurmas, titulo: "Turmas" }, c.trabalhos), { ...I.praticar, titulo: "Praticar" }, salvos];
     case "familia":
       return [inicio, { ...I.criancas, titulo: "Crianças" }, com(I.avisos, c.avisosPorLer), I.agenda];
     case "educador":
@@ -94,7 +94,7 @@ export function abasTelemovel(papel: Papel | null, c: Contadores): ItemNav[] {
     case "administrador":
       return [inicio, { ...I.painel, titulo: "Escola" }, { ...I.turmas, titulo: "Turmas" }, { ...I.membros, titulo: "Membros" }];
     default:
-      return [inicio, cursos, videos, comunidade];
+      return [inicio, cursos, videos, salvos];
   }
 }
 

@@ -35,8 +35,8 @@ describe("navegação por papel", () => {
       expect(abas[0].url).toBe("/inicio");
       expect(new Set(urls(abas)).size).toBe(4);
     }
-    expect(urls(abasTelemovel(null, nada))).toEqual(["/inicio", "/cursos", "/videos", "/comunidade"]);
-    expect(urls(abasTelemovel("aluno", nada))).toEqual(["/inicio", "/instituicao/turmas", "/instituicao/praticar", "/comunidade"]);
+    expect(urls(abasTelemovel(null, nada))).toEqual(["/inicio", "/cursos", "/videos", "/salvos"]);
+    expect(urls(abasTelemovel("aluno", nada))).toEqual(["/inicio", "/instituicao/turmas", "/instituicao/praticar", "/salvos"]);
     expect(abasTelemovel("educador", { ...nada, porRever: 4 }).find((a) => a.url === "/instituicao/respostas")?.contador).toBe(4);
   });
 

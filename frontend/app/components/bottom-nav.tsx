@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
-  Bookmark,
   BookOpen,
   Building2,
   ChevronRight,
@@ -39,13 +38,12 @@ type Item = { title: string; url: string; icon: LucideIcon; contador?: number };
 
 // As mesmas rotas da barra lateral (app-sidebar.tsx), repartidas entre as
 // abas de baixo e o painel "Mais". As abas dependem do papel na escola
-// (lib/instituicoes/navegacao.ts); sem escola: Início, Cursos, Vídeos, Comunidade.
+// (lib/instituicoes/navegacao.ts); sem escola: Início, Cursos, Vídeos, Salvos.
 function paraItem(i: ItemNav): Item {
   return { title: i.titulo, url: i.url, icon: ICONE_NAV[i.icone], contador: i.contador };
 }
 
 const MAIS: Item[] = [
-  { title: "Salvos", url: "/salvos", icon: Bookmark },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },

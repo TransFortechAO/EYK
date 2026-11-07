@@ -384,7 +384,7 @@ export function PostCard({
   onAutorBloqueado?: (userId: number) => void;
   /** Chamado com o novo post depois de repostar (para o pôr no topo da lista). */
   onRepostado?: (novo: Post) => void;
-  /** Abre logo o modal do post (ex: link partilhado /comunidade?post=ID). */
+  /** Abre logo o modal do post (ex: link partilhado /inicio?post=ID). */
   abrirAoCarregar?: boolean;
 }) {
   const [liked, setLiked] = useState(post.liked || false);
