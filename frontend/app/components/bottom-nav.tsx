@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bell,
+  Bookmark,
   BookOpen,
   Building2,
   ChevronRight,
@@ -44,6 +45,7 @@ function paraItem(i: ItemNav): Item {
 }
 
 const MAIS: Item[] = [
+  { title: "Salvos", url: "/salvos", icon: Bookmark },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },

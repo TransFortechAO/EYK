@@ -1522,6 +1522,27 @@ function normalizeComentario(raw: RawComentario): Comentario {
 
 export const api = {
   // =========================================================================
+  //  SALVOS (guardar para ver depois)
+  // =========================================================================
+  salvos: {
+    ids: async (): Promise<string[]> => (await fetchAPI<{ ids: string[] }>('/api/salvos/ids/')).ids,
+
+    listar: async (): Promise<{ cursos: Course[]; videos: Video[]; posts: Post[] }> => {
+      const r = await fetchAPI<{ cursos: RawCourse[]; videos: RawVideo[]; posts: RawPost[] }>('/api/salvos/');
+      return { cursos: r.cursos.map(normalizeCourse), videos: r.videos.map(normalizeVideo), posts: r.posts.map(normalizePost) };
+    },
+
+    alternar: async (tipo: 'curso' | 'video' | 'post', id: string | number): Promise<{ salvo: boolean }> => {
+      try {
+        return await fetchAPI('/api/salvos/', { method: 'POST', body: JSON.stringify({ tipo, id }) });
+      } catch (err) {
+        const detalhe = (err as { data?: { detail?: string } }).data?.detail;
+        throw new Error(detalhe ?? 'Não foi possível guardar.');
+      }
+    },
+  },
+
+  // =========================================================================
   //  AUTENTICAÇÃO
   // =========================================================================
   login: async (username: string, password: string) => {

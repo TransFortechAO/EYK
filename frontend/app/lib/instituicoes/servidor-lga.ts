@@ -26,6 +26,13 @@ import type {
   VideoAnexo,
 } from "./tipos";
 
+/** O que este membro guardou na escola. */
+export type SalvosEscola = {
+  conteudos: ConteudoEscola[];
+  aulas: (Aula & { turmaNome: string })[];
+  posts: (PostTurma & { turmaNome: string })[];
+};
+
 type TurmaLga = Grupo & { lga: NonNullable<Grupo["lga"]> };
 type DesafioComProgresso = Desafio & { progresso: number; concluido: boolean; turmaNome: string | null };
 type NivelMestria = "por_comecar" | "a_comecar" | "a_progredir" | "dominado";
@@ -263,6 +270,19 @@ export const apiLgaReal = {
 
   async denunciarPostTurma(id: string, postId: string): Promise<void> {
     await pedido(`${id}/posts/${postId}/denunciar/`, { method: "POST" });
+  },
+
+  // ── Salvos ──
+  async salvosIds(id: string): Promise<string[]> {
+    return (await pedido<{ ids: string[] }>(`${id}/salvos/ids/`)).ids;
+  },
+
+  listarSalvos(id: string): Promise<SalvosEscola> {
+    return pedido(`${id}/salvos/`);
+  },
+
+  alternarSalvo(id: string, tipo: "conteudo" | "aula" | "post_turma", itemId: string): Promise<{ salvo: boolean }> {
+    return pedido(`${id}/salvos/`, json({ tipo, id: itemId }));
   },
 
   // ── Classificações e desafios ──

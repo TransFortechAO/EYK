@@ -12,6 +12,7 @@ import { OfflineBanner } from "@/components/pwa";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
 import { AvisoPlataforma } from "@/components/aviso-plataforma";
 import { EscolaGlobal } from "@/components/instituicao/contexto";
+import { SalvosProvider } from "@/components/ds/botao-salvar";
 
 const ROTAS_PUBLICAS = new Set([
   "/",
@@ -64,6 +65,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider>
       <AuthGate>
         <EscolaGlobal>
+          <SalvosProvider>
           <SidebarProvider>
             <div className="flex min-h-dvh w-full">
               <AppSidebar />
@@ -81,6 +83,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </SidebarProvider>
+          </SalvosProvider>
         </EscolaGlobal>
       </AuthGate>
     </ThemeProvider>

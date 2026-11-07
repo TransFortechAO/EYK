@@ -26,6 +26,7 @@ const PAGINAS: Record<string, PaginaComPesquisa> = {
   "/videos": { tipo: "pagina", placeholder: "Pesquisar vídeos ou professores…" },
   "/comunidade": { tipo: "pagina", placeholder: "Pesquisar publicações ou pessoas…" },
   "/biblioteca": { tipo: "pagina", placeholder: "Pesquisar gestos, palavras ou frases…" },
+  "/salvos": { tipo: "pagina", placeholder: "Pesquisar nos Salvos…" },
   "/professor/cursos": { tipo: "pagina", placeholder: "Pesquisar nos meus cursos…" },
   "/professor/videos": { tipo: "pagina", placeholder: "Pesquisar nos meus vídeos…" },
   "/configuracoes/administracao/utilizadores": { tipo: "pagina", placeholder: "Pesquisar utilizadores por nome ou email…" },

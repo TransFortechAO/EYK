@@ -15,6 +15,7 @@ import {
   Star,
 } from "lucide-react";
 import { CourseCard, SectionHeader, EmptyState, ShareButton } from "@/components/eyk";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import { PreviaConteudo } from "@/components/partilha/modal-partilha";
 import { RecursosAnexos } from "@/components/curso/recursos-anexos";
 import { VideoComments } from "@/components/eyk/video-comments";
@@ -247,6 +248,7 @@ export default function CoursePlayerPage() {
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{curso.title}</h1>
             <div className="flex shrink-0 items-center gap-1">
+              <BotaoSalvar tipo="curso" id={curso.id} variante="acao" />
               <ShareButton
                 url={`/cursos/${curso.id}`}
                 titulo={curso.title}

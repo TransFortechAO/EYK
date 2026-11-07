@@ -56,6 +56,7 @@ def _dados_membro(membro: MembroInstituicao) -> dict:
         'progresso': _tabela(membro.progresso.all()),
         'pratica': _tabela(membro.registos_pratica.all()),
         'presencas': _tabela(RespostaEvento.objects.filter(membro=membro)),
+        'salvos': _tabela(membro.salvos.all()),
     }
 
 

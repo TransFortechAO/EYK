@@ -32,6 +32,7 @@ import { ListaDesafios } from "@/components/instituicao/desafios";
 import { CartaoGesto } from "@/components/instituicao/lga";
 import { ListaClassificacao } from "@/components/instituicao/turma/classificacao";
 import { SeparadorComunidade } from "@/components/instituicao/turma/comunidade";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import { contem, dataHora, Etiqueta, haQuanto } from "@/components/instituicao/ui";
 import { usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
@@ -49,7 +50,7 @@ function ComEscola({ children, semEscola = null }: { children: ReactNode; semEsc
 }
 
 /** Aluno que escolheu ver só a escola (a opção por omissão para alunos de uma escola parceira). */
-function soEscola(ctx: ReturnType<typeof useInstituicao>): boolean {
+export function soEscola(ctx: ReturnType<typeof useInstituicao>): boolean {
   return !!ctx.atual && ctx.atual.membro.papel === "aluno" && !ctx.verGeral;
 }
 
@@ -92,6 +93,8 @@ export function SoPlataformaGeral({ children }: { children: ReactNode }) {
 
 export function CartaoConteudoEscola({ conteudo: c, turma }: { conteudo: ConteudoEscola; turma?: string | null }) {
   return (
+    <div className="relative h-full">
+    <BotaoSalvar tipo="conteudo" id={c.id} variante="cartao" />
     <Link href={`/instituicao/conteudos/${c.id}`} className="group block h-full">
       <Card className="flex h-full flex-row overflow-hidden shadow-soft transition-shadow group-hover:shadow-elevated sm:flex-col">
         <div className="relative grid w-32 shrink-0 place-items-center bg-gradient-to-br from-primary/15 via-surface to-primary/5 sm:aspect-video sm:w-auto">
@@ -100,7 +103,7 @@ export function CartaoConteudoEscola({ conteudo: c, turma }: { conteudo: Conteud
             <Building2 className="h-3 w-3" aria-hidden /> {c.ambito.tipo === "turma" ? turma ?? "Da turma" : "Da escola"}
           </span>
           {c.emLga && (
-            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground sm:bottom-auto sm:left-auto sm:right-3 sm:top-3">
+            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground ">
               <Hand className="h-3 w-3" aria-hidden /> Em LGA
             </span>
           )}
@@ -121,6 +124,7 @@ export function CartaoConteudoEscola({ conteudo: c, turma }: { conteudo: Conteud
         </div>
       </Card>
     </Link>
+    </div>
   );
 }
 

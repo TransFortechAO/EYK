@@ -99,6 +99,12 @@ exceto para bordas/realces descritos abaixo.
 - Publicação (feed): cabeçalho (autor, tempo, "editado"), texto, foto, repost; ações
   **Gosto · Comentar · Partilhar** com os números; comentários num modal.
 
+### Salvos (`components/ds/botao-salvar.tsx`)
+- Guardar para ver depois, com o marcador (`Bookmark`), igual nas duas partes da plataforma. Preenchido a dourado quando está guardado.
+- `BotaoSalvar`: variante `cartao` (por cima da imagem, nunca dentro do link), `acao` (linha de ações da publicação) e `botao` (detalhe, ao lado de Partilhar).
+- Tudo numa só página, **Salvos** (`/salvos`), com pesquisa e um separador por tipo no telemóvel. Na barra lateral e no "Mais".
+- O que é da escola fica na escola: ao listar volta a verificar-se o acesso, e o aluno que só vê a escola não tem salvos públicos.
+
 ### Modais
 - `Dialog` sem espaçamento próprio: usar `DialogHeader` (título + descrição) e um corpo
   `div.space-y-4.overflow-y-auto.p-5`.

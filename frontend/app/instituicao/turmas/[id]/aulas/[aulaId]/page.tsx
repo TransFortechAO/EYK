@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, BookOpen, CalendarClock, Camera, Captions, Dumbbell, Lock, Paperclip, PlayCircle, Send } from "lucide-react";
 import { toast } from "sonner";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import { enderecoApi } from "@/lib/instituicoes/servidor";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,7 +67,10 @@ export default function AulaPage() {
       </Link>
 
       <div>
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{aula.titulo}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{aula.titulo}</h1>
+          <BotaoSalvar tipo="aula" id={aula.id} className="shrink-0" />
+        </div>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>
             {aula.autor} · {haQuanto(aula.publicadaEm)}

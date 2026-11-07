@@ -502,3 +502,21 @@ class Desafio(models.Model):
 
     class Meta:
         ordering = ['termina_em', 'id']
+
+
+class SalvoEscola(models.Model):
+    """Guardado por um membro. Ao listar volta a verificar-se o acesso: quem sai de uma
+    turma deixa de ver o que tinha guardado dela."""
+    membro = models.ForeignKey(MembroInstituicao, on_delete=models.CASCADE, related_name='salvos')
+    conteudo = models.ForeignKey(ConteudoEscola, on_delete=models.CASCADE, null=True, blank=True, related_name='+')
+    aula = models.ForeignKey(Aula, on_delete=models.CASCADE, null=True, blank=True, related_name='+')
+    post = models.ForeignKey(PostTurma, on_delete=models.CASCADE, null=True, blank=True, related_name='+')
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em', '-id']
+        constraints = [
+            models.UniqueConstraint(fields=['membro', 'conteudo'], condition=models.Q(conteudo__isnull=False), name='salvo_conteudo_unico'),
+            models.UniqueConstraint(fields=['membro', 'aula'], condition=models.Q(aula__isnull=False), name='salvo_aula_unico'),
+            models.UniqueConstraint(fields=['membro', 'post'], condition=models.Q(post__isnull=False), name='salvo_post_turma_unico'),
+        ]

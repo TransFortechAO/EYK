@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -197,6 +198,7 @@ function LinkDentroDeCartao({ href, className, children }: { href: string; class
 export function CourseCard({ course }: { course: Course }) {
   return (
     <Card className="group relative overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
+      <BotaoSalvar tipo="curso" id={course.id} variante="cartao" />
       <Link
         href={`/cursos/${course.id}`}
         // Telemóvel: cartão horizontal e compacto; a partir do tablet, vertical.
@@ -292,6 +294,8 @@ export function CourseCard({ course }: { course: Course }) {
 /* ---------- Video card ---------- */
 export function VideoCard({ video }: { video: Video }) {
   return (
+    <div className="relative">
+    <BotaoSalvar tipo="video" id={video.id} variante="cartao" />
     <Link
       href={`/videos/${video.id}`}
       className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
@@ -352,6 +356,7 @@ export function VideoCard({ video }: { video: Video }) {
         </div>
       </Card>
     </Link>
+    </div>
   );
 }
 
@@ -546,7 +551,7 @@ export function PostCard({
           {cabecalho(false)}
           {corpo(false)}
           {/* Como num feed: reagir, comentar (abre o modal do post) e partilhar, com os números. */}
-          <div className="grid grid-cols-3 gap-1 border-t border-border/60 pt-2">
+          <div className="grid grid-cols-4 gap-1 border-t border-border/60 pt-2">
             <Button
               variant="ghost"
               size="sm"
@@ -576,9 +581,10 @@ export function PostCard({
               onClick={() => setPartilhaAberta(true)}
             >
               <Share2 className="h-4 w-4" />
-              <span>Partilhar</span>
+              <span className="hidden sm:inline">Partilhar</span>
               {!!post.reposts && <span className="tabular-nums text-muted-foreground">{post.reposts}</span>}
             </Button>
+            <BotaoSalvar tipo="post" id={post.id} variante="acao" />
           </div>
         </div>
       </Card>

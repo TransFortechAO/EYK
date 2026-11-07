@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/eyk";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import { useConfirm } from "@/components/confirm-dialog";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { EscolherGestos } from "@/components/instituicao/lga";
@@ -339,6 +340,7 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
                       <span className="hidden sm:inline">Comentar</span>
                       <span className="tabular-nums">{p.comentarios}</span>
                     </Button>
+                    <BotaoSalvar tipo="post_turma" id={p.id} variante="acao" />
                   </div>
                   <div className="flex justify-end gap-1">
                   {moderador ? (

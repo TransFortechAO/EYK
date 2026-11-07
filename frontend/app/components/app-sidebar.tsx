@@ -8,6 +8,7 @@ import {
   PlayCircle,
   Users,
   Bell,
+  Bookmark,
   Trophy,
   Settings,
   LogOut,
@@ -55,6 +56,7 @@ const primary = [
 ];
 
 const secondary = [
+  { title: "Salvos", url: "/salvos", icon: Bookmark },
   { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },

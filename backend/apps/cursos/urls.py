@@ -6,6 +6,7 @@ from apps.accounts.api_notificacoes import (
     notificacao_marcar_lida,
     notificacao_nao_lidas,
 )
+from apps.alunos.api_salvos import salvos, salvos_ids
 from apps.feed.api_views import (
     comentario_detail,
     comentario_list,
@@ -82,6 +83,9 @@ urlpatterns = [
     path('comunidade/posts/<int:post_id>/comentarios/', comentario_list, name='api-comentario-list'),
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/', comentario_detail, name='api-comentario-detail'),
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/reagir/', comentario_reagir, name='api-comentario-reagir'),
+
+    path('salvos/', salvos, name='salvos'),
+    path('salvos/ids/', salvos_ids, name='salvos-ids'),
 
     path('notificacoes/', notificacao_list, name='notificacao-list'),
     path('notificacoes/nao-lidas/', notificacao_nao_lidas, name='notificacao-nao-lidas'),

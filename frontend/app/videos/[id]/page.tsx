@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Eye, Calendar, Clock } from "lucide-react";
 import { ShareButton } from "@/components/eyk";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import { PreviaConteudo } from "@/components/partilha/modal-partilha";
 import { RecursosAnexos } from "@/components/curso/recursos-anexos";
 import { VideoComments } from "@/components/eyk/video-comments";
@@ -207,6 +208,7 @@ export default function VideoPlayerPage() {
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{video.title}</h1>
             <div className="flex shrink-0 items-center gap-1">
+              <BotaoSalvar tipo="video" id={video.id} variante="acao" />
               <ShareButton
                 url={`/videos/${video.id}`}
                 titulo={video.title}

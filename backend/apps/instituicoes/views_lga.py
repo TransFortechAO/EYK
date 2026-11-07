@@ -33,6 +33,7 @@ from .models import (
     ProgressoPratica,
     RegistoPratica,
     RespostaVideo,
+    SalvoEscola,
 )
 from .servicos import TAMANHO_CODIGO_PARTILHADO, auditar, consentimentos_atuais, gerar_codigo
 from .views_comunicacao import avisos_de, erro_fotos, eventos_de, sem_consentimento_fotos, validar_quota
@@ -1061,6 +1062,73 @@ def comentario_denunciar(request, membro, comentario_id):
         c.estado = 'denunciado'
         c.save(update_fields=['estado'])
     return Response({'ok': True})
+
+
+# ── Salvos ───────────────────────────────────────────────────────────────────
+
+def _ve_aula(membro, a: Aula) -> bool:
+    return pode(membro.papel, 'ver_turmas_lga') and acede_turma(membro, a.turma_id)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([permissions.IsAuthenticated])
+@com_membro()
+def salvos(request, membro):
+    i = membro.instituicao
+    if request.method == 'GET':
+        guardados = list(membro.salvos.select_related(
+            'conteudo__video', 'aula__video', 'aula__turma', 'post__foto', 'post__turma',
+        ).prefetch_related('aula__recursos', 'post__gostos', 'post__comentarios'))
+        return Response({
+            'conteudos': [
+                conteudo_json(s.conteudo, i.pk) for s in guardados if s.conteudo and ve_conteudo(membro, s.conteudo)
+            ],
+            'aulas': [
+                {**aula_json(s.aula, i.pk), 'turmaNome': s.aula.turma.nome}
+                for s in guardados if s.aula and _ve_aula(membro, s.aula)
+            ],
+            'posts': [
+                {**_post_json(s.post, membro), 'turmaNome': s.post.turma.nome}
+                for s in guardados if s.post and _ve_post(membro, s.post)
+            ],
+        })
+
+    tipo, item_id = request.data.get('tipo'), pid(request.data.get('id'))
+    if tipo == 'conteudo':
+        alvo = i.conteudos.filter(pk=item_id).first()
+        visivel = alvo and ve_conteudo(membro, alvo)
+        campos = {'conteudo': alvo}
+    elif tipo == 'aula':
+        alvo = i.aulas.filter(pk=item_id).first()
+        visivel = alvo and _ve_aula(membro, alvo)
+        campos = {'aula': alvo}
+    elif tipo == 'post_turma':
+        alvo = i.posts_turma.filter(pk=item_id).first()
+        visivel = alvo and _ve_post(membro, alvo)
+        campos = {'post': alvo}
+    else:
+        raise Recusa('Tipo inválido.')
+    if not visivel:
+        raise Recusa('Já não está disponível.', status.HTTP_404_NOT_FOUND)
+    salvo, criado = SalvoEscola.objects.get_or_create(membro=membro, **campos)
+    if not criado:
+        salvo.delete()
+    return Response({'salvo': criado})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+@com_membro()
+def salvos_ids(request, membro):
+    chaves = []
+    for conteudo, aula, post in membro.salvos.values_list('conteudo_id', 'aula_id', 'post_id'):
+        if conteudo:
+            chaves.append(f'conteudo:{sid(conteudo)}')
+        elif aula:
+            chaves.append(f'aula:{sid(aula)}')
+        elif post:
+            chaves.append(f'post_turma:{sid(post)}')
+    return Response({'ids': chaves})
 
 
 # ── Classificações, desafios e resumo ────────────────────────────────────────

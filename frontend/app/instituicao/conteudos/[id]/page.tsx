@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Building2, Captions, Eye, Hand, Lock } from "lucide-react";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import { Card } from "@/components/ui/card";
 import { useInstituicaoAtual } from "@/components/instituicao/contexto";
 import { VideoLga } from "@/components/instituicao/lga";
@@ -33,7 +34,10 @@ export default function ConteudoEscolaPage() {
         <div className="space-y-4">
           <VideoLga video={c.video ?? null} glyph={c.tipo === "curso" ? "📚" : "🤟"} titulo={c.titulo} />
           <div>
-            <h2 className="font-serif text-2xl font-semibold">{c.titulo}</h2>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{c.titulo}</h1>
+              <BotaoSalvar tipo="conteudo" id={c.id} className="shrink-0" />
+            </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {c.autor} · {dataCurta(c.publicadoEm)}
             </p>
