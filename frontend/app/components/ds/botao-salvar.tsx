@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { Bookmark } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { api } from "@/lib/api";
 import { PREFIXO_SERVIDOR } from "@/lib/instituicoes/servidor";
@@ -85,7 +86,9 @@ export function useSalvos(): EstadoSalvos | null {
 
 /**
  * - `cartao`: ícone por cima da imagem de um cartão (fica por cima do link, não dentro dele);
- * - `acao`: na linha de ações de uma publicação, ao lado de Gosto e Comentar;
+ * - `menu`: no menu "⋯" de uma publicação, junto de Denunciar (a linha de ações fica só com
+ *   Reações, Comentários e Partilhar, sem botões encostados uns aos outros);
+ * - `acao`: botão pequeno ao lado de um item (ex: na página Salvos);
  * - `botao`: nas páginas de detalhe, ao lado de Partilhar.
  */
 export function BotaoSalvar({
@@ -96,7 +99,7 @@ export function BotaoSalvar({
 }: {
   tipo: TipoSalvo;
   id: string | number;
-  variante?: "cartao" | "acao" | "botao";
+  variante?: "cartao" | "acao" | "botao" | "menu";
   className?: string;
 }) {
   const salvos = useSalvos();
@@ -107,6 +110,13 @@ export function BotaoSalvar({
   const icone = <Bookmark className={cn("h-4 w-4", salvo && "fill-primary text-primary")} aria-hidden />;
   const clique = () => void salvos.alternar(tipo, id);
 
+  if (variante === "menu") {
+    return (
+      <DropdownMenuItem onSelect={clique} className={cn("gap-2", className)}>
+        {icone} {salvo ? "Tirar dos Salvos" : "Salvar"}
+      </DropdownMenuItem>
+    );
+  }
   if (variante === "cartao") {
     return (
       <button

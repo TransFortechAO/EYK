@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { EyeOff, Flag, Hand, Eye, ImagePlus, MessageCircle, Send, ShieldCheck, Users, X } from "lucide-react";
+import { EyeOff, Flag, Hand, Eye, ImagePlus, MessageCircle, MoreHorizontal, Send, ShieldCheck, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/eyk";
 import { BotaoSalvar } from "@/components/ds/botao-salvar";
@@ -322,8 +323,8 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
                     <span>{g.palavra}</span>
                   </div>
                 )}
-                <div className="flex flex-wrap items-center justify-between gap-1 border-t border-border/60 pt-2">
-                  <div className="flex gap-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2">
+                  <div className="flex gap-2 sm:gap-4">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -340,28 +341,30 @@ export function SeparadorComunidade({ turmaId, ensino }: { turmaId: string; ensi
                       <span className="hidden sm:inline">Comentários</span>
                       <span className="tabular-nums">{p.comentarios}</span>
                     </Button>
-                    <BotaoSalvar tipo="post_turma" id={p.id} variante="acao" />
                   </div>
-                  <div className="flex justify-end gap-1">
-                  {moderador ? (
-                    p.estado === "visivel" ? (
-                      <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => void moderar(p.id, false)}>
-                        <EyeOff className="h-3.5 w-3.5" /> Esconder
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Mais opções">
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
-                    ) : (
-                      <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => void moderar(p.id, true)}>
-                        <Eye className="h-3.5 w-3.5" /> Mostrar
-                      </Button>
-                    )
-                  ) : (
-                    p.estado === "visivel" &&
-                    p.autorId !== atual.membro.id && (
-                      <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => void denunciar(p.id)}>
-                        <Flag className="h-3.5 w-3.5" /> Denunciar
-                      </Button>
-                    )
-                  )}
-                  </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <BotaoSalvar tipo="post_turma" id={p.id} variante="menu" />
+                      {moderador ? (
+                        <DropdownMenuItem className="gap-2" onSelect={() => void moderar(p.id, p.estado !== "visivel")}>
+                          {p.estado === "visivel" ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {p.estado === "visivel" ? "Esconder" : "Mostrar"}
+                        </DropdownMenuItem>
+                      ) : (
+                        p.estado === "visivel" &&
+                        p.autorId !== atual.membro.id && (
+                          <DropdownMenuItem className="gap-2" onSelect={() => void denunciar(p.id)}>
+                            <Flag className="h-4 w-4" /> Denunciar
+                          </DropdownMenuItem>
+                        )
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </Card>
             );

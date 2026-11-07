@@ -507,6 +507,7 @@ export function PostCard({
             autorId={post.authorId}
             autorNome={post.author}
             onBloqueado={onAutorBloqueado}
+            itens={<BotaoSalvar tipo="post" id={post.id} variante="menu" />}
           />
         </div>
       )}
@@ -551,7 +552,7 @@ export function PostCard({
           {cabecalho(false)}
           {corpo(false)}
           {/* Como num feed: reagir, comentar (abre o modal do post) e partilhar, com os números. */}
-          <div className="grid grid-cols-4 gap-1 border-t border-border/60 pt-2">
+          <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-2 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
@@ -581,10 +582,9 @@ export function PostCard({
               onClick={() => setPartilhaAberta(true)}
             >
               <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Partilhar</span>
+              <span>Partilhar</span>
               {!!post.reposts && <span className="tabular-nums text-muted-foreground">{post.reposts}</span>}
             </Button>
-            <BotaoSalvar tipo="post" id={post.id} variante="acao" />
           </div>
         </div>
       </Card>

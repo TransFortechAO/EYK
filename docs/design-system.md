@@ -102,11 +102,12 @@ exceto para bordas/realces descritos abaixo.
 - Curso/vídeo: **horizontal e compacto no telemóvel**, vertical a partir do tablet; grelha de 2–3 colunas.
 - O Início mostra até **8 cursos e 8 vídeos**, em faixas no meio do feed; o resto está nas páginas de Cursos e Vídeos.
 - Publicação (feed): cabeçalho (autor, tempo, "editado"), texto, foto, repost; ações
-  **Reações · Comentários · Partilhar** com os números (e o marcador dos Salvos); comentários num modal.
+  **Reações · Comentários · Partilhar** com os números; Salvar no menu "⋯"; comentários num modal.
 
 ### Salvos (`components/ds/botao-salvar.tsx`)
 - Guardar para ver depois, com o marcador (`Bookmark`), igual nas duas partes da plataforma. Preenchido a dourado quando está guardado.
-- `BotaoSalvar`: variante `cartao` (por cima da imagem, nunca dentro do link), `acao` (linha de ações da publicação) e `botao` (detalhe, ao lado de Partilhar).
+- `BotaoSalvar`: variante `cartao` (por cima da imagem, nunca dentro do link), `menu` (no menu "⋯" da publicação, junto de Denunciar) e `botao` (detalhe, ao lado de Partilhar).
+- Nas publicações, a linha de ações tem só **Reações · Comentários · Partilhar**, com espaço entre si: os botões nunca se tocam. Salvar, Denunciar e Bloquear ficam no menu "⋯" (o autor vê o menu só com Salvar).
 - Tudo numa só página, **Salvos** (`/salvos`), com pesquisa e um separador por tipo no telemóvel. Na barra lateral e no "Mais".
 - O que é da escola fica na escola: ao listar volta a verificar-se o acesso, e o aluno que só vê a escola não tem salvos públicos.
 
