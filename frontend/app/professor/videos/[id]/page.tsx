@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Heart, ThumbsDown, Eye, Users, MessageCircle, Percent, Film } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
+import { useSecoesMoveis } from "@/components/ds/secoes-moveis";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -17,6 +18,14 @@ export default function VideoEngajamentoPage() {
   const router = useRouter();
   const [dados, setDados] = useState<VideoEngajamento | null>(null);
   const [loading, setLoading] = useState(true);
+  // Telemóvel/tablet: números, reações e as outras aulas em separadores; no computador vê-se tudo.
+  const temOutras = !!dados?.cursoId && (dados?.outrasAulasDoCurso.length ?? 0) > 0;
+  const { so, separadores } = useSecoesMoveis([
+    { id: "resumo", rotulo: "Resumo" },
+    { id: "reacoes", rotulo: "Reações" },
+    ...(temOutras ? [{ id: "outras", rotulo: "Outras aulas" }] : []),
+  ]);
+  const com = (base: string, id: string) => [base, so(id)].filter(Boolean).join(" ");
 
   useEffect(() => {
     const id = Number(params.id);
@@ -44,10 +53,12 @@ export default function VideoEngajamentoPage() {
         <PageHeader title={dados.video.titulo} description="Engajamento e reações ao vídeo." />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {separadores}
+
+      <div className={com("grid gap-4 sm:grid-cols-2 lg:grid-cols-3", "resumo")}>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-rose-500/15 text-rose-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Heart className="h-5 w-5" />
             </div>
             <div>
@@ -69,7 +80,7 @@ export default function VideoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 text-sky-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Eye className="h-5 w-5" />
             </div>
             <div>
@@ -80,7 +91,7 @@ export default function VideoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Users className="h-5 w-5" />
             </div>
             <div>
@@ -91,7 +102,7 @@ export default function VideoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-500/15 text-indigo-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <MessageCircle className="h-5 w-5" />
             </div>
             <div>
@@ -102,7 +113,7 @@ export default function VideoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/15 text-emerald-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Percent className="h-5 w-5" />
             </div>
             <div>
@@ -115,8 +126,8 @@ export default function VideoEngajamentoPage() {
         </Card>
       </div>
 
-      {dados.cursoId && dados.outrasAulasDoCurso.length > 0 && (
-        <Card className="p-5 shadow-soft">
+      {temOutras && (
+        <Card className={com("p-5 shadow-soft", "outras")}>
           <p className="font-serif text-lg font-semibold mb-1">Outras aulas deste curso</p>
           <p className="text-xs text-muted-foreground mb-4">
             Esta aula faz parte de um curso — compara o engajamento com as restantes.
@@ -158,7 +169,7 @@ export default function VideoEngajamentoPage() {
         </Card>
       )}
 
-      <Card className="p-5 shadow-soft">
+      <Card className={com("p-5 shadow-soft", "reacoes")}>
         <p className="font-serif text-lg font-semibold mb-4">Reações</p>
         {dados.reacoes.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">Ainda não há reações a este vídeo.</p>

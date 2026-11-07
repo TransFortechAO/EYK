@@ -68,7 +68,7 @@ exceto para bordas/realces descritos abaixo.
   Moderação e Plataforma; professor: Painel, Meus Cursos, Meus Vídeos e Início. "Configurações" logo antes de "Sair".
 - **Barra do topo** da app: logótipo (só `movel:`), pesquisa da página (só `computador:`), chips de
   moedas e streak, sino com pré-visualização e ícone de perfil, cujo menu abre ao passar
-  o cursor (no ecrã táctil, com um toque). **Página pública (landing): barra opaca.**
+  o cursor (no ecrã táctil, com um toque). **Página pública (landing): barra opaca e flutuante** (cantos redondos, afastada das margens).
 
 ## 4. Regras de componentes
 
@@ -91,7 +91,8 @@ exceto para bordas/realces descritos abaixo.
 ### Separadores em páginas com vários tipos de conteúdo (`components/ds/secoes-moveis.tsx`)
 - **Telemóvel/tablet**: cada tipo de elemento no seu separador (nada misturado num scroll enorme).
 - **Computador**: tudo visível, uma secção por baixo da outra.
-- Aplicado em: Perfil e Gamificação.
+- Aplicado em: Perfil, Gamificação, Painel do professor (Números · Atividade · Ranking · Atalhos) e Engajamento
+  de cursos (Resumo · Aulas · Avaliações) e de vídeos (Resumo · Reações · Outras aulas).
 - A Leaderboard usa separadores em **todos** os ecrãs, porque são vistas alternativas da mesma
   lista (Classificação / Streak / Moedas / Professores).
 - **O Início é a Comunidade** (`components/comunidade/feed.tsx`): compositor, publicações por ordem aleatória

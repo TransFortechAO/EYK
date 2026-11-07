@@ -20,10 +20,19 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, StatCard } from "@/components/eyk";
+import { useSecoesMoveis } from "@/components/ds/secoes-moveis";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { api, tempoRelativo, type ProfessorCurso, type ProfessorVideo, type ProfessorLeaderRow } from "@/lib/api";
+
+// Telemóvel/tablet: cada tipo de informação no seu separador; no computador vê-se tudo.
+const SECOES = [
+  { id: "numeros", rotulo: "Números" },
+  { id: "atividade", rotulo: "Atividade" },
+  { id: "ranking", rotulo: "Ranking" },
+  { id: "atalhos", rotulo: "Atalhos" },
+] as const;
 
 type AtividadeItem = {
   id: string;
@@ -40,6 +49,7 @@ export default function ProfessorDashboardPage() {
   const [ranking, setRanking] = useState<ProfessorLeaderRow[]>([]);
   const [seguidores, setSeguidores] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { so, separadores } = useSecoesMoveis(SECOES);
 
   useEffect(() => {
     let alive = true;
@@ -123,6 +133,9 @@ export default function ProfessorDashboardPage() {
         </Button>
       </PageHeader>
 
+      {separadores}
+
+      <section className={cn("space-y-8", so("numeros"))}>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Users} label="Alunos" value={totalAlunos} hint="inscritos nos teus cursos" tone="gold" />
         <StatCard icon={UserPlus} label="Seguidores" value={seguidores} hint="recebem as tuas novidades" />
@@ -158,12 +171,13 @@ export default function ProfessorDashboardPage() {
           </div>
         </section>
       )}
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={cn("grid gap-4 sm:grid-cols-2", so("atalhos"))}>
         <Link href="/professor/perfil">
           <Card className="p-5 shadow-soft hover:shadow-elevated transition-shadow cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500/15 text-violet-300">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
                 <User2 className="h-5 w-5" />
               </div>
               <div>
@@ -176,7 +190,7 @@ export default function ProfessorDashboardPage() {
         <Link href="/professor/cursos">
           <Card className="p-5 shadow-soft hover:shadow-elevated transition-shadow cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
                 <BookOpen className="h-5 w-5" />
               </div>
               <div>
@@ -189,7 +203,7 @@ export default function ProfessorDashboardPage() {
         <Link href="/professor/videos">
           <Card className="p-5 shadow-soft hover:shadow-elevated transition-shadow cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 text-sky-300">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
                 <Video className="h-5 w-5" />
               </div>
               <div>
@@ -202,7 +216,7 @@ export default function ProfessorDashboardPage() {
         <Link href="/configuracoes">
           <Card className="p-5 shadow-soft hover:shadow-elevated transition-shadow cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/15 text-emerald-300">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
                 <Shield className="h-5 w-5" />
               </div>
               <div>
@@ -214,8 +228,10 @@ export default function ProfessorDashboardPage() {
         </Link>
       </div>
 
-      {ranking.length > 0 && (
-        <section className="space-y-4">
+      {ranking.length === 0 ? (
+        <p className={cn("hidden text-sm text-muted-foreground", so("ranking") ?? "movel:block")}>Ainda não há ranking este mês.</p>
+      ) : (
+        <section className={cn("space-y-4", so("ranking"))}>
           <div>
             <h2 className="font-serif text-xl font-semibold">Ranking mensal de professores</h2>
             <p className="text-sm text-muted-foreground">
@@ -251,7 +267,7 @@ export default function ProfessorDashboardPage() {
         </section>
       )}
 
-      <section className="space-y-4">
+      <section className={cn("space-y-4", so("atividade"))}>
         <h2 className="font-serif text-xl font-semibold">Atividade recente</h2>
         {loading ? (
           <Card className="p-10 text-center text-muted-foreground shadow-soft">A carregar…</Card>

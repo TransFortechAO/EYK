@@ -4,17 +4,26 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Users, Eye, GraduationCap, TrendingUp, Heart, MessageCircle, BarChart3, Star } from "lucide-react";
 import { PageHeader } from "@/components/eyk";
+import { useSecoesMoveis } from "@/components/ds/secoes-moveis";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { api, formatarDuracaoCurta, tempoRelativo, type CursoEngajamento } from "@/lib/api";
 import { Estrelas } from "@/components/curso/AvaliacoesCurso";
 
+const SECOES_CURSO = [
+  { id: "resumo", rotulo: "Resumo" },
+  { id: "aulas", rotulo: "Aulas" },
+  { id: "avaliacoes", rotulo: "Avaliações" },
+] as const;
+
 export default function CursoEngajamentoPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [dados, setDados] = useState<CursoEngajamento | null>(null);
   const [loading, setLoading] = useState(true);
+  // Telemóvel/tablet: números, aulas e avaliações em separadores; no computador vê-se tudo.
+  const { so, separadores } = useSecoesMoveis(SECOES_CURSO);
 
   useEffect(() => {
     const id = Number(params.id);
@@ -42,10 +51,12 @@ export default function CursoEngajamentoPage() {
         <PageHeader title={dados.curso.titulo} description="Engajamento e desempenho do curso." />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {separadores}
+
+      <div className={["grid gap-4 sm:grid-cols-2 lg:grid-cols-4", so("resumo")].filter(Boolean).join(" ")}>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Users className="h-5 w-5" />
             </div>
             <div>
@@ -56,7 +67,7 @@ export default function CursoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 text-sky-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Eye className="h-5 w-5" />
             </div>
             <div>
@@ -67,7 +78,7 @@ export default function CursoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/15 text-emerald-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <GraduationCap className="h-5 w-5" />
             </div>
             <div>
@@ -78,7 +89,7 @@ export default function CursoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-purple-500/15 text-purple-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
@@ -89,7 +100,7 @@ export default function CursoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-rose-500/15 text-rose-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Heart className="h-5 w-5" />
             </div>
             <div>
@@ -100,7 +111,7 @@ export default function CursoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-indigo-500/15 text-indigo-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <MessageCircle className="h-5 w-5" />
             </div>
             <div>
@@ -111,7 +122,7 @@ export default function CursoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 text-sky-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <Users className="h-5 w-5" />
             </div>
             <div>
@@ -122,7 +133,7 @@ export default function CursoEngajamentoPage() {
         </Card>
         <Card className="p-5 shadow-soft">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-300">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
@@ -133,7 +144,7 @@ export default function CursoEngajamentoPage() {
         </Card>
       </div>
 
-      <Card className="p-5 shadow-soft">
+      <Card className={["p-5 shadow-soft", so("aulas")].filter(Boolean).join(" ")}>
         <p className="font-serif text-lg font-semibold mb-4">Engajamento por aula</p>
         {dados.aulas.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">Este curso ainda não tem aulas.</p>
@@ -169,7 +180,7 @@ export default function CursoEngajamentoPage() {
         )}
       </Card>
 
-      <Card className="p-5 shadow-soft">
+      <Card className={["p-5 shadow-soft", so("avaliacoes")].filter(Boolean).join(" ")}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-serif text-lg font-semibold">Avaliações dos alunos</p>
           {dados.mediaAvaliacoes !== null && (
@@ -226,7 +237,7 @@ export default function CursoEngajamentoPage() {
                     </td>
                     <td className="py-2 bg-surface/40 rounded-r-xl">
                       {i.concluido ? (
-                        <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30">Concluído</Badge>
+                        <Badge className="border-success/30 bg-success/15 text-success">Concluído</Badge>
                       ) : (
                         <Badge variant="outline">Em curso</Badge>
                       )}

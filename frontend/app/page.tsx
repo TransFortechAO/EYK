@@ -75,15 +75,16 @@ export default function LandingPage() {
       <div className="relative z-10">
 
         {/* Cabeçalho */}
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0a0a0a]">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-8">
+        {/* Barra flutuante: opaca, com cantos redondos e afastada das margens. */}
+        <header className="sticky top-3 z-20 px-3 sm:top-4 sm:px-6">
+          <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/10 bg-[#0a0a0a] py-2 pl-4 pr-3 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)] sm:pl-6 sm:pr-4">
             <div className="flex items-center gap-2">
               <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt=""
-                className="h-20 w-auto object-contain"
+                className="h-14 w-auto object-contain sm:h-16"
               />
             </div>
 
-            <nav className="flex items-center gap-6">
+            <nav className="flex items-center gap-4 sm:gap-6">
               <Link
                 href="/login"
                 className="text-sm font-medium text-white/70 transition hover:text-white"
