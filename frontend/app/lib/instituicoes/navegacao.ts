@@ -120,19 +120,18 @@ export function restoParaMais(papel: Papel | null, c: Contadores): { escola: Ite
 export type GrupoMenu<T> = { id: string; titulo?: string; itens: T[] };
 
 /**
- * Telemóvel e tablet seguem a ordem da barra lateral do computador: as primeiras `n`
- * entradas (pela ordem dos grupos) são as abas de baixo; o resto fica no "Mais", nos
- * mesmos grupos e com os mesmos títulos. Um grupo que fica vazio desaparece.
+ * Telemóvel e tablet seguem a ordem da barra lateral do computador: as abas de baixo são
+ * as primeiras `n` entradas do PRIMEIRO grupo (Administração, Professor ou as principais) e
+ * nunca se misturam com outro grupo; o resto fica no "Mais", nos mesmos grupos e com os
+ * mesmos títulos (ex: o Início do professor fica em "Explorar"). Um grupo vazio desaparece.
  */
 export function repartirAbas<T>(grupos: GrupoMenu<T>[], n = 4): { abas: T[]; mais: GrupoMenu<T>[] } {
-  const abas: T[] = [];
-  const mais: GrupoMenu<T>[] = [];
-  for (const g of grupos) {
-    const livres = Math.max(0, n - abas.length);
-    abas.push(...g.itens.slice(0, livres));
-    const resto = g.itens.slice(livres);
-    if (resto.length) mais.push({ ...g, itens: resto });
-  }
-  return { abas, mais };
+  const [primeiro, ...outros] = grupos;
+  if (!primeiro) return { abas: [], mais: [] };
+  const resto = primeiro.itens.slice(n);
+  return {
+    abas: primeiro.itens.slice(0, n),
+    mais: [...(resto.length ? [{ ...primeiro, itens: resto }] : []), ...outros.filter((g) => g.itens.length > 0)],
+  };
 }
 

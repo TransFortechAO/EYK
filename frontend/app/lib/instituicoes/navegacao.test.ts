@@ -113,7 +113,7 @@ describe("plataforma geral, turmas e publicação", () => {
     await expect(apiLga.decidirPropostaPublica(c.id, false)).rejects.toThrow(/já decidida/);
   });
 
-  it("telemóvel e tablet seguem a ordem da barra lateral: 4 abas e o resto no Mais", () => {
+  it("telemóvel e tablet seguem a ordem da barra lateral: as abas vêm só do primeiro grupo", () => {
     const grupos = [
       { id: "admin", titulo: "Administração", itens: ["metricas", "escolas", "moderacao", "plataforma", "professores"] },
       { id: "principal", itens: ["inicio", "cursos"] },
@@ -126,8 +126,12 @@ describe("plataforma geral, turmas e publicação", () => {
       { id: "principal", itens: ["inicio", "cursos"] },
       { id: "mais", titulo: "Mais", itens: ["notificacoes"] },
     ]);
-    const professor = repartirAbas([{ id: "prof", itens: ["painel", "cursos", "videos"] }, { id: "principal", itens: ["inicio", "c", "v"] }]);
-    expect(professor.abas).toEqual(["painel", "cursos", "videos", "inicio"]);
-    expect(professor.mais).toEqual([{ id: "principal", itens: ["c", "v"] }]);
+    // Professor: Painel, Meus Cursos e Meus Vídeos; o Início fica no Mais, em "Explorar".
+    const professor = repartirAbas([
+      { id: "prof", titulo: "Professor", itens: ["painel", "cursos", "videos"] },
+      { id: "principal", titulo: "Explorar", itens: ["inicio", "c", "v"] },
+    ]);
+    expect(professor.abas).toEqual(["painel", "cursos", "videos"]);
+    expect(professor.mais).toEqual([{ id: "principal", titulo: "Explorar", itens: ["inicio", "c", "v"] }]);
   });
 });

@@ -63,9 +63,10 @@ exceto para bordas/realces descritos abaixo.
   rodapé com o ícone de perfil (leva ao perfil, sem menu) e "Sair" à direita. Recolhida (72px) só com os ícones; abre ao
   passar o cursor e empurra o conteúdo, sem ficar por cima dele. Como no Instagram, **os ícones têm o
   mesmo tamanho (22px) e o mesmo lugar nos dois estados**: só o texto aparece ou desaparece.
-- **Menu de baixo**: 4 abas + "Mais", **pela mesma ordem e nos mesmos grupos da barra lateral**: as 4 primeiras
-  entradas são as abas e o resto fica no "Mais" (função `repartirAbas`). Equipa EYK: as abas são Métricas, Escolas,
-  Moderação e Plataforma; professor: Painel, Meus Cursos, Meus Vídeos e Início. "Configurações" logo antes de "Sair".
+- **Menu de baixo**: até 4 abas + "Mais", **pela mesma ordem e nos mesmos grupos da barra lateral**: as abas são as
+  primeiras entradas do primeiro grupo, sem misturar grupos, e o resto fica no "Mais" (função `repartirAbas`).
+  Equipa EYK: Métricas, Escolas, Moderação e Plataforma; professor: Painel, Meus Cursos e Meus Vídeos (o Início
+  fica no "Mais", em "Explorar"). "Configurações" logo antes de "Sair".
 - **Barra do topo** da app: logótipo (só `movel:`), pesquisa da página (só `computador:`), chips de
   moedas e streak, sino com pré-visualização e ícone de perfil, cujo menu abre ao passar
   o cursor (no ecrã táctil, com um toque). **Página pública (landing): barra opaca e flutuante** (cantos redondos, afastada das margens).
