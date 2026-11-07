@@ -21,6 +21,7 @@ import {
   Gift,
   Check,
   Copy,
+  Eye,
 } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
 import { DesafiosEscola } from "@/components/instituicao/escola";
@@ -42,6 +43,9 @@ const SEPARADORES = [
 ] as const;
 
 const badgeIcons: Record<string, typeof Sparkles> = {
+  // Conquistas de professor.
+  Eye,
+  TrendingUp,
   PlayCircle,
   Video,
   Flame,

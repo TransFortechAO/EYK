@@ -142,11 +142,24 @@ BADGES_METAS = {
     'embaixador': {'campo': 'convidados', 'meta': 3},
     'veterano': {'campo': 'dias_conta', 'meta': 365},
     'mestre-eyk': {'campo': 'nivel', 'meta': 6},
+    # Professores (ver Badge.publico).
+    'professor-popular': {'campo': 'views_totais', 'meta': 500},
+    'professor-influente': {'campo': 'views_totais', 'meta': 2000},
+    'mentor': {'campo': 'aulas_publicadas', 'meta': 10},
 }
 
 
+def publico_de(user) -> str:
+    return 'professor' if getattr(user, 'is_teacher', False) else 'aluno'
+
+
+def badges_de(user):
+    """As conquistas que esta pessoa pode ganhar (as comuns e as do seu papel)."""
+    return Badge.objects.filter(publico__in=['todos', publico_de(user)])
+
+
 def _construir_contexto(user) -> dict:
-    from apps.professores.models import VisualizacaoVideo
+    from apps.professores.models import Video, VisualizacaoVideo
 
     try:
         streak_record = user.ofensiva.maior_sequencia
@@ -167,6 +180,8 @@ def _construir_contexto(user) -> dict:
         'dias_conta': dias_conta,
         'nivel': nivel_info(xp)['nivel'],
         'videos_assistidos': VisualizacaoVideo.objects.filter(utilizador=user).count(),
+        'views_totais': VisualizacaoVideo.objects.filter(video__professor__user=user).aggregate(t=Sum('count'))['t'] or 0,
+        'aulas_publicadas': Video.objects.filter(professor__user=user, ativo=True).count(),
     }
 
 
@@ -174,7 +189,10 @@ def progresso_badges(user) -> dict:
     """Devolve, por slug, {'valor': int, 'meta': int, 'progresso': 0-100}."""
     ctx = _construir_contexto(user)
     resultado = {}
+    aplicaveis = set(badges_de(user).values_list('slug', flat=True))
     for slug, info in BADGES_METAS.items():
+        if slug not in aplicaveis:
+            continue
         campo, meta = info['campo'], info['meta']
         valor = ctx[campo] if campo else 0
         progresso = min(100, int((valor / meta) * 100)) if meta > 0 else 0

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiInstituicoes, definirPessoaDemo, reporDemo } from "./api";
 import { apiLga } from "./lga";
-import { abasTelemovel, navegacaoEscola, restoParaMais, urlsNoMenu } from "./navegacao";
+import { abasTelemovel, navegacaoEscola, repartirAbas, restoParaMais, urlsNoMenu } from "./navegacao";
 import { PAPEIS } from "./permissoes";
 
 const nada = { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
@@ -111,5 +111,23 @@ describe("plataforma geral, turmas e publicação", () => {
     await apiLga.decidirPropostaPublica(c.id, true);
     expect((await apiLga.listarPropostasPublicas()).map((p) => p.id)).not.toContain(c.id);
     await expect(apiLga.decidirPropostaPublica(c.id, false)).rejects.toThrow(/já decidida/);
+  });
+
+  it("telemóvel e tablet seguem a ordem da barra lateral: 4 abas e o resto no Mais", () => {
+    const grupos = [
+      { id: "admin", titulo: "Administração", itens: ["metricas", "escolas", "moderacao", "plataforma", "professores"] },
+      { id: "principal", itens: ["inicio", "cursos"] },
+      { id: "mais", titulo: "Mais", itens: ["notificacoes"] },
+    ];
+    const { abas, mais } = repartirAbas(grupos);
+    expect(abas).toEqual(["metricas", "escolas", "moderacao", "plataforma"]);
+    expect(mais).toEqual([
+      { id: "admin", titulo: "Administração", itens: ["professores"] },
+      { id: "principal", itens: ["inicio", "cursos"] },
+      { id: "mais", titulo: "Mais", itens: ["notificacoes"] },
+    ]);
+    const professor = repartirAbas([{ id: "prof", itens: ["painel", "cursos", "videos"] }, { id: "principal", itens: ["inicio", "c", "v"] }]);
+    expect(professor.abas).toEqual(["painel", "cursos", "videos", "inicio"]);
+    expect(professor.mais).toEqual([{ id: "principal", itens: ["c", "v"] }]);
   });
 });

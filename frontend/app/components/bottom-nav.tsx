@@ -30,15 +30,15 @@ import { useAuth } from "@/components/auth-gate";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
-import { abasTelemovel, restoParaMais, type ItemNav } from "@/lib/instituicoes/navegacao";
+import { abasTelemovel, repartirAbas, restoParaMais, type GrupoMenu, type ItemNav } from "@/lib/instituicoes/navegacao";
 import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
 import { ICONE_NAV } from "@/components/instituicao/icones-nav";
 
 type Item = { title: string; url: string; icon: LucideIcon; contador?: number };
 
-// As mesmas rotas da barra lateral (app-sidebar.tsx), repartidas entre as
-// abas de baixo e o painel "Mais". As abas dependem do papel na escola
-// (lib/instituicoes/navegacao.ts); sem escola: Início, Cursos, Vídeos, Salvos.
+// As mesmas rotas e a mesma ordem da barra lateral (app-sidebar.tsx): as 4 primeiras
+// entradas são as abas de baixo e o resto fica no "Mais", nos mesmos grupos. Para a
+// equipa EYK as abas são da Administração; para o professor, as suas ferramentas.
 function paraItem(i: ItemNav): Item {
   return { title: i.titulo, url: i.url, icon: ICONE_NAV[i.icone], contador: i.contador };
 }
@@ -126,7 +126,7 @@ export function BottomNav() {
   const escola = useInstituicaoOpcional();
   const papel = escola?.atual?.membro.papel ?? null;
   const contadores = escola?.contadores ?? { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
-  const abas = abasTelemovel(papel, contadores).map(paraItem);
+  const principais = abasTelemovel(papel, contadores).map(paraItem);
   const resto = restoParaMais(papel, contadores);
   const daEscola: Item[] = escola?.atual
     ? resto.escola.map(paraItem)
@@ -135,14 +135,19 @@ export function BottomNav() {
       : [];
   const geralNoMais = resto.geral.map(paraItem);
 
-  const itensMais = [
-    ...daEscola,
-    ...geralNoMais,
-    ...MAIS,
-    ...(user?.isTeacher ? PROFESSOR : []),
-    ...(user?.isStaff ? ADMINISTRACAO : []),
-    ...CONFIGURACOES,
+  // A mesma ordem da barra lateral (app-sidebar.tsx): Administração, Professor, principais,
+  // escola, Plataforma EYK e o resto. As 4 primeiras entradas são as abas.
+  const grupos: (GrupoMenu<Item> & { icone?: LucideIcon })[] = [
+    ...(user?.isStaff ? [{ id: "admin", titulo: "Administração", icone: ShieldCheck, itens: ADMINISTRACAO }] : []),
+    ...(user?.isTeacher ? [{ id: "professor", titulo: "Professor", icone: LayoutDashboard, itens: PROFESSOR }] : []),
+    { id: "principal", titulo: user?.isTeacher ? "Explorar" : undefined, icone: Home, itens: principais },
+    ...(daEscola.length ? [{ id: "escola", titulo: escola?.atual ? escola.atual.instituicao.nome : "Escola", icone: Building2, itens: daEscola }] : []),
+    ...(geralNoMais.length ? [{ id: "geral", titulo: "Plataforma EYK", icone: Home, itens: geralNoMais }] : []),
+    { id: "mais", titulo: "Mais", itens: MAIS },
   ];
+  const { abas, mais: gruposMais } = repartirAbas(grupos);
+
+  const itensMais = [...gruposMais.flatMap((g) => g.itens), ...CONFIGURACOES];
   // "Mais" fica ativo quando o painel está aberto ou a página pertence ao painel.
   // /configuracoes/administracao/* pertence ao grupo de administração.
   const maisAtivo = maisAberto || itensMais.some((i) => ativo(i.url));
@@ -234,25 +239,17 @@ export function BottomNav() {
             <SheetDescription className="sr-only">Outras páginas da plataforma EYK.</SheetDescription>
           </SheetHeader>
 
-          {user?.isStaff && (
-            <Grupo titulo="Administração" icone={ShieldCheck} itens={ADMINISTRACAO} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          )}
-          {user?.isTeacher && (
-            <Grupo titulo="Professor" icone={LayoutDashboard} itens={PROFESSOR} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          )}
-          {daEscola.length > 0 && (
+          {gruposMais.map((g, i) => (
             <Grupo
-              titulo={escola?.atual ? escola.atual.instituicao.nome : "Escola"}
-              icone={Building2}
-              itens={daEscola}
+              key={g.id}
+              // O título só aparece quando há mais de um grupo, como na barra lateral.
+              titulo={gruposMais.length > 1 || i > 0 ? g.titulo : undefined}
+              icone={(g as { icone?: LucideIcon }).icone}
+              itens={g.itens}
               ativo={ativo}
               aoNavegar={() => setMaisAberto(false)}
             />
-          )}
-          {geralNoMais.length > 0 && (
-            <Grupo titulo="Plataforma EYK" icone={Home} itens={geralNoMais} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          )}
-          <Grupo titulo={daEscola.length || geralNoMais.length || user?.isTeacher || user?.isStaff ? "Mais" : undefined} itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
+          ))}
 
           <Grupo itens={CONFIGURACOES} ativo={(url) => pathname === url} aoNavegar={() => setMaisAberto(false)} />
 

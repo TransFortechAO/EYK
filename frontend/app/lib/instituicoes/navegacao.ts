@@ -116,3 +116,23 @@ export function restoParaMais(papel: Papel | null, c: Contadores): { escola: Ite
     geral: GERAL.filter((i) => !abas.has(i.url)),
   };
 }
+
+export type GrupoMenu<T> = { id: string; titulo?: string; itens: T[] };
+
+/**
+ * Telemóvel e tablet seguem a ordem da barra lateral do computador: as primeiras `n`
+ * entradas (pela ordem dos grupos) são as abas de baixo; o resto fica no "Mais", nos
+ * mesmos grupos e com os mesmos títulos. Um grupo que fica vazio desaparece.
+ */
+export function repartirAbas<T>(grupos: GrupoMenu<T>[], n = 4): { abas: T[]; mais: GrupoMenu<T>[] } {
+  const abas: T[] = [];
+  const mais: GrupoMenu<T>[] = [];
+  for (const g of grupos) {
+    const livres = Math.max(0, n - abas.length);
+    abas.push(...g.itens.slice(0, livres));
+    const resto = g.itens.slice(livres);
+    if (resto.length) mais.push({ ...g, itens: resto });
+  }
+  return { abas, mais };
+}
+

@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from apps.accounts.models import User
 
 from .models import AlunoBadge, Badge, Carteira, Ofensiva, TransacaoMoeda
-from .services import nivel_info, progresso_badges, verificar_badges
+from .services import badges_de, nivel_info, progresso_badges, verificar_badges
 
 MOTIVO_LABEL = {
     'curso_concluido': 'Curso concluído',
@@ -121,7 +121,7 @@ def badges_list(request):
     desbloqueados = set(AlunoBadge.objects.filter(utilizador=user).values_list('badge__slug', flat=True))
 
     resultado = []
-    for badge in Badge.objects.all().order_by('ordem'):
+    for badge in badges_de(user).order_by('ordem'):
         info = progresso.get(badge.slug, {'progresso': 0})
         earned = badge.slug in desbloqueados
         resultado.append({

@@ -61,10 +61,14 @@ def _publicacoes(user: User, incluir_ocultas=False, limite=10) -> list[dict]:
 
 def _conquistas(user: User) -> list[dict]:
     from apps.gamificacao.models import AlunoBadge
+    from apps.gamificacao.services import publico_de
 
+    # Só as do papel da pessoa (uma conquista de aluno não aparece no perfil de um professor).
     return [
         {'id': b.badge.slug, 'nome': b.badge.nome, 'descricao': b.badge.descricao, 'icone': b.badge.icone}
-        for b in AlunoBadge.objects.filter(utilizador=user).select_related('badge')
+        for b in AlunoBadge.objects.filter(
+            utilizador=user, badge__publico__in=['todos', publico_de(user)],
+        ).select_related('badge')
     ]
 
 
