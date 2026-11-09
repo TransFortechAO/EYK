@@ -6,18 +6,17 @@ import { ArrowRight, BookOpen, Captions, Contrast, Hand, PlayCircle, Settings2, 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CourseCard, SectionHeader, VideoCard } from "@/components/eyk";
 import { useAuth } from "@/components/auth-gate";
 import { LgaSign } from "@/components/lga-sign";
-import { api, mediaUrl, type Course, type EmAndamento, type TamanhoTexto, type Video } from "@/lib/api";
+import { api, mediaUrl, type EmAndamento, type TamanhoTexto } from "@/lib/api";
 import { lgaSigns } from "@/lib/lga-data";
 import { aplicarPreferenciasVisuais } from "@/lib/preferencias-visuais";
 import { cn } from "@/lib/utils";
 
 /**
  * O Início centrado na aprendizagem (Educação · Inclusão · Comunidade): primeiro o que a
- * pessoa está a aprender, depois a aprendizagem acessível (LGA e acessibilidade), depois
- * o que lhe recomendamos; a Comunidade vem a seguir.
+ * pessoa está a aprender, depois a aprendizagem acessível (LGA e acessibilidade); a
+ * Comunidade vem a seguir, com as recomendações pelo meio.
  */
 
 const minutos = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} min` : `${s} s`);
@@ -144,10 +143,6 @@ function Interruptor({ ligado, desligado, icone: Icone, rotulo, onClick }: { lig
   );
 }
 
-function Motivo({ texto }: { texto: string }) {
-  return <p className="mt-1.5 px-1 text-xs text-muted-foreground">{texto}</p>;
-}
-
 /** Acessibilidade num toque: as mesmas preferências de Configurações → Aparência e Reprodução. */
 function AcessibilidadeRapida() {
   const { user, refresh } = useAuth();
@@ -260,46 +255,6 @@ export function AprendeAcessivel() {
         <BibliotecaDestaque />
         <AcessibilidadeRapida />
       </div>
-    </section>
-  );
-}
-
-type ComMotivo<T> = T & { motivo: string };
-
-/** "Recomendados para ti": o que a pessoa já aprende e quem segue; diz sempre porquê. */
-export function Recomendados({ cursos, videos }: { cursos: ComMotivo<Course>[]; videos: ComMotivo<Video>[] }) {
-  if (cursos.length === 0 && videos.length === 0) return null;
-  return (
-    <section aria-labelledby="recomendados" className="space-y-6">
-      <h2 id="recomendados" className="font-serif text-xl font-semibold tracking-tight sm:text-2xl">
-        Recomendados para ti
-      </h2>
-      {cursos.length > 0 && (
-        <div>
-          <SectionHeader title="Cursos" href="/cursos" cta="Ver todos os cursos" />
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
-            {cursos.map((c) => (
-              <div key={c.id}>
-                <CourseCard course={c} />
-                <Motivo texto={c.motivo} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {videos.length > 0 && (
-        <div>
-          <SectionHeader title="Vídeos" href="/videos" cta="Ver todos os vídeos" />
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
-            {videos.map((v) => (
-              <div key={v.id}>
-                <VideoCard video={v} />
-                <Motivo texto={v.motivo} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </section>
   );
 }

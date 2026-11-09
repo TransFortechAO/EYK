@@ -2,17 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, PlayCircle, Sparkles, Trophy, UserPlus } from "lucide-react";
+import { Check, PlayCircle, Sparkles, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { api, type Course, type LeaderRow, type ProfessorSugerido, type Video } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { api, type Course, type ProfessorSugerido, type Video } from "@/lib/api";
 
 /**
- * Coluna lateral do Início (computador), como nas redes sociais: o que está em destaque,
- * pessoas para seguir e quem está no topo. Cada bloco some se não tiver nada para mostrar.
+ * Coluna lateral do Início (computador), como nas redes sociais: os cursos e vídeos em
+ * destaque e pessoas para seguir. Cada bloco some se não tiver nada para mostrar.
  */
 
 function Miniatura({ fundo, video }: { fundo: string; video?: boolean }) {
@@ -27,7 +26,7 @@ function Miniatura({ fundo, video }: { fundo: string; video?: boolean }) {
 export function DestaquesCatalogo({ curso, video }: { curso: Course | null; video: Video | null }) {
   if (!curso && !video) return null;
   return (
-    <ul className="space-y-2 border-t border-border/60 pt-3">
+    <ul className="space-y-2">
       {curso && (
         <li>
           <Link href={`/cursos/${curso.id}`} className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-surface">
@@ -123,43 +122,10 @@ function ProfessoresParaSeguir() {
   );
 }
 
-function TopoClassificacao() {
-  const [linhas, setLinhas] = useState<LeaderRow[]>([]);
-
-  useEffect(() => {
-    void api.getLeaderboard().then((l) => setLinhas(l.slice(0, 3))).catch(() => setLinhas([]));
-  }, []);
-
-  if (linhas.length === 0) return null;
-  return (
-    <Card className="space-y-3 p-4 shadow-soft">
-      <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
-        <Trophy className="h-4 w-4 text-primary" /> No topo da classificação
-      </h2>
-      <ol className="space-y-2">
-        {linhas.map((l) => (
-          <li key={l.rank} className={cn("flex items-center gap-3 rounded-lg p-2", l.isMe && "bg-primary/10")}>
-            <span className="w-5 text-center font-serif text-lg font-semibold tabular-nums text-primary">{l.rank}</span>
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarFallback className="bg-gradient-gold text-xs font-semibold uppercase text-primary-foreground">{l.initials}</AvatarFallback>
-            </Avatar>
-            <span className="min-w-0 flex-1 truncate text-sm">{l.isMe ? "Tu" : l.name}</span>
-            <span className="text-xs tabular-nums text-muted-foreground">{l.coins} moedas</span>
-          </li>
-        ))}
-      </ol>
-      <Link href="/leaderboard" className="block text-center text-sm font-medium text-primary hover:underline">
-        Ver a classificação
-      </Link>
-    </Card>
-  );
-}
-
 export function LateralInicio() {
   return (
     <>
       <ProfessoresParaSeguir />
-      <TopoClassificacao />
     </>
   );
 }

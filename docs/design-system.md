@@ -102,12 +102,13 @@ exceto para bordas/realces descritos abaixo.
      Continuar) e vídeos deixados a meio. Sem nada começado, um convite para explorar cursos.
   2. **Aprende de forma acessível**: a **Biblioteca LGA** em destaque (sinais do dia) e a **Acessibilidade**
      num toque (legendas, contraste elevado, tamanho do texto — as mesmas preferências das Configurações).
-  3. **Recomendados para ti**: pelo que a pessoa já aprende e por quem segue, cada um com o motivo.
-  4. **Comunidade EYK** (`components/comunidade/feed.tsx`): compositor, publicações por ordem aleatória e,
-     pelo meio, mais recomendações. Sem separadores. `/comunidade` leva ao Início (links antigos).
+  3. **Comunidade EYK** (`components/comunidade/feed.tsx`): compositor e publicações por ordem aleatória e,
+     pelo meio, os cursos e vídeos recomendados (pelo que a pessoa aprende e por quem segue, com o motivo),
+     **um a um e com a forma de uma publicação** (`publicacao-conteudo.tsx`), em sítios diferentes a cada
+     visita — nunca agrupados. Sem separadores. `/comunidade` leva ao Início (links antigos).
   O catálogo completo, com filtros, está em Cursos e Vídeos. No menu, o lugar da Comunidade é dos **Salvos**.
-- Coluna lateral do Início (só no computador), como nas redes sociais: **Em destaque** (publicações, um curso
-  e um vídeo), **Professores para seguir** e **No topo da classificação**. Cada bloco desaparece se estiver vazio.
+- Coluna lateral do Início (só no computador), como nas redes sociais: **Em destaque** (só um curso e um
+  vídeo; as publicações estão no feed) e **Professores para seguir**. Cada bloco desaparece se estiver vazio.
 - Cursos e Vídeos não dizem "x encontrados": a lista fala por si.
 - Separadores das Configurações: 3 por linha no telemóvel, 6 numa linha a partir do tablet.
 

@@ -1,7 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Flame, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -10,21 +9,24 @@ import { Card } from "@/components/ui/card";
 import { CompositorPost } from "@/components/comunidade/compositor";
 import { api, type Post } from "@/lib/api";
 
-/** Depois de quantas publicações entra cada faixa de cursos ou vídeos. */
-const POSICOES_FAIXAS = [2, 7, 12, 17];
+/** Entre um curso ou vídeo e o seguinte, 1 a 3 publicações (sorteado uma vez por visita). */
+const INTERVALO_MIN = 1;
+const INTERVALO_MAX = 3;
 
 /**
- * O feed da Comunidade, agora no Início: compositor, publicações por ordem aleatória (para
- * quem entra não sentir que perdeu nada) e, pelo meio, faixas de cursos e vídeos.
+ * O feed da Comunidade, agora no Início: compositor e publicações por ordem aleatória (para
+ * quem entra não sentir que perdeu nada), com cursos e vídeos pelo meio, um a um e em sítios
+ * diferentes a cada visita — nunca todos juntos.
  * `?post=ID` (link partilhado, notificação) abre essa publicação primeiro.
  */
 export function FeedComunidade({
-  faixas = [],
-  destaques: destaquesExtra,
+  intercalados = [],
+  destaques,
   lateral,
 }: {
-  faixas?: ReactNode[];
-  /** Mais destaques, no mesmo cartão "Em destaque" (ex: um curso e um vídeo). */
+  /** Cursos e vídeos, cada um com a forma de uma publicação. */
+  intercalados?: { chave: string; no: ReactNode }[];
+  /** O cartão "Em destaque" (um curso e um vídeo). */
   destaques?: ReactNode;
   /** Mais blocos na coluna lateral (ex: professores para seguir). */
   lateral?: ReactNode;
@@ -33,6 +35,10 @@ export function FeedComunidade({
   const postPartilhado = searchParams.get("post");
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [reagindoIds, setReagindoIds] = useState<Set<string>>(new Set());
+  // Sorteado uma vez: o feed não salta enquanto a pessoa lê.
+  const [intervalos] = useState(() =>
+    Array.from({ length: 40 }, () => INTERVALO_MIN + Math.floor(Math.random() * (INTERVALO_MAX - INTERVALO_MIN + 1))),
+  );
 
   const carregar = useCallback(async () => {
     setPosts(await api.getPosts(postPartilhado));
@@ -65,19 +71,15 @@ export function FeedComunidade({
     }
   };
 
-  // Coluna lateral (computador): publicações em destaque.
-  const destaques = useMemo(
-    () => [...(posts ?? [])].filter((p) => p.content).sort((a, b) => b.likes + b.comments - (a.likes + a.comments)).slice(0, 3),
-    [posts],
-  );
-
   const lista = posts ?? [];
-  const faixaDepois = (i: number) => {
-    const n = POSICOES_FAIXAS.indexOf(i);
-    return n >= 0 ? faixas[n] : null;
-  };
-  // Com poucas publicações, as faixas que sobram ficam no fim.
-  const sobra = faixas.filter((_, n) => (POSICOES_FAIXAS[n] ?? Infinity) >= lista.length);
+  // Depois de que publicação entra cada curso ou vídeo.
+  const depoisDe = new Map<number, { chave: string; no: ReactNode }[]>();
+  let posicao = -1;
+  intercalados.forEach((item, n) => {
+    posicao += intervalos[n % intervalos.length];
+    const i = Math.min(posicao, Math.max(lista.length - 1, 0));
+    depoisDe.set(i, [...(depoisDe.get(i) ?? []), item]);
+  });
 
   return (
     <div className="grid gap-8 computador:grid-cols-[minmax(0,1fr)_18rem]">
@@ -100,37 +102,25 @@ export function FeedComunidade({
                 abrirAoCarregar={postPartilhado === post.id}
               />
             </div>
-            {faixaDepois(i)}
+            {depoisDe.get(i)?.map((item) => <Fragment key={item.chave}>{item.no}</Fragment>)}
           </Fragment>
         ))}
-        {posts && sobra}
+        {/* Sem publicações, os cursos e vídeos aparecem na mesma. */}
+        {posts && lista.length === 0 && intercalados.map((item) => <Fragment key={item.chave}>{item.no}</Fragment>)}
       </div>
 
       <aside className="hidden space-y-5 computador:block">
         {/* Fica à vista ao descer o feed; se for mais alta que o ecrã, desliza por dentro. */}
         <div className="sticky top-24 max-h-[calc(100dvh-7rem)] space-y-5 overflow-y-auto pb-2">
-          <Card className="space-y-3 p-4 shadow-soft">
-            <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
-              <Flame className="h-4 w-4 text-primary" /> Em destaque
-            </h2>
-            {destaques.length === 0 && !destaquesExtra ? (
-              <p className="text-sm text-muted-foreground">Ainda sem destaques.</p>
-            ) : (
-              <ul className="space-y-3">
-                {destaques.map((p) => (
-                  <li key={p.id}>
-                    <Link href={`/inicio?post=${p.id}`} scroll={false} className="block rounded-lg p-2 transition-colors hover:bg-surface">
-                      <p className="line-clamp-2 text-sm">{p.content}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {p.author} · {p.likes} gosto{p.likes === 1 ? "" : "s"} · {p.comments} comentário{p.comments === 1 ? "" : "s"}
-                      </p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {destaquesExtra}
-          </Card>
+          {/* Em destaque: só cursos e vídeos (as publicações estão no feed). */}
+          {destaques && (
+            <Card className="space-y-3 p-4 shadow-soft">
+              <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
+                <Flame className="h-4 w-4 text-primary" /> Em destaque
+              </h2>
+              {destaques}
+            </Card>
+          )}
           {lateral}
         </div>
       </aside>
