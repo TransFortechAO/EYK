@@ -100,9 +100,7 @@ exceto para bordas/realces descritos abaixo.
   `components/inicio/aprendizagem.tsx`), por esta ordem:
   1. **Continua a aprender**: cursos em andamento (percentagem real de aulas vistas, última aula, botão
      Continuar) e vídeos deixados a meio. Sem nada começado, um convite para explorar cursos.
-  2. **Aprende de forma acessível**: a **Biblioteca LGA** em destaque (sinais do dia) e a **Acessibilidade**
-     num toque (legendas, contraste elevado, tamanho do texto — as mesmas preferências das Configurações).
-  3. **Comunidade EYK** (`components/comunidade/feed.tsx`): compositor e publicações por ordem aleatória e,
+  2. **Comunidade EYK** (`components/comunidade/feed.tsx`): compositor e publicações por ordem aleatória e,
      pelo meio, os cursos e vídeos recomendados (pelo que a pessoa aprende e por quem segue, com o motivo),
      **um a um e com a forma de uma publicação** (`publicacao-conteudo.tsx`), em sítios diferentes a cada
      visita — nunca agrupados. Sem separadores. `/comunidade` leva ao Início (links antigos).

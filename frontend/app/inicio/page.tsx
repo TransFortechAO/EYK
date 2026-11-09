@@ -7,7 +7,7 @@ import { useAuth } from "@/components/auth-gate";
 import { ComunidadeComEscola, InicioEscola, SoPlataformaGeral } from "@/components/instituicao/escola";
 import { FeedComunidade } from "@/components/comunidade/feed";
 import { DestaquesCatalogo, LateralInicio } from "@/components/comunidade/lateral";
-import { AprendeAcessivel, ContinuarAprender } from "@/components/inicio/aprendizagem";
+import { ContinuarAprender } from "@/components/inicio/aprendizagem";
 import { PublicacaoConteudo } from "@/components/comunidade/publicacao-conteudo";
 import { PesquisaGlobal } from "@/components/pesquisa-global";
 import { pesquisaDaPagina } from "@/components/pesquisa-pagina";
@@ -67,7 +67,7 @@ function Feed({ sugestoes }: { sugestoes: Sugestoes | null }) {
 
 /**
  * O Início do EYK: Educação · Inclusão · Comunidade. Primeiro a aprendizagem da pessoa
- * (continuar, aprender em LGA, acessibilidade); depois a Comunidade, com os cursos e vídeos
+ * (continuar a aprender); depois a Comunidade, com os cursos e vídeos
  * recomendados pelo meio, um a um.
  */
 export default function InicioPage() {
@@ -105,8 +105,6 @@ export default function InicioPage() {
 
       {/* Com escola parceira: trabalhos de LGA, aulas novas, avisos e desafios da escola. */}
       <InicioEscola />
-
-      <AprendeAcessivel />
 
       <section aria-labelledby="comunidade" className="space-y-4">
         <div>
