@@ -27,8 +27,9 @@ describe("voltar ao sítio de onde se veio depois de entrar", () => {
 });
 
 describe("paginaInicial", () => {
-  it("a equipa EYK entra nas métricas e os restantes no Início", () => {
+  it("a equipa EYK entra nas métricas, o professor no Painel e os restantes no Início", () => {
     expect(paginaInicial({ isStaff: true })).toBe("/configuracoes/administracao/metricas");
+    expect(paginaInicial({ isTeacher: true })).toBe("/professor");
     expect(paginaInicial({ isStaff: false })).toBe("/inicio");
     expect(paginaInicial(null)).toBe("/inicio");
   });

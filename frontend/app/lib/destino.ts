@@ -42,9 +42,14 @@ export function loginComDestino(caminho: string): string {
   return seguro ? `/login?next=${encodeURIComponent(seguro)}` : "/login";
 }
 
-/** Primeira página de cada pessoa: a equipa EYK entra nas métricas; os outros no Início. */
-export function paginaInicial(user?: { isStaff?: boolean } | null): string {
-  return user?.isStaff ? "/configuracoes/administracao/metricas" : "/inicio";
+/**
+ * Primeira página de cada pessoa, a mesma que o topo do seu menu: a equipa EYK entra nas
+ * métricas, o professor no Painel e os outros no Início.
+ */
+export function paginaInicial(user?: { isStaff?: boolean; isTeacher?: boolean } | null): string {
+  if (user?.isStaff) return "/configuracoes/administracao/metricas";
+  if (user?.isTeacher) return "/professor";
+  return "/inicio";
 }
 
 /**
