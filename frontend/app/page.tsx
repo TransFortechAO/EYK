@@ -8,6 +8,10 @@ import {
   Instagram,
   Facebook,
   Linkedin,
+  PlayCircle,
+  Users,
+  Trophy,
+  Captions,
 } from "lucide-react";
 
 
@@ -48,6 +52,17 @@ const rodapeLinks = {
   ],
   
 };
+
+// Redes da Transfortech (quem faz a EYK).
+const redes = [
+  {
+    nome: "Instagram",
+    icone: Instagram,
+    href: "https://www.instagram.com/trans_fortech?utm_source=ig_web_button_share_sheet&dlrf=ZDNlZDc0MzIxNw==",
+  },
+  { nome: "Facebook", icone: Facebook, href: "https://www.facebook.com/profile.php?id=100082682384295" },
+  { nome: "LinkedIn", icone: Linkedin, href: "https://www.linkedin.com/company/transfortech/posts/?feedView=all" },
+];
 
 export default function LandingPage() {
   return (
@@ -103,9 +118,10 @@ export default function LandingPage() {
         </header>
 
         {/* Hero */}
+        {/* Telemóvel: uma coluna, centrada. Computador: duas colunas a ocupar a largura. */}
         <section className="mx-auto max-w-6xl px-6 py-16 lg:px-8 lg:py-24">
-          <div className="grid items-center gap-12">
-            <div className="mx-auto max-w-2xl text-center lg:text-left">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+            <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
               <div
                 className="mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
                 style={{
@@ -120,7 +136,7 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <h1 className="mb-6 font-serif text-4xl font-bold leading-[1.1] text-white lg:text-5xl">
+              <h1 className="mb-6 font-serif text-4xl font-bold leading-[1.1] text-white lg:text-6xl">
                 Estudar em{" "}
                 <em className="not-italic" style={{ color: EYK_GOLD_LIGHT }}>
                   língua gestual
@@ -128,7 +144,7 @@ export default function LandingPage() {
                 nunca foi tão fácil.
               </h1>
 
-              <p className="mb-10 max-w-[480px] text-sm leading-relaxed text-white/60 lg:text-base">
+              <p className="mx-auto mb-10 max-w-[480px] text-sm leading-relaxed text-white/60 lg:mx-0 lg:max-w-xl lg:text-lg">
                 Ekola ya Kelela — &ldquo;Escola Especial&rdquo; em Kimbundu. Plataforma digital
                 para pessoas com deficiências auditivas e afónicas, com vídeo-aulas, conteúdos
                 escolares e científicos, feitos por professores para reforçar o que já foi
@@ -153,23 +169,66 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
+
+            {/* A plataforma por dentro: aula em LGA, comunidade e conquistas. */}
+            <div aria-hidden className="relative mx-auto w-full max-w-md lg:max-w-none">
+              <div
+                className="absolute -inset-6 rounded-[2.5rem] opacity-60 blur-3xl"
+                style={{ background: "radial-gradient(circle at 60% 40%, rgba(212,162,74,0.35), transparent 65%)" }}
+              />
+              <div className="relative space-y-4">
+                <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#111] shadow-[0_30px_60px_-30px_rgba(0,0,0,0.9)]">
+                  <div className="relative grid aspect-video place-items-center bg-gradient-to-br from-[#2a2112] via-[#151515] to-[#0d0d0d]">
+                    <Hand className="h-24 w-24" style={{ color: EYK_GOLD_LIGHT }} />
+                    <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">
+                      <Captions className="h-3.5 w-3.5" /> LGA + legendas
+                    </span>
+                    <span className="absolute bottom-4 right-4 grid h-12 w-12 place-items-center rounded-full text-black" style={{ background: `linear-gradient(135deg, ${EYK_GOLD}, ${EYK_GOLD_LIGHT})` }}>
+                      <PlayCircle className="h-6 w-6" />
+                    </span>
+                  </div>
+                  <div className="space-y-2 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: EYK_GOLD }}>Vídeo-aula</p>
+                    <p className="font-serif text-lg font-bold text-white">Saudações em Língua Gestual Angolana</p>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full w-2/3 rounded-full" style={{ background: `linear-gradient(90deg, ${EYK_GOLD}, ${EYK_GOLD_LIGHT})` }} />
+                    </div>
+                    <p className="text-xs text-white/50">65% concluído</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-2xl border border-white/10 bg-[#111] p-4">
+                    <Users className="mb-2 h-5 w-5" style={{ color: EYK_GOLD }} />
+                    <p className="text-sm font-semibold text-white">Comunidade</p>
+                    <p className="text-xs text-white/50">Alunos e professores, surdos e ouvintes</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-[#111] p-4">
+                    <Trophy className="mb-2 h-5 w-5" style={{ color: EYK_GOLD }} />
+                    <p className="text-sm font-semibold text-white">Conquistas</p>
+                    <p className="text-xs text-white/50">Moedas, níveis e classificação</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
         </section>
 
         {/* O que é a EYK */}
         <section className="border-t border-white/5 py-20">
-          <div className="mx-auto max-w-3xl px-6 text-center lg:px-8">
-            <p
-              className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em]"
-              style={{ color: EYK_GOLD }}
-            >
-              O que é a EYK
-            </p>
-            <h2 className="mb-6 font-serif text-3xl font-bold leading-tight text-white lg:text-4xl">
-              Uma plataforma pensada de mãos para pessoas surdas.
-            </h2>
-            <p className="text-sm leading-relaxed text-white/60 lg:text-base">
+          <div className="mx-auto grid max-w-6xl gap-6 px-6 text-center lg:grid-cols-2 lg:gap-16 lg:px-8 lg:text-left">
+            <div>
+              <p
+                className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em]"
+                style={{ color: EYK_GOLD }}
+              >
+                O que é a EYK
+              </p>
+              <h2 className="font-serif text-3xl font-bold leading-tight text-white lg:text-5xl">
+                Uma plataforma pensada de mãos para pessoas surdas.
+              </h2>
+            </div>
+            <p className="text-sm leading-relaxed text-white/60 lg:self-end lg:text-lg">
               Ekola ya Kelela, de origem Kimbundu, &ldquo;Escola Especial&rdquo; em Português, é
               uma plataforma digital direcionada a pessoas com deficiências afónicas e auditivas,
               ajudando-as com vídeo-aulas, conteúdos de entretenimento, conceitos escolares e
@@ -179,11 +238,11 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="mx-auto mt-14 grid max-w-5xl gap-5 px-6 sm:grid-cols-3 lg:px-8">
+          <div className="mx-auto mt-14 grid max-w-6xl gap-5 px-6 sm:grid-cols-3 lg:gap-6 lg:px-8">
             {beneficios.map(({ icon: Icon, title, text }) => (
               <div
                 key={title}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 lg:p-8"
               >
                 <div
                   className="mb-4 grid h-11 w-11 place-items-center rounded-full"
@@ -237,16 +296,22 @@ export default function LandingPage() {
 
             <div>
               <h4 className="mb-3 text-sm font-semibold text-white">Siga-nos</h4>
-              <div className="flex items-center gap-3">
-                {[Instagram, Facebook, Linkedin].map((Icon, i) => (
-                  <span
-                    key={i}
-                    className="grid h-8 w-8 place-items-center rounded-full border border-white/10 text-white/50"
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                  </span>
+              <ul className="flex items-center gap-3">
+                {redes.map(({ nome, icone: Icone, href }) => (
+                  <li key={nome}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Transfortech no ${nome}`}
+                      title={nome}
+                      className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white/60 transition hover:border-[#d4a24a]/60 hover:text-white"
+                    >
+                      <Icone className="h-4 w-4" aria-hidden />
+                    </a>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </div>
 
