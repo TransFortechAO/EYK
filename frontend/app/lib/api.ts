@@ -585,6 +585,21 @@ export type LeaderRow = {
   isMe?: boolean;
 };
 
+/** "Continua a aprender" no Início. */
+export type EmAndamento = {
+  cursos: {
+    cursoId: number;
+    titulo: string;
+    categoria: string | null;
+    thumbnail: string | null;
+    progresso: number;
+    aulasVistas: number;
+    totalAulas: number;
+    ultimaAula: { id: number; titulo: string; segundos: number; duracao: number };
+  }[];
+  videos: { videoId: number; titulo: string; thumbnail: string | null; segundos: number; duracao: number }[];
+};
+
 /** Sugestão de professor para seguir (coluna lateral do Início). */
 export type ProfessorSugerido = {
   professorId: number;
@@ -1536,6 +1551,19 @@ export const api = {
   // =========================================================================
   //  SALVOS (guardar para ver depois)
   // =========================================================================
+  inicio: {
+    continuar: async (): Promise<EmAndamento> => fetchAPI<EmAndamento>('/api/inicio/continuar/'),
+
+    /** Cursos e vídeos para esta pessoa, cada um com o motivo da sugestão. */
+    recomendados: async (): Promise<{ cursos: (Course & { motivo: string })[]; videos: (Video & { motivo: string })[] }> => {
+      const r = await fetchAPI<{ cursos: (RawCourse & { motivo: string })[]; videos: (RawVideo & { motivo: string })[] }>('/api/inicio/recomendados/');
+      return {
+        cursos: r.cursos.map((c) => ({ ...normalizeCourse(c), motivo: c.motivo })),
+        videos: r.videos.map((v) => ({ ...normalizeVideo(v), motivo: v.motivo })),
+      };
+    },
+  },
+
   /** Pesquisa em toda a plataforma (as pessoas vêm de pesquisarUtilizadores). */
   pesquisar: async (q: string): Promise<{ cursos: Course[]; videos: Video[]; posts: Post[] }> => {
     const r = await fetchAPI<{ cursos: RawCourse[]; videos: RawVideo[]; posts: RawPost[] }>(`/api/pesquisa/?q=${encodeURIComponent(q)}`);

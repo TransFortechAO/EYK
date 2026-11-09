@@ -2,17 +2,21 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { PageHeader, SectionHeader, CourseCard, VideoCard } from "@/components/eyk";
-import { api, type Course, type Video } from "@/lib/api";
+import { api, type Course, type EmAndamento, type Video } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
-import { ComunidadeComEscola, InicioEscola } from "@/components/instituicao/escola";
+import { ComunidadeComEscola, InicioEscola, SoPlataformaGeral } from "@/components/instituicao/escola";
 import { FeedComunidade } from "@/components/comunidade/feed";
 import { DestaquesCatalogo, LateralInicio } from "@/components/comunidade/lateral";
+import { AprendeAcessivel, ContinuarAprender, Recomendados } from "@/components/inicio/aprendizagem";
 import { PesquisaGlobal } from "@/components/pesquisa-global";
 import { pesquisaDaPagina } from "@/components/pesquisa-pagina";
 import { BoasVindasProfessor } from "@/components/boas-vindas-professor";
 
-/** Quantos cursos ou vídeos entram em cada faixa do feed. */
-const POR_FAIXA = 4;
+/** Quantas recomendações aparecem em cima; as seguintes entram no meio do feed. */
+const NO_TOPO = 4;
+
+type ComMotivo<T> = T & { motivo: string };
+type Sugestoes = { cursos: ComMotivo<Course>[]; videos: ComMotivo<Video>[] };
 
 function Faixa({ titulo, href, cta, children }: { titulo: string; href: string; cta: string; children: React.ReactNode }) {
   return (
@@ -23,12 +27,8 @@ function Faixa({ titulo, href, cta, children }: { titulo: string; href: string; 
   );
 }
 
-/**
- * O Início é a Comunidade: publicações e, pelo meio, faixas de cursos e vídeos — tudo
- * numa só página, sem saltar entre Início e Comunidade. O catálogo completo, com filtros,
- * continua em Cursos e Vídeos.
- */
-function Feed() {
+/** A Comunidade: publicações e, pelo meio, mais recomendações. */
+function Feed({ sugestoes }: { sugestoes: Sugestoes | null }) {
   const [cursos, setCursos] = useState<Course[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
 
@@ -36,8 +36,7 @@ function Feed() {
     let vivo = true;
     void Promise.all([api.getCursos(), api.getVideos("recent")]).then(([c, v]) => {
       if (!vivo) return;
-      // Os mais recentes primeiro (quem é novo ainda não começou nenhum curso).
-      setCursos([...c].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")));
+      setCursos(c);
       setVideos(v);
     });
     return () => {
@@ -45,26 +44,17 @@ function Feed() {
     };
   }, []);
 
-  const bloco = <T,>(lista: T[], n: number) => lista.slice(n * POR_FAIXA, (n + 1) * POR_FAIXA);
+  const maisCursos = sugestoes?.cursos.slice(NO_TOPO, NO_TOPO * 2) ?? [];
+  const maisVideos = sugestoes?.videos.slice(NO_TOPO, NO_TOPO * 2) ?? [];
   const faixas = [
-    bloco(cursos, 0).length > 0 && (
-      <Faixa key="c0" titulo="Cursos recentes" href="/cursos" cta="Ver todos os cursos">
-        {bloco(cursos, 0).map((c) => <CourseCard key={c.id} course={c} />)}
+    maisCursos.length > 0 && (
+      <Faixa key="c" titulo="Mais cursos para ti" href="/cursos" cta="Ver todos os cursos">
+        {maisCursos.map((c) => <CourseCard key={c.id} course={c} />)}
       </Faixa>
     ),
-    bloco(videos, 0).length > 0 && (
-      <Faixa key="v0" titulo="Vídeos recentes" href="/videos" cta="Ver todos os vídeos">
-        {bloco(videos, 0).map((v) => <VideoCard key={v.id} video={v} />)}
-      </Faixa>
-    ),
-    bloco(cursos, 1).length > 0 && (
-      <Faixa key="c1" titulo="Mais cursos para ti" href="/cursos" cta="Ver todos os cursos">
-        {bloco(cursos, 1).map((c) => <CourseCard key={c.id} course={c} />)}
-      </Faixa>
-    ),
-    bloco(videos, 1).length > 0 && (
-      <Faixa key="v1" titulo="Mais vídeos" href="/videos" cta="Ver todos os vídeos">
-        {bloco(videos, 1).map((v) => <VideoCard key={v.id} video={v} />)}
+    maisVideos.length > 0 && (
+      <Faixa key="v" titulo="Mais vídeos para ti" href="/videos" cta="Ver todos os vídeos">
+        {maisVideos.map((v) => <VideoCard key={v.id} video={v} />)}
       </Faixa>
     ),
   ].filter(Boolean);
@@ -82,32 +72,66 @@ function Feed() {
   );
 }
 
+/**
+ * O Início do EYK: Educação · Inclusão · Comunidade. Primeiro a aprendizagem da pessoa
+ * (continuar, aprender em LGA, acessibilidade, recomendações); depois a Comunidade.
+ */
 export default function InicioPage() {
   const { user } = useAuth();
   const firstName = user?.name?.split(" ")[0] || "Estudante";
+  const [emAndamento, setEmAndamento] = useState<EmAndamento | null>(null);
+  const [sugestoes, setSugestoes] = useState<Sugestoes | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    void api.inicio.continuar().then((d) => vivo && setEmAndamento(d)).catch(() => vivo && setEmAndamento({ cursos: [], videos: [] }));
+    void api.inicio.recomendados().then((d) => vivo && setSugestoes(d)).catch(() => vivo && setSugestoes({ cursos: [], videos: [] }));
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <BoasVindasProfessor />
       <div className="space-y-4">
         <PageHeader
           title={`Olá, ${firstName}`}
           gesto="Olá"
-          description="Publicações da comunidade, cursos e vídeos — tudo num só lugar."
+          description="A tua aprendizagem continua aqui. Descobre, aprende e evolui ao teu ritmo."
         />
         {/* Telemóvel/tablet: a pesquisa fica aqui (no topo tapava os outros ícones). */}
         <PesquisaGlobal className="computador:hidden" placeholder={pesquisaDaPagina("/inicio")?.placeholder} />
       </div>
 
+      {/* Catálogo geral: escondido ao aluno de uma escola que escolheu ver só a escola. */}
+      <SoPlataformaGeral>
+        <ContinuarAprender dados={emAndamento} />
+      </SoPlataformaGeral>
+
       {/* Com escola parceira: trabalhos de LGA, aulas novas, avisos e desafios da escola. */}
       <InicioEscola />
 
-      {/* Com escola: separadores para a comunidade de cada Turma LGA; o aluno que só vê a escola não vê o feed geral. */}
-      <ComunidadeComEscola>
-        <Suspense fallback={null}>
-          <Feed />
-        </Suspense>
-      </ComunidadeComEscola>
+      <AprendeAcessivel />
+
+      <SoPlataformaGeral>
+        {sugestoes && <Recomendados cursos={sugestoes.cursos.slice(0, NO_TOPO)} videos={sugestoes.videos.slice(0, NO_TOPO)} />}
+      </SoPlataformaGeral>
+
+      <section aria-labelledby="comunidade" className="space-y-4">
+        <div>
+          <h2 id="comunidade" className="font-serif text-xl font-semibold tracking-tight sm:text-2xl">
+            Comunidade EYK
+          </h2>
+          <p className="text-sm text-muted-foreground">Partilha experiências, coloca questões e aprende com outras pessoas.</p>
+        </div>
+        {/* Com escola: separadores para a comunidade de cada Turma LGA; o aluno que só vê a escola não vê o feed geral. */}
+        <ComunidadeComEscola>
+          <Suspense fallback={null}>
+            <Feed sugestoes={sugestoes} />
+          </Suspense>
+        </ComunidadeComEscola>
+      </section>
     </div>
   );
 }

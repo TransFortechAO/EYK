@@ -96,10 +96,16 @@ exceto para bordas/realces descritos abaixo.
   de cursos (Resumo · Aulas · Avaliações) e de vídeos (Resumo · Reações · Outras aulas).
 - A Leaderboard usa separadores em **todos** os ecrãs, porque são vistas alternativas da mesma
   lista (Classificação / Streak / Moedas / Professores).
-- **O Início é a Comunidade** (`components/comunidade/feed.tsx`): compositor, publicações por ordem aleatória
-  (antigas e recentes, para quem entra não sentir que perdeu nada) e, pelo meio, faixas de 4 cursos ou 4 vídeos.
-  Sem separadores. O catálogo completo, com filtros, está em Cursos e Vídeos. `/comunidade` leva ao Início
-  (links antigos). No menu, o lugar da Comunidade é dos **Salvos**.
+- **O Início segue os três pilares do EYK — Educação · Inclusão · Comunidade** (`inicio/page.tsx`,
+  `components/inicio/aprendizagem.tsx`), por esta ordem:
+  1. **Continua a aprender**: cursos em andamento (percentagem real de aulas vistas, última aula, botão
+     Continuar) e vídeos deixados a meio. Sem nada começado, um convite para explorar cursos.
+  2. **Aprende de forma acessível**: a **Biblioteca LGA** em destaque (sinais do dia) e a **Acessibilidade**
+     num toque (legendas, contraste elevado, tamanho do texto — as mesmas preferências das Configurações).
+  3. **Recomendados para ti**: pelo que a pessoa já aprende e por quem segue, cada um com o motivo.
+  4. **Comunidade EYK** (`components/comunidade/feed.tsx`): compositor, publicações por ordem aleatória e,
+     pelo meio, mais recomendações. Sem separadores. `/comunidade` leva ao Início (links antigos).
+  O catálogo completo, com filtros, está em Cursos e Vídeos. No menu, o lugar da Comunidade é dos **Salvos**.
 - Coluna lateral do Início (só no computador), como nas redes sociais: **Em destaque** (publicações, um curso
   e um vídeo), **Professores para seguir** e **No topo da classificação**. Cada bloco desaparece se estiver vazio.
 - Cursos e Vídeos não dizem "x encontrados": a lista fala por si.

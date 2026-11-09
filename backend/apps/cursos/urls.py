@@ -7,6 +7,7 @@ from apps.accounts.api_notificacoes import (
     notificacao_nao_lidas,
 )
 from apps.alunos.api_salvos import salvos, salvos_ids
+from apps.cursos.api_inicio import continuar_aprender, recomendados
 from apps.cursos.api_pesquisa import pesquisa
 from apps.feed.api_views import (
     comentario_detail,
@@ -88,6 +89,8 @@ urlpatterns = [
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/reagir/', comentario_reagir, name='api-comentario-reagir'),
 
     path('pesquisa/', pesquisa, name='pesquisa'),
+    path('inicio/continuar/', continuar_aprender, name='inicio-continuar'),
+    path('inicio/recomendados/', recomendados, name='inicio-recomendados'),
     path('salvos/', salvos, name='salvos'),
     path('salvos/ids/', salvos_ids, name='salvos-ids'),
 
