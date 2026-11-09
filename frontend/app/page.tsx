@@ -92,7 +92,7 @@ export default function LandingPage() {
         {/* Cabeçalho */}
         {/* Barra flutuante: opaca, com cantos redondos e afastada das margens. */}
         <header className="sticky top-3 z-20 px-3 sm:top-4 sm:px-6">
-          <div className="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-white/10 bg-[#0a0a0a] py-2 pl-4 pr-3 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)] sm:pl-6 sm:pr-4">
+          <div className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-white/10 bg-[#0a0a0a] py-2 pl-4 pr-3 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)] sm:pl-6 sm:pr-4">
             <div className="flex items-center gap-2">
               <img src="/assets/EYK_-_LOGO-SEM-BAKGROUND.png" alt=""
                 className="h-14 w-auto object-contain sm:h-16"
@@ -119,7 +119,7 @@ export default function LandingPage() {
 
         {/* Hero */}
         {/* Telemóvel: uma coluna, centrada. Computador: duas colunas a ocupar a largura. */}
-        <section className="mx-auto max-w-6xl px-6 py-16 lg:px-8 lg:py-24">
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
           <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
             <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
               <div
@@ -215,8 +215,8 @@ export default function LandingPage() {
         </section>
 
         {/* O que é a EYK */}
-        <section className="border-t border-white/5 py-20">
-          <div className="mx-auto grid max-w-6xl gap-6 px-6 text-center lg:grid-cols-2 lg:gap-16 lg:px-8 lg:text-left">
+        <section className="border-t border-white/5 py-16 lg:py-20">
+          <div className="mx-auto grid max-w-7xl gap-6 px-4 text-center sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:text-left">
             <div>
               <p
                 className="mb-4 text-[11px] font-bold uppercase tracking-[0.18em]"
@@ -238,7 +238,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="mx-auto mt-14 grid max-w-6xl gap-5 px-6 sm:grid-cols-3 lg:gap-6 lg:px-8">
+          <div className="mx-auto mt-14 grid max-w-7xl gap-5 px-4 sm:grid-cols-3 sm:px-6 lg:gap-6 lg:px-8">
             {beneficios.map(({ icon: Icon, title, text }) => (
               <div
                 key={title}
@@ -259,7 +259,7 @@ export default function LandingPage() {
 
         {/* Rodapé */}
         <footer className="border-t border-white/5 py-14">
-          <div className="mx-auto grid max-w-6xl gap-10 px-6 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <div className="flex items-center gap-2">
@@ -315,7 +315,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="mx-auto mt-10 max-w-6xl border-t border-white/5 px-6 pt-6 lg:px-8">
+          <div className="mx-auto mt-10 max-w-7xl border-t border-white/5 px-4 pt-6 sm:px-6 lg:px-8">
             <p className="text-xs text-white/35">© 2026 Projeto EYK — Transfortech</p>
           </div>
         </footer>
