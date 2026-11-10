@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BotaoSalvar } from "@/components/ds/botao-salvar";
-import type { Course, Video } from "@/lib/api";
+import { tempoRelativo, type Course, type Video } from "@/lib/api";
 
 const iniciais = (nome: string) => {
   const p = nome.trim().split(/\s+/);
@@ -25,6 +25,7 @@ export function PublicacaoConteudo(
   const video = tipo === "video" ? (props.conteudo as Video) : null;
   const href = curso ? `/cursos/${c.id}` : `/videos/${c.id}`;
   const Icone = curso ? BookOpen : PlayCircle;
+  const publicadoHa = tempoRelativo(c.publishedAt);
 
   return (
     <Card className="space-y-4 p-5 shadow-soft">
@@ -39,6 +40,7 @@ export function PublicacaoConteudo(
             <Sparkles className="h-3 w-3 text-primary" aria-hidden />
             {curso ? "Curso" : "Vídeo"}
             {motivo ? ` · ${motivo}` : ""}
+            {publicadoHa ? ` · ${publicadoHa}` : ""}
           </p>
         </div>
         <BotaoSalvar tipo={tipo} id={c.id} variante="acao" className="shrink-0" />

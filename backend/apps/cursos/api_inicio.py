@@ -1,5 +1,5 @@
 """O Início centrado na aprendizagem: o que a pessoa está a aprender e o que lhe recomendamos."""
-from django.db.models import Max
+from django.db.models import Max, Q
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -108,23 +108,36 @@ def recomendados(request):
             pontos, motivo = pontos + 3, f'Porque aprendes {categoria}'
         return pontos, motivo
 
-    candidatos = [c for c in cursos_visiveis(user).exclude(professor__user=user)[:200] if c.id not in inscritos]
+    cursos_q = cursos_visiveis(user)
+    if not user.is_teacher:
+        cursos_q = cursos_q.exclude(professor__user=user)
+    candidatos = [c for c in cursos_q[:200] if c.id not in inscritos or c.professor.user_id == user.id]
     cursos = []
     for c in candidatos:
+        e_proprio = c.professor.user_id == user.id
         pontos, motivo = motivo_e_pontos(
             c.categoria.nome if c.categoria else None, c.professor_id, c.professor.nome_publico, c.total_inscritos(),
         )
+        if e_proprio:
+            pontos, motivo = pontos + 100, 'Publicado por ti'
         cursos.append((pontos, c, motivo))
     cursos.sort(key=lambda x: (-x[0], -x[1].id))
 
+    videos_q = Video.objects.filter(ativo=True, oculto=False, curso__isnull=True)
+    if user.is_teacher:
+        videos_q = videos_q.filter(Q(professor__user=user) | ~Q(id__in=vistos))
+    else:
+        videos_q = videos_q.exclude(id__in=vistos).exclude(professor__user=user)
     videos_q = (
-        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True)
-        .exclude(id__in=vistos).exclude(professor__user=user)
+        videos_q
         .select_related('professor').prefetch_related('reacoes', 'visualizacoes', 'recursos')[:200]
     )
     videos = []
     for v in videos_q:
+        e_proprio = v.professor.user_id == user.id
         pontos, motivo = motivo_e_pontos(None, v.professor_id, v.professor.nome_publico, v.total_visualizacoes())
+        if e_proprio:
+            pontos, motivo = pontos + 100, 'Publicado por ti'
         videos.append((pontos, v, motivo))
     videos.sort(key=lambda x: (-x[0], -x[1].id))
 

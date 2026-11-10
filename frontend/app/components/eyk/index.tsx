@@ -292,7 +292,7 @@ export function CourseCard({ course }: { course: Course }) {
 }
 
 /* ---------- Video card ---------- */
-export function VideoCard({ video }: { video: Video }) {
+export function VideoCard({ video, formatoYoutubeMobile = false }: { video: Video; formatoYoutubeMobile?: boolean }) {
   return (
     <div className="relative">
     <BotaoSalvar tipo="video" id={video.id} variante="cartao" />
@@ -301,8 +301,8 @@ export function VideoCard({ video }: { video: Video }) {
       className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
     >
       {/* Telemóvel: cartão horizontal e compacto; a partir do tablet, vertical. */}
-      <Card className="flex overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated sm:block">
-        <div className="relative aspect-video w-[40%] shrink-0 self-start bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center sm:w-full">
+      <Card className={`flex overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated sm:block ${formatoYoutubeMobile ? "flex-col rounded-xl sm:flex-col" : ""}`}>
+        <div className={`relative aspect-video shrink-0 self-start bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${formatoYoutubeMobile ? "w-full sm:w-full" : "w-[40%] sm:w-full"}`}>
           {/* Thumbnail (se existir) */}
           {video.thumbnail ? (
             <div

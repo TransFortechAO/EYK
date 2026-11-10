@@ -104,9 +104,9 @@ export default function VideosPage() {
 
         <section>
           {filtrados.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
+            <div className="videos-youtube-mobile grid gap-3 sm:grid-cols-2 sm:gap-5 md:grid-cols-3">
               {filtrados.map((v) => (
-                <VideoCard key={v.id} video={v} />
+                <VideoCard key={v.id} video={v} formatoYoutubeMobile />
               ))}
             </div>
           ) : (

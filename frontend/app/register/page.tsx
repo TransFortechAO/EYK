@@ -206,7 +206,7 @@ function RegisterConteudo() {
 
           <ul className="space-y-3 max-w-[380px]">
             {[
-              { icon: BookOpen, text: "Cursos em vídeo com intérprete LGP" },
+              { icon: BookOpen, text: "Cursos em vídeo com intérprete LGA" },
               { icon: Users, text: "Comunidade de alunos e professores" },
               { icon: Trophy, text: "Gamificação: moedas, níveis e ranking" },
             ].map(({ icon: TheIcon, text }, i) => (

@@ -50,6 +50,30 @@
   }
 }
 
+/* Grelha de vídeos em formato de feed, com a mesma pequena margem do player. */
+.videos-youtube-mobile {
+  @media (max-width: 639.98px) {
+    width: calc(100% + 1rem);
+    margin-inline: -0.5rem;
+  }
+
+  @media (min-width: 640px) and (max-width: 767.98px) {
+    width: calc(100% + 2rem);
+    margin-inline: -1rem;
+  }
+
+  @media (min-width: 768px) and (max-width: 1023.98px) {
+    width: calc(100% + 3rem);
+    margin-inline: -1.5rem;
+  }
+
+  @media (pointer: coarse) and (min-width: 1024px) and (max-width: 1366px) {
+    width: calc(100% + 1rem);
+    margin-left: -1.5rem;
+    margin-right: 0.5rem;
+  }
+}
+
 /*
  * EYK Design System — cream + gold, serif titles, sans body.
  * Tokens are semantic and defined in oklch. Never hard-code colors in components.
