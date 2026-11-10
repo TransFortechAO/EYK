@@ -33,6 +33,12 @@ class Curso(models.Model):
     oculto = models.BooleanField(default=False, db_index=True)  # ver Video.oculto
     publicado_em = models.DateField(null=True, blank=True)
 
+    # Autorização expressa do professor para avaliar e selecionar aulas do curso
+    # como fonte de investigação/treino de IA para LGA.
+    uso_ia_lga = models.BooleanField(default=False)
+    uso_ia_lga_em = models.DateTimeField(null=True, blank=True)
+    uso_ia_lga_versao = models.CharField(max_length=30, blank=True)
+
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     # Preenchido quando o autor edita o conteúdo (mostra "editado" na plataforma).

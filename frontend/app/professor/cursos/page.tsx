@@ -50,6 +50,7 @@ const EMPTY_FORM: ProfessorCursoPayload = {
   descricao: "",
   categoria_nome: "",
   ativo: true,
+  uso_ia_lga: false,
 };
 
 export default function ProfessorCursosPage() {
@@ -116,6 +117,7 @@ export default function ProfessorCursosPage() {
       descricao: curso.descricao,
       categoria_nome: curso.categoria || "",
       ativo: curso.ativo,
+      uso_ia_lga: curso.uso_ia_lga,
     });
     setVideosNovos([]);
     setRecursosNovos([]);
@@ -721,6 +723,16 @@ export default function ProfessorCursosPage() {
                     ))}
                   </ul>
                 )}
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <Switch aria-label="Autorizar seleção deste curso para investigação de IA LGA" checked={Boolean(form.uso_ia_lga)} onCheckedChange={(v) => setForm({ ...form, uso_ia_lga: v })} />
+                  <div>
+                    <p className="text-sm font-medium">Autorizar seleção de aulas para investigação de IA LGA</p>
+                    <p className="text-xs text-muted-foreground">Ao ativar, autorizas a seleção de partes das aulas para investigação de IA LGA e confirmas ter os direitos e a autorização das pessoas filmadas. Só aulas alojadas na EYK e relevantes são sugeridas; a equipa revê e identifica os segmentos antes de os incluir no dataset. Podes retirar esta autorização ao desativar a opção.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">

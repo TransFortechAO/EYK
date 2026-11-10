@@ -165,7 +165,7 @@ export default function CoursePlayerPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         {/* Coluna principal: player + info + tabs */}
         <div className="min-w-0 space-y-6">
-          <Card className="overflow-hidden rounded-3xl border-border/70 shadow-elevated">
+          <Card className="player-youtube-mobile overflow-hidden rounded-3xl border-border/70 shadow-elevated">
             <div className="relative">
               {activeVideo ? (
                 <ModernVideoPlayer

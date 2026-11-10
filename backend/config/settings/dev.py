@@ -28,6 +28,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://192.168.1.122:3000',
 ]
 if LAN_IP:
     CSRF_TRUSTED_ORIGINS.extend([f'http://{LAN_IP}:3000', f'http://{LAN_IP}:8000'])

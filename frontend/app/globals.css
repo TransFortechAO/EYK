@@ -21,6 +21,35 @@
   }
 }
 
+/* Player de curso/vídeo ocupa toda a largura disponível em telemóveis e tablets,
+   como o player móvel do YouTube; o conteúdo abaixo mantém o padding da página. */
+.player-youtube-mobile {
+  @media (max-width: 639.98px) {
+    width: calc(100% + 1rem);
+    margin-inline: -0.5rem;
+    border-radius: 0.75rem;
+  }
+
+  @media (min-width: 640px) and (max-width: 767.98px) {
+    width: calc(100% + 2rem);
+    margin-inline: -1rem;
+    border-radius: 0.75rem;
+  }
+
+  @media (min-width: 768px) and (max-width: 1023.98px) {
+    width: calc(100% + 3rem);
+    margin-inline: -1.5rem;
+    border-radius: 0.75rem;
+  }
+
+  @media (pointer: coarse) and (min-width: 1024px) and (max-width: 1366px) {
+    width: calc(100% + 1rem);
+    margin-left: -1.5rem;
+    margin-right: 0.5rem;
+    border-radius: 0.75rem;
+  }
+}
+
 /*
  * EYK Design System — cream + gold, serif titles, sans body.
  * Tokens are semantic and defined in oklch. Never hard-code colors in components.
@@ -387,4 +416,44 @@ video::cue {
 body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/* Login e registo acompanham o tema escolhido na página inicial. */
+html:not(.dark) .auth-page .auth-brand-panel {
+  border-color: rgb(24 24 27 / 0.12);
+}
+
+html:not(.dark) .auth-page .auth-brand-overlay {
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.82) 0%,
+    rgb(255 255 255 / 0.76) 40%,
+    rgb(255 255 255 / 0.9) 100%
+  ) !important;
+}
+
+html:not(.dark) .auth-page .auth-brand-panel [class*="text-white"] {
+  color: #292524 !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card {
+  border-color: rgb(24 24 27 / 0.12);
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: 0 24px 60px -32px rgb(0 0 0 / 0.24);
+}
+
+html:not(.dark) .auth-page .auth-form-card [class*="text-white"] {
+  color: #292524 !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card [class*="border-white"] {
+  border-color: rgb(24 24 27 / 0.14) !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card [class*="bg-white/"] {
+  background-color: rgb(24 24 27 / 0.035) !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card input::placeholder {
+  color: #78716c !important;
 }

@@ -22,7 +22,6 @@ const SEPARADORES = [
   { id: "posicao", rotulo: "Classificação", icone: Trophy },
   { id: "streak", rotulo: "Streak", icone: Flame },
   { id: "moedas", rotulo: "Moedas", icone: Coins },
-  { id: "professores", rotulo: "Professores", icone: GraduationCap },
 ] as const;
 
 type Linha = { chave: string; posicao: number; userId: number | null; name: string; initials: string; isMe?: boolean; valor: ReactNode };
@@ -181,10 +180,7 @@ export default function LeaderboardPage() {
             <Lista linhas={porMoedas} rotuloValor="Moedas" />
           </TabsContent>
 
-          <TabsContent value="professores" className="space-y-6">
-            <p className="text-sm text-muted-foreground">Os professores que mais contribuem com cursos e vídeos.</p>
-            <Lista linhas={dosProfessores} rotuloValor="Moedas" />
-          </TabsContent>
+          
         </Tabs>
       </LeaderboardComEscola>
     </div>

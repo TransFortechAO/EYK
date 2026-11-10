@@ -25,27 +25,15 @@ function Capa({ src, icone: Icone }: { src: string | null; icone: typeof BookOpe
 
 /** "Continua a aprender": cursos em andamento e vídeos deixados a meio. */
 export function ContinuarAprender({ dados }: { dados: EmAndamento | null }) {
-  if (!dados) return null;
-  const vazio = dados.cursos.length === 0 && dados.videos.length === 0;
+  // Esta secção é sobre cursos por concluir. Sem um curso em andamento,
+  // não há título nem card para mostrar (mesmo que existam vídeos a meio).
+  if (!dados || dados.cursos.length === 0) return null;
   return (
     <section aria-labelledby="continuar" className="space-y-3">
       <h2 id="continuar" className="font-serif text-xl font-semibold tracking-tight sm:text-2xl">
         Continua a aprender
       </h2>
-      {vazio ? (
-        <Card className="flex flex-col items-start gap-3 p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-medium">Ainda não começaste nenhum curso.</p>
-            <p className="text-sm text-muted-foreground">Escolhe um curso e a tua aprendizagem fica aqui, pronta para continuar.</p>
-          </div>
-          <Button asChild className="gap-2 rounded-full">
-            <Link href="/cursos">
-              Explorar cursos <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
-          </Button>
-        </Card>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
           {dados.cursos.map((c) => (
             <Card key={`c${c.cursoId}`} className="flex gap-4 p-4 shadow-soft">
               <Capa src={c.thumbnail} icone={BookOpen} />
@@ -96,8 +84,7 @@ export function ContinuarAprender({ dados }: { dados: EmAndamento | null }) {
               </div>
             </Card>
           ))}
-        </div>
-      )}
+      </div>
     </section>
   );
 }

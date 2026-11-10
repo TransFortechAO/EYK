@@ -64,7 +64,7 @@ export function ProfileMenu({ className }: { className?: string }) {
     "?";
 
   const perfilHref = "/perfil";
-  const perfilLabel = "O meu perfil";
+  const perfilLabel = "Perfil";
 
   return (
     <DropdownMenu open={aberto} onOpenChange={setAberto} modal={false}>
@@ -110,7 +110,7 @@ export function ProfileMenu({ className }: { className?: string }) {
           <Link href={perfilHref}>{perfilLabel}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/gamificacao">A minha gamificação</Link>
+          <Link href="/gamificacao">Gamificação</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/configuracoes">Configurações</Link>

@@ -64,6 +64,10 @@ class Video(models.Model):
     atualizado_em = models.DateTimeField(auto_now=True)
     # Preenchido quando o autor edita o conteúdo (mostra "editado" na plataforma).
     editado_em = models.DateTimeField(null=True, blank=True)
+    # Consentimento opcional para eventual uso de vídeos públicos em investigação de IA LGA.
+    uso_ia_lga = models.BooleanField(default=False)
+    uso_ia_lga_em = models.DateTimeField(null=True, blank=True)
+    uso_ia_lga_versao = models.CharField(max_length=30, blank=True)
     # Índice de propósito: `ativo=True` (combinado com `curso__isnull`) é o
     # filtro de TODAS as listagens públicas de vídeos — ver nota em Curso.ativo.
     ativo = models.BooleanField(default=True, db_index=True)

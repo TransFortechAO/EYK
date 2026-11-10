@@ -3,14 +3,26 @@ export const API_BASE_URL = (() => {
   // "/" (produção no Render) → caminhos relativos: o Next.js reencaminha
   // /api, /accounts, /media… para o Django (ver next.config.ts).
   const env = process.env.NEXT_PUBLIC_API_URL;
-  if (env) return env.replace(/\/$/, '');
+  if (env) {
+    const base = env.replace(/\/$/, '');
+    if (base === '/') return '';
+    // Em desenvolvimento, localhost no browser seria o computador visitante.
+    // O Next encaminha estes pedidos para o Django local.
+    if (
+      process.env.NODE_ENV === 'development' &&
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/api)?$/i.test(base)
+    ) {
+      return '';
+    }
+    return base;
+  }
 
-  // Sem NEXT_PUBLIC_API_URL definido: deriva o endereço da API a partir de
-  // onde o browser está a aceder à app (mesmo host, porta 8000). Isto faz
-  // o acesso pela rede local funcionar sem configuração — aceder por
-  // http://192.168.x.x:3000 chama automaticamente http://192.168.x.x:8000,
-  // em vez de tentar sempre "localhost" (que, visto de outro dispositivo,
-  // aponta para esse dispositivo, não para o servidor Django).
+  // Em desenvolvimento, os pedidos são relativos e o Next encaminha-os para
+  // o backend local, evitando CORS e a necessidade de expor a porta 8000.
+  if (process.env.NODE_ENV === 'development') return '';
+
+  // Fora do desenvolvimento, sem proxy configurado, usa a porta 8000 no host
+  // da página para instalações que servem a API diretamente.
   if (typeof window !== 'undefined') {
     return `${window.location.protocol}//${window.location.hostname}:8000`;
   }
@@ -452,6 +464,47 @@ export type GestoLGA = {
   validado_por: string;
 };
 
+export type AmostraLGA = {
+  id: number;
+  palavra: string;
+  variante: string;
+  estado: 'pendente' | 'validada' | 'rejeitada';
+  estadoLabel: string;
+  criadoEm: string;
+  notaRevisao: string;
+  autor?: string;
+  consentimentoVersao?: string;
+  consentidoEm?: string;
+  representanteConfirmado?: boolean;
+};
+
+export type RecolhaLGA = {
+  versaoConsentimento: string;
+  palavras: { nome: string; amostrasValidadas: number }[];
+  amostras: AmostraLGA[];
+};
+
+export type FonteDatasetLGA = {
+  id: number;
+  videoId: number;
+  titulo: string;
+  descricao: string;
+  professor: string;
+  curso: string | null;
+  duracaoSegundos: number;
+  videoUrl: string | null;
+  temLegenda: boolean;
+  pontuacao: number;
+  motivos: string[];
+  estado: 'sugerida' | 'aprovada' | 'rejeitada' | 'retirada';
+  palavra: string;
+  inicioSegundos: number | null;
+  fimSegundos: number | null;
+  notaRevisao: string;
+  consentimentoEm: string;
+  consentimentoVersao: string;
+};
+
 export type ConfigAdmin = {
   limite_video_mb: number;
   limite_aula_mb: number;
@@ -796,6 +849,7 @@ export type ProfessorCurso = {
   videos: ProfessorCursoVideo[];
   recursos: ProfessorRecurso[];
   oculto: boolean;
+  uso_ia_lga?: boolean;
 };
 
 export type CursoRecurso = {
@@ -826,6 +880,7 @@ export type ProfessorCursoPayload = {
   descricao: string;
   categoria_nome?: string;
   ativo?: boolean;
+  uso_ia_lga?: boolean;
   thumbnail?: File | null;
 };
 
@@ -847,6 +902,7 @@ export type ProfessorVideo = {
   recursos: ProfessorRecurso[];
   oculto: boolean;
   tem_legenda: boolean;
+  uso_ia_lga?: boolean;
 };
 
 export type ProfessorVideoPayload = {
@@ -854,6 +910,7 @@ export type ProfessorVideoPayload = {
   descricao?: string;
   url_externa?: string;
   ativo?: boolean;
+  uso_ia_lga?: boolean;
   arquivo?: File | null;
   thumbnail?: File | null;
 };
@@ -1266,6 +1323,7 @@ function _appendCursoPayload(formData: FormData, payload: Partial<ProfessorCurso
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
   if (payload.categoria_nome !== undefined) formData.append('categoria_nome', payload.categoria_nome);
   if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
+  if (payload.uso_ia_lga !== undefined) formData.append('uso_ia_lga', String(payload.uso_ia_lga));
 }
 
 function _appendVideoPayload(
@@ -1276,6 +1334,7 @@ function _appendVideoPayload(
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
   if (payload.url_externa !== undefined) formData.append('url_externa', payload.url_externa);
   if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
+  if (payload.uso_ia_lga !== undefined) formData.append('uso_ia_lga', String(payload.uso_ia_lga));
 }
 
 function initiais(name: string): string {
@@ -2069,6 +2128,32 @@ export const api = {
     apagarGesto: async (id: number): Promise<void> => {
       await fetchAPI(`/api/plataforma/admin/gestos/${id}/`, { method: 'DELETE' });
     },
+    recolhaLGA: async (): Promise<RecolhaLGA> => fetchAPI('/api/plataforma/amostras-lga/'),
+    enviarAmostraLGA: async (dados: { palavra: string; variante: string; video: File; consentimentoVersao: string }) => {
+      const form = new FormData();
+      form.append('palavra', dados.palavra);
+      form.append('variante', dados.variante);
+      form.append('video', dados.video);
+      form.append('consentimento', 'true');
+      form.append('consentimento_versao', dados.consentimentoVersao);
+      form.append('representante_confirmado', 'true');
+      return fetchAPI<AmostraLGA>('/api/plataforma/amostras-lga/', { method: 'POST', body: form });
+    },
+    apagarAmostraLGA: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/plataforma/amostras-lga/${id}/`, { method: 'DELETE' });
+    },
+    adminAmostrasLGA: async (): Promise<AmostraLGA[]> => fetchAPI('/api/plataforma/admin/amostras-lga/'),
+    reverAmostraLGA: async (id: number, estado: AmostraLGA['estado'], notaRevisao = ''): Promise<AmostraLGA> =>
+      fetchAPI(`/api/plataforma/admin/amostras-lga/${id}/`, {
+        method: 'PATCH', body: JSON.stringify({ estado, notaRevisao }),
+      }),
+    adminFontesDatasetLGA: async (): Promise<FonteDatasetLGA[]> => fetchAPI('/api/plataforma/admin/fontes-dataset-lga/'),
+    reverFonteDatasetLGA: async (id: number, dados: {
+      estado: 'aprovada' | 'rejeitada'; palavra?: string; inicioSegundos?: number | null;
+      fimSegundos?: number | null; notaRevisao?: string;
+    }): Promise<FonteDatasetLGA> => fetchAPI(`/api/plataforma/admin/fontes-dataset-lga/${id}/`, {
+      method: 'PATCH', body: JSON.stringify(dados),
+    }),
   },
 
   admin: {

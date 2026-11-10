@@ -26,6 +26,8 @@ const ROTAS_PUBLICAS = new Set([
   "/contestar",
   "/termos",
   "/privacidade",
+  "/sobre",
+  "/faqs",
 ]);
 // Prefixos públicos (rotas dinâmicas), ex: verificação de um certificado.
 const PREFIXOS_PUBLICOS = ["/certificados/"];

@@ -45,6 +45,7 @@ const EMPTY_FORM: ProfessorVideoPayload = {
   descricao: "",
   url_externa: "",
   ativo: true,
+  uso_ia_lga: false,
 };
 
 export default function ProfessorVideosPage() {
@@ -108,6 +109,7 @@ export default function ProfessorVideosPage() {
       descricao: video.descricao,
       url_externa: video.url_externa,
       ativo: video.ativo,
+      uso_ia_lga: video.uso_ia_lga,
     });
     setVideoFile(null);
     setRecursosNovos([]);
@@ -579,6 +581,16 @@ export default function ProfessorVideosPage() {
                     ))}
                   </ul>
                 )}
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <Switch aria-label="Autorizar seleção deste vídeo para investigação de IA LGA" disabled={!Boolean(editando?.arquivo || videoFile)} checked={Boolean(form.uso_ia_lga)} onCheckedChange={(v) => setForm({ ...form, uso_ia_lga: v })} />
+                  <div>
+                    <p className="text-sm font-medium">Autorizar seleção para investigação de IA LGA</p>
+                    <p className="text-xs text-muted-foreground">Ao ativar, autorizas a seleção de partes deste vídeo para investigação de IA LGA e confirmas ter os direitos e a autorização das pessoas que aparecem. Só conteúdo publicado, alojado na EYK e relevante é sugerido; links externos ficam excluídos. A equipa revê o gesto antes de o incluir no dataset. Podes retirar esta autorização ao desativar a opção.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">

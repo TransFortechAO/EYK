@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ProfileMenu } from "@/components/profile-menu";
 import { UserInitialsLink } from "@/components/UserAvatar";
 
 const MAXIMO = 2000;
@@ -119,9 +120,7 @@ export function CompositorPost({
   return (
     <>
       <div className="flex items-center gap-3">
-        <Avatar className="h-10 w-10 shrink-0">
-          <UserInitialsLink />
-        </Avatar>
+        <ProfileMenu className="shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         <button
           type="button"
           onClick={() => setAberto(true)}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Hand } from "lucide-react";
+import { Hand, Video } from "lucide-react";
+import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/eyk";
 import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { normalizarTexto } from "@/components/filtros/barra-filtros";
@@ -9,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { lgaCategories, lgaSigns } from "@/lib/lga-data";
 import { LGASign } from "@/components/lga-sign";
 import { GestosValidadosBiblioteca } from "@/components/instituicao/escola";
+import { Button } from "@/components/ui/button";
 
 export default function BibliotecaPage() {
   const [cat, setCat] = useState("Todas");
@@ -26,6 +28,11 @@ export default function BibliotecaPage() {
         title="Biblioteca LGA"
         description="Consulta rápida de gestos da Língua Gestual Angolana — aprende ao teu ritmo."
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-surface/40 p-4">
+        <p className="text-sm text-muted-foreground">Queres ajudar a preparar ferramentas de reconhecimento de LGA?</p>
+        <Button asChild variant="outline" className="gap-2"><Link href="/contribuir-lga"><Video className="h-4 w-4" />Contribuir com um vídeo</Link></Button>
+      </div>
 
       <CampoPesquisaPagina className="computador:hidden" />
 

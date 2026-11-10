@@ -156,6 +156,9 @@ def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
             arquivo=arquivo,
             ativo=True,
             ordem=ordem_inicial + indice,
+            uso_ia_lga=curso.uso_ia_lga,
+            uso_ia_lga_em=curso.uso_ia_lga_em,
+            uso_ia_lga_versao=curso.uso_ia_lga_versao,
         )
         atualizar_duracao(video)
 
@@ -230,9 +233,16 @@ def professor_curso_detail(request, curso_id):
         serializer = ProfessorCursoSerializer(curso, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         novos_recursos = request.FILES.getlist('recursos')
+        alterou_consentimento_ia = 'uso_ia_lga' in request.data
         try:
             with transaction.atomic():
                 curso = serializer.save()
+                if alterou_consentimento_ia:
+                    curso.videos.update(
+                        uso_ia_lga=curso.uso_ia_lga,
+                        uso_ia_lga_em=curso.uso_ia_lga_em,
+                        uso_ia_lga_versao=curso.uso_ia_lga_versao,
+                    )
                 if novos_recursos:
                     _criar_recursos(RecursoCurso, 'curso', curso, novos_recursos)
         except ValueError as erro:

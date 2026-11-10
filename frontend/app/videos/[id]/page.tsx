@@ -172,7 +172,7 @@ export default function VideoPlayerPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         {/* Coluna principal: player + info */}
         <div className="min-w-0 space-y-6">
-          <Card className="overflow-hidden rounded-3xl border-0 shadow-xl shadow-black/5 bg-black/5 backdrop-blur-sm">
+          <Card className="player-youtube-mobile overflow-hidden rounded-3xl border-0 shadow-xl shadow-black/5 bg-black/5 backdrop-blur-sm">
             <div ref={playerWrapRef} className="relative aspect-video">
               <ModernVideoPlayer
                 fileUrl={video.fileUrl}

@@ -107,12 +107,7 @@ export default function InicioPage() {
       <InicioEscola />
 
       <section aria-labelledby="comunidade" className="space-y-4">
-        <div>
-          <h2 id="comunidade" className="font-serif text-xl font-semibold tracking-tight sm:text-2xl">
-            Comunidade EYK
-          </h2>
-          <p className="text-sm text-muted-foreground">Partilha experiências, coloca questões e aprende com outras pessoas.</p>
-        </div>
+        
         {/* Com escola: separadores para a comunidade de cada Turma LGA; o aluno que só vê a escola não vê o feed geral. */}
         <ComunidadeComEscola>
           <Suspense fallback={null}>
