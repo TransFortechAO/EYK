@@ -714,6 +714,7 @@ export type GamePanel = {
   nextLevelXp: number;
   initials: string;
   name: string;
+  foto: string | null;
 };
 
 // =================== Tipos ADMIN (Painel de Gestão) ========================

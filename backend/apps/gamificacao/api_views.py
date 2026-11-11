@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import User
 
-from .models import AlunoBadge, Badge, Carteira, Ofensiva, TransacaoMoeda
+from .models import AlunoBadge, Carteira, Ofensiva, TransacaoMoeda
 from .services import badges_de, nivel_info, progresso_badges, verificar_badges
 
 MOTIVO_LABEL = {
@@ -77,6 +77,7 @@ def gamificacao_painel(request):
         'nextLevelXp': nivel['nextLevelXp'],
         'initials': _get_initials(user),
         'name': _get_name(user),
+        'foto': _get_photo(user),
     }
     return Response(data)
 

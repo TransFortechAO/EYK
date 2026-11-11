@@ -99,7 +99,7 @@ export default function GamificacaoPage() {
 
   const p = panel || {
     coins: 0, xp: 0, streak: 0, streakRecord: 0, level: 1,
-    levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante",
+    levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante", foto: null,
   };
   const xpNeeded = Math.max(0, p.nextLevelXp - p.xp);
 
@@ -127,7 +127,7 @@ export default function GamificacaoPage() {
               name={p.name}
               initials={p.initials}
               userId={user?.id}
-              foto={user?.foto ?? null}
+              foto={user?.foto ?? p.foto}
             />
           </Avatar>
           <div className="flex-1 space-y-2">

@@ -22,6 +22,7 @@ const SEPARADORES = [
   { id: "posicao", rotulo: "Classificação", icone: Trophy },
   { id: "streak", rotulo: "Streak", icone: Flame },
   { id: "moedas", rotulo: "Moedas", icone: Coins },
+  { id: "professores", rotulo: "Professores", icone: GraduationCap },
 ] as const;
 
 type Linha = { chave: string; posicao: number; userId: number | null; name: string; initials: string; isMe?: boolean; valor: ReactNode };
@@ -130,6 +131,7 @@ export default function LeaderboardPage() {
   }, []);
 
   const me = rows.find((r) => r.isMe);
+  const meuRankProfessor = professores.find((r) => r.isMe);
 
   const porRank: Linha[] = useMemo(
     () => rows.slice(3).map((r) => ({ chave: `${r.rank}-${r.name}`, posicao: r.rank, userId: r.userId, name: r.name, initials: r.initials, isMe: r.isMe, valor: <><Coins className="h-4 w-4 text-primary" />{r.coins}</> })),
@@ -180,7 +182,15 @@ export default function LeaderboardPage() {
             <Lista linhas={porMoedas} rotuloValor="Moedas" />
           </TabsContent>
 
-          
+          <TabsContent value="professores" className="space-y-6">
+            <StatCard
+              icon={GraduationCap}
+              label="A tua posição mensal"
+              value={meuRankProfessor ? `#${meuRankProfessor.rank}` : "—"}
+              hint="Classificação de professores pelas visualizações deste mês."
+            />
+            <Lista linhas={dosProfessores} rotuloValor="Moedas este mês" />
+          </TabsContent>
         </Tabs>
       </LeaderboardComEscola>
     </div>
