@@ -10,11 +10,12 @@
  *
  * Os nomes das caches têm de bater certo com app/lib/offline.ts.
  */
-const VERSAO = "v1";
+const VERSAO = "v2";
 const CACHE_PAGINAS = `eyk-paginas-${VERSAO}`;
 const CACHE_ESTATICOS = `eyk-estaticos-${VERSAO}`;
 const CACHE_API = `eyk-api-${VERSAO}`;
-const CACHE_VIDEOS = `eyk-videos-${VERSAO}`;
+// Nome fixo: mudar a VERSAO não pode apagar os vídeos guardados para ver offline.
+const CACHE_VIDEOS = "eyk-videos-v1";
 const CACHES_ATUAIS = [CACHE_PAGINAS, CACHE_ESTATICOS, CACHE_API, CACHE_VIDEOS];
 
 const PAGINAS_INICIAIS = ["/inicio", "/manifest.webmanifest", "/icons/icon-192.png"];

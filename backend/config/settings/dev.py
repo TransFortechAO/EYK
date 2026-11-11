@@ -5,6 +5,9 @@ from .base import *
 # Apenas para desenvolvimento local/rede privada. Não usar estas permissões em produção.
 DEBUG = True
 ALLOWED_HOSTS = ['*']
+# O Next reencaminha os pedidos para o Django: sem isto os URLs de media saem com
+# 127.0.0.1:8000, que noutro computador da rede aponta para ele próprio.
+USE_X_FORWARDED_HOST = True
 
 DATABASES = {
     'default': {
@@ -25,6 +28,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://192.168.1.122:3000',
 ]
 if LAN_IP:
     CSRF_TRUSTED_ORIGINS.extend([f'http://{LAN_IP}:3000', f'http://{LAN_IP}:8000'])

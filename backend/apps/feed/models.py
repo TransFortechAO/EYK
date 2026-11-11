@@ -5,9 +5,16 @@ from apps.accounts.models import User
 
 class Post(models.Model):
     autor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
-    conteudo = models.TextField()
+    # Vazio num repost sem comentário.
+    conteudo = models.TextField(blank=True)
+    # Repost: a publicação original (sempre a raiz, nunca outro repost).
+    repost_de = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='reposts',
+    )
     imagem = models.ImageField(upload_to='posts/', null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
+    # Preenchido quando o autor edita o conteúdo (mostra "editado" na plataforma).
+    editado_em = models.DateTimeField(null=True, blank=True)
     # Ocultado pela moderação (denúncias): deixa de aparecer a terceiros, mas
     # não é apagado — fica como prova e pode ser reposto.
     oculto = models.BooleanField(default=False, db_index=True)

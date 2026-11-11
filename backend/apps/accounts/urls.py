@@ -7,6 +7,7 @@ app_name = 'accounts'
 urlpatterns = [
     path('auth/csrf/', views.auth_csrf, name='auth-csrf'),
     path('auth/register/', views.auth_register_json, name='auth-register-json'),
+    path('auth/nome-utilizador/', views.auth_nome_utilizador, name='auth-nome-utilizador'),
     path('auth/login/', views.auth_login_json, name='auth-login-json'),
     path('auth/logout/', views.auth_logout_json, name='auth-logout-json'),
     path('auth/me/', views.auth_me, name='auth-me'),

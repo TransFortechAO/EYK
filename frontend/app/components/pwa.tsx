@@ -3,6 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Download, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CHIP_BOTAO } from "@/components/ds/chip";
+import { cn } from "@/lib/utils";
 
 // Em desenvolvimento o service worker fica desligado (iria guardar em cache os
 // ficheiros do hot-reload do Next); pode ser ligado com NEXT_PUBLIC_ENABLE_SW=true.
@@ -12,7 +14,18 @@ const SW_LIGADO =
 /** Regista o service worker (public/sw.js). Montado uma vez no layout raiz. */
 export function PwaRegister() {
   useEffect(() => {
-    if (!SW_LIGADO || !("serviceWorker" in navigator)) return;
+    if (!("serviceWorker" in navigator)) return;
+    if (!SW_LIGADO) {
+      // Um service worker deixado por uma versão de produção neste endereço continuaria
+      // a servir JavaScript antigo (em dev os ficheiros têm sempre o mesmo nome).
+      void navigator.serviceWorker.getRegistrations().then((registos) => {
+        registos.forEach((r) => void r.unregister());
+      });
+      void caches.keys().then((nomes) => {
+        nomes.filter((n) => n.startsWith("eyk-") && !n.startsWith("eyk-videos")).forEach((n) => void caches.delete(n));
+      });
+      return;
+    }
     navigator.serviceWorker.register("/sw.js").catch(() => {
       /* sem service worker a app continua a funcionar, só não fica offline */
     });
@@ -70,7 +83,13 @@ export function InstallAppButton() {
   };
 
   return (
-    <Button variant="outline" size="sm" className="hidden gap-1.5 rounded-full sm:inline-flex" onClick={() => void instalar()}>
+    <Button
+      variant="outline"
+      size="sm"
+      // Chip do Design System: sem borda nem sombra no tema claro.
+      className={cn("hidden gap-1.5 sm:inline-flex", CHIP_BOTAO)}
+      onClick={() => void instalar()}
+    >
       <Download className="h-4 w-4" />
       Instalar app
     </Button>

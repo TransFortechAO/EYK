@@ -30,6 +30,26 @@ describe("mediaUrl", () => {
   });
 });
 
+describe("API_BASE_URL", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it("usa o mesmo domínio quando configurada para proxy relativo", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_URL", "/");
+    vi.stubGlobal("window", {
+      location: { protocol: "http:", hostname: "192.168.1.122" },
+    });
+    vi.resetModules();
+
+    const { API_BASE_URL } = await import("./api");
+
+    expect(API_BASE_URL).toBe("");
+  });
+});
+
 describe("tempoRelativo", () => {
   afterEach(() => {
     vi.useRealTimers();

@@ -8,16 +8,15 @@ const origensExtra = (process.env.NEXT_ALLOWED_DEV_ORIGINS_EXTRA || "")
   .map((origem) => origem.trim())
   .filter(Boolean);
 
-// Produção (Render): o Next.js reencaminha as rotas do Django para o backend,
-// e o browser só fala com um domínio. Assim os cookies de sessão e CSRF são
-// do próprio site — com frontend e API em domínios diferentes (ex: dois
-// *.onrender.com) seriam cookies de terceiros, que o Safari e o Chrome
-// bloqueiam. Com isto ligado, NEXT_PUBLIC_API_URL deve ser "/".
-// Lido no build: definir API_INTERNO antes de `npm run build`. No Render é o
-// "host:porta" interno do serviço eyk-api (ver render.yaml).
+// O Next reencaminha as rotas do Django para o backend, e o browser só fala
+// com um domínio. Isso mantém cookies de sessão/CSRF funcionais e permite
+// aceder pela rede local mesmo quando o Django só escuta em localhost.
+// Em desenvolvimento local, o backend é assumido em 127.0.0.1:8000; no
+// Docker/produção, API_INTERNO deve apontar para o serviço Django.
 const apiInterno = (() => {
   const valor = (process.env.API_INTERNO || "").trim().replace(/\/$/, "");
-  return valor && !/^https?:\/\//.test(valor) ? `http://${valor}` : valor;
+  if (valor) return /^https?:\/\//.test(valor) ? valor : `http://${valor}`;
+  return process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : "";
 })();
 const ROTAS_DJANGO = ["api", "accounts", "aluno", "media", "static", "admin"];
 

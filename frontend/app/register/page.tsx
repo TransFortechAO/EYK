@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useMemo, useState, useTransition } from "react";
+import { Suspense, useEffect, useMemo, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Eye,
   EyeOff,
@@ -17,16 +18,18 @@ import {
   ArrowRight,
   Check,
   X,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api";
+import { api, type NomeUtilizador } from "@/lib/api";
+import { guardarDestinoDoEndereco } from "@/lib/destino";
+import { FormularioProfessor } from "@/components/registo/formulario-professor";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
 const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
-const EYK_BG = "#0a0a0a";
 
 export default function RegisterPage() {
   return (
@@ -55,13 +58,21 @@ const NIVEIS_FORCA = [
 ];
 
 function RegisterConteudo() {
+  // Depois do registo e do perfil, volta ao link de onde veio (ex: convite da escola).
+  useEffect(() => guardarDestinoDoEndereco(), []);
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref") || undefined;
+  // Dois formulários: aluno (conta criada já) e professor (pedido confirmado por email).
+  const [tipo, setTipo] = useState<"aluno" | "professor">(searchParams.get("tipo") === "professor" ? "professor" : "aluno");
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [nome, setNome] = useState("");
+  // Nome de utilizador: proposto a partir do nome; a pessoa pode escolher outro.
   const [username, setUsername] = useState("");
+  const [aEditarUsername, setAEditarUsername] = useState(false);
+  const [verificacao, setVerificacao] = useState<NomeUtilizador | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -71,12 +82,39 @@ function RegisterConteudo() {
   const passwordsCoincidem =
     confirmPassword.length > 0 ? confirmPassword === password : null;
 
+  useEffect(() => {
+    const procurar = aEditarUsername ? username.trim() : nome.trim();
+    if (procurar.length < 2) {
+      setVerificacao(null);
+      if (!aEditarUsername) setUsername("");
+      return;
+    }
+    const temporizador = setTimeout(() => {
+      void api.nomeUtilizador(nome.trim(), aEditarUsername ? username.trim() : "").then((res) => {
+        if (!res) return;
+        setVerificacao(res);
+        if (!aEditarUsername) setUsername(res.username);
+      });
+    }, 350);
+    return () => clearTimeout(temporizador);
+  }, [nome, username, aEditarUsername]);
+
+  const escolherUsername = (escolhido: string) => {
+    setUsername(escolhido);
+    setAEditarUsername(true);
+    setVerificacao({ username: escolhido, disponivel: true, sugestoes: [] });
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!nome.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setErrorMsg("Preenche todos os campos.");
+      return;
+    }
+    if (aEditarUsername && verificacao && !verificacao.disponivel) {
+      setErrorMsg("Este nome de utilizador já existe. Escolhe uma das sugestões.");
       return;
     }
     if (password !== confirmPassword) {
@@ -90,17 +128,24 @@ function RegisterConteudo() {
 
     startTransition(async () => {
       try {
-        const res = await api.register(username.trim(), email.trim(), password, ref);
+        const res = await api.register({ nome: nome.trim(), username: username.trim(), email: email.trim(), password, ref });
         if (!res?.ok) {
           setErrorMsg(res?.error || "Não foi possível criar a conta. Tenta novamente.");
           return;
         }
         window.location.assign("/personalizar-perfil");
       } catch (err) {
-        const status = (err as { status?: number })?.status;
+        const { status, data } = err as { status?: number; data?: { codigo?: string; sugestoes?: string[] } };
         const msg = err instanceof Error ? err.message : "Erro ao criar conta.";
+        // Alguém ficou com este nome de utilizador entretanto: mostra as alternativas.
+        if (data?.codigo === "username_ocupado") {
+          setAEditarUsername(true);
+          setVerificacao({ username: username.trim(), disponivel: false, sugestoes: data.sugestoes ?? [] });
+          setErrorMsg(msg);
+          return;
+        }
         if (status === 409 || msg.toLowerCase().includes("já existe") || msg.toLowerCase().includes("already")) {
-          setErrorMsg("Já existe uma conta com este nome de utilizador ou email.");
+          setErrorMsg("Já existe uma conta com este email.");
         } else {
           setErrorMsg(msg);
         }
@@ -109,14 +154,14 @@ function RegisterConteudo() {
   };
 
   return (
-    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2" style={{ background: EYK_BG }}>
+    <div className="auth-page min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-background text-foreground">
       {/* Lado Esquerdo — Branding EYK */}
-      <aside className="relative overflow-hidden px-8 py-12 lg:px-16 lg:py-20 flex flex-col justify-between border-r border-white/5">
+      <aside className="auth-brand-panel relative overflow-hidden px-8 py-12 lg:px-16 lg:py-20 flex flex-col justify-between border-r border-white/5">
         <div className="absolute inset-0 z-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/assets/gif1.gif" alt="" aria-hidden className="h-full w-full object-cover" />
           <div
-            className="absolute inset-0"
+            className="auth-brand-overlay absolute inset-0"
             style={{
               background:
                 "linear-gradient(180deg, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.75) 40%, rgba(10,10,10,0.92) 100%)",
@@ -134,25 +179,18 @@ function RegisterConteudo() {
         />
 
         <div className="relative z-10 animate-in fade-in slide-in-from-left-2 duration-700">
-          <Link href="/" className="inline-block mb-12" aria-label="Página inicial EYK">
-            <span className="font-serif text-4xl font-bold tracking-tight" style={{ color: EYK_GOLD }}>
-              EYK
-            </span>
-            <span className="sr-only">Ekola Ya Kelela</span>
+          <Link href="/" className="relative mb-12 inline-block -translate-x-8 -translate-y-6 lg:-translate-x-14 lg:-translate-y-16" aria-label="Página inicial EYK — Ekola Ya Kelela">
+            <Image
+              src="/assets/EYK-logo-marca.png"
+              alt="EYK — Ekola Ya Kelela"
+              width={266}
+              height={207}
+              priority
+              className="h-16 w-auto object-contain"
+            />
           </Link>
 
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-8 border"
-            style={{
-              background: "rgba(212,162,74,0.12)",
-              borderColor: "rgba(212,162,74,0.28)",
-              color: EYK_GOLD_LIGHT,
-            }}
-          >
-            <Hand className="w-3.5 h-3.5" aria-hidden />
-            <span className="text-[11px] font-bold tracking-[0.04em] uppercase">Língua Gestual Inclusiva</span>
-          </div>
-
+          
           <h1 className="font-serif font-bold text-white leading-[1.1] max-w-[420px] mb-6 text-4xl lg:text-[42px]">
             Junta-te a uma comunidade
             <em className="not-italic" style={{ color: EYK_GOLD_LIGHT }}>
@@ -168,7 +206,7 @@ function RegisterConteudo() {
 
           <ul className="space-y-3 max-w-[380px]">
             {[
-              { icon: BookOpen, text: "Cursos em vídeo com intérprete LGP" },
+              { icon: BookOpen, text: "Cursos em vídeo com intérprete LGA" },
               { icon: Users, text: "Comunidade de alunos e professores" },
               { icon: Trophy, text: "Gamificação: moedas, níveis e ranking" },
             ].map(({ icon: TheIcon, text }, i) => (
@@ -199,17 +237,51 @@ function RegisterConteudo() {
       {/* Lado Direito — Formulário */}
       <main className="flex items-center justify-center px-6 py-12 lg:px-16 lg:py-20">
         <div
-          className="w-full max-w-[460px] rounded-[28px] border border-white/[0.07] bg-white/[0.02] backdrop-blur-sm p-8 sm:p-10 shadow-[0_0_0_1px_rgba(212,162,74,0.04),0_30px_60px_-30px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-3 duration-700"
+          className="auth-form-card w-full max-w-[460px] rounded-[28px] border border-white/[0.07] bg-white/[0.02] backdrop-blur-sm p-8 sm:p-10 shadow-[0_0_0_1px_rgba(212,162,74,0.04),0_30px_60px_-30px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-3 duration-700"
         >
-          <h2 className="font-serif font-bold text-white text-3xl mb-3">Cria a tua conta.</h2>
-          <p className="text-sm text-white/60 mb-9 leading-relaxed">
-            Preenche os dados abaixo para começares a tua jornada na EYK.
+          <h2 className="font-serif font-bold text-white text-3xl mb-3">
+            {tipo === "aluno" ? "Cria a tua conta." : "Quero ensinar na EYK."}
+          </h2>
+          <p className="text-sm text-white/60 mb-6 leading-relaxed">
+            {tipo === "aluno"
+              ? "Preenche os dados abaixo para começares a tua jornada na EYK."
+              : "Preenche os teus dados. Enviamos-te um email para confirmares o endereço e escolheres a palavra-passe."}
           </p>
 
+          {/* Logo no início: quem quer ensinar não tem de chegar ao fim do formulário para o descobrir. */}
+          <div role="tablist" aria-label="Tipo de conta" className="mb-8 grid grid-cols-2 gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+            {([
+              { id: "aluno", rotulo: "Aluno", icone: User },
+              { id: "professor", rotulo: "Professor", icone: GraduationCap },
+            ] as const).map((op) => (
+              <button
+                key={op.id}
+                type="button"
+                role="tab"
+                aria-selected={tipo === op.id}
+                onClick={() => {
+                  setTipo(op.id);
+                  setErrorMsg(null);
+                }}
+                className={
+                  "flex h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold transition-colors " +
+                  (tipo === op.id ? "text-black" : "text-white/60 hover:text-white")
+                }
+                style={tipo === op.id ? { background: `linear-gradient(135deg, ${EYK_GOLD}, ${EYK_GOLD_LIGHT})` } : undefined}
+              >
+                <op.icone className="h-4 w-4" aria-hidden />
+                {op.rotulo}
+              </button>
+            ))}
+          </div>
+
+          {tipo === "professor" ? (
+            <FormularioProfessor />
+          ) : (
           <form onSubmit={handleSubmit} method="post" className="space-y-5" noValidate>
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-white/85 text-sm">
-                Nome de utilizador
+              <Label htmlFor="nome" className="text-white/85 text-sm">
+                Nome
               </Label>
               <div className="relative group">
                 <User
@@ -218,17 +290,80 @@ function RegisterConteudo() {
                   aria-hidden
                 />
                 <Input
-                  id="username"
-                  name="username"
+                  id="nome"
+                  name="nome"
                   type="text"
-                  autoComplete="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="name"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
                   required
                   disabled={isPending}
                   className="h-12 rounded-2xl pl-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/40 transition-all focus-visible:bg-white/[0.06] focus-visible:border-[#d4a24a]/50 focus-visible:ring-2 focus-visible:ring-[#d4a24a]/25"
                 />
               </div>
+
+              {/* Nome de utilizador criado a partir do nome, com sugestões se já existir. */}
+              {aEditarUsername ? (
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="username" className="text-xs text-white/60">
+                    Nome de utilizador
+                  </Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))}
+                    disabled={isPending}
+                    className="h-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-sm text-white focus-visible:border-[#d4a24a]/50 focus-visible:ring-2 focus-visible:ring-[#d4a24a]/25"
+                  />
+                </div>
+              ) : (
+                username && (
+                  <p className="flex flex-wrap items-center gap-x-2 pt-1 text-xs text-white/60">
+                    O teu nome de utilizador:
+                    <span className="font-medium text-white">@{username}</span>
+                    <button
+                      type="button"
+                      onClick={() => setAEditarUsername(true)}
+                      className="font-medium underline underline-offset-2"
+                      style={{ color: EYK_GOLD_LIGHT }}
+                    >
+                      Mudar
+                    </button>
+                  </p>
+                )
+              )}
+
+              {verificacao && (
+                <div aria-live="polite" className="space-y-1.5 text-xs">
+                  {aEditarUsername && (
+                    <p className={verificacao.disponivel ? "flex items-center gap-1 text-emerald-400" : "flex items-center gap-1 text-red-400"}>
+                      {verificacao.disponivel ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
+                      {verificacao.disponivel ? "Disponível" : "Este nome de utilizador já existe."}
+                    </p>
+                  )}
+                  {verificacao.nome_ocupado && !aEditarUsername && (
+                    <p className="text-white/60">Já existe alguém com este nome, por isso propomos este.</p>
+                  )}
+                  {verificacao.sugestoes.length > 0 && (verificacao.nome_ocupado || !verificacao.disponivel) && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-white/60">Outras opções:</span>
+                      {verificacao.sugestoes.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => escolherUsername(s)}
+                          className="rounded-full border border-white/15 px-2.5 py-1 text-white/85 transition-colors hover:border-[#d4a24a]/60 hover:text-white"
+                        >
+                          @{s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -402,6 +537,7 @@ function RegisterConteudo() {
               .
             </p>
           </form>
+          )}
 
           <p className="mt-8 text-center text-sm text-white/55">
             Já tens conta?{" "}
@@ -411,14 +547,6 @@ function RegisterConteudo() {
             </Link>
           </p>
 
-          <div className="mt-6 border-t border-white/[0.08] pt-6 text-center">
-            <Link
-              href="/ser-professor"
-              className="hit text-sm font-medium text-white/55 hover:text-white/80 hover:underline"
-            >
-              Quer ser professor no EYK?
-            </Link>
-          </div>
         </div>
       </main>
     </div>

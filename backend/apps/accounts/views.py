@@ -22,6 +22,7 @@ from .emails import (
 )
 from .forms import UserRegisterForm
 from .models import User
+from .nomes_utilizador import disponivel, nome_principal, separar_nome, sugestoes
 from .rate_limit import excedeu_limite, ip_do_pedido
 from .sessoes import registar_dispositivo
 
@@ -121,6 +122,28 @@ def resposta_conta_sancionada(user: User) -> JsonResponse:
     }, status=403)
 
 
+@require_GET
+def auth_nome_utilizador(request):
+    """Durante o registo: propõe um nome de utilizador a partir do nome da pessoa
+    ou diz se o escolhido está livre, com sugestões quando não está."""
+    if excedeu_limite(f'nome-utilizador:{ip_do_pedido(request)}', 60, 60):
+        return JsonResponse({'ok': False, 'error': 'Demasiados pedidos. Espera um pouco.'}, status=429)
+    nome = (request.GET.get('nome') or '').strip()
+    username = (request.GET.get('username') or '').strip()
+    livres = sugestoes(nome or username)
+    if not username:
+        return JsonResponse({
+            'ok': True,
+            'username': livres[0] if livres else '',
+            'disponivel': True,
+            'sugestoes': livres[1:],
+            # Já há alguém com este nome: o ecrã explica porque propõe outro.
+            'nome_ocupado': bool(nome) and not disponivel(nome_principal(nome)),
+        })
+    livre = disponivel(username)
+    return JsonResponse({'ok': True, 'username': username, 'disponivel': livre, 'sugestoes': [] if livre else livres})
+
+
 @csrf_exempt
 @require_POST
 def auth_register_json(request):
@@ -135,15 +158,29 @@ def auth_register_json(request):
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'Pedido inválido.'}, status=400)
 
+    nome = ' '.join((body.get('nome') or '').split())
     username = (body.get('username') or '').strip()
     email = (body.get('email') or '').strip()
     password = body.get('password') or ''
     ref = (body.get('ref') or '').strip()
 
+    # Sem nome de utilizador escolhido, cria-se a partir do nome.
+    if not username and nome:
+        livres = sugestoes(nome, 1)
+        username = livres[0] if livres else ''
+
     if not username or not email or not password:
         return JsonResponse(
             {'ok': False, 'error': 'Preenche todos os campos.'}, status=400,
         )
+
+    if not disponivel(username):
+        return JsonResponse({
+            'ok': False,
+            'codigo': 'username_ocupado',
+            'error': 'Este nome de utilizador já existe. Escolhe uma das sugestões.',
+            'sugestoes': sugestoes(nome or username),
+        }, status=400)
 
     form = UserRegisterForm(data={
         'username': username,
@@ -159,6 +196,9 @@ def auth_register_json(request):
         return JsonResponse({'ok': False, 'error': primeiro_erro}, status=400)
 
     user = form.save()
+    if nome:
+        user.first_name, user.last_name = separar_nome(nome)
+        user.save(update_fields=['first_name', 'last_name'])
     enviar_email_verificacao(user)
 
     if ref and ref != username:

@@ -1,17 +1,18 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Eye, EyeOff, LogIn, Hand, BookOpen, Users, Trophy, User, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
+import { consumirDestino, guardarDestinoDoEndereco, paginaInicial } from "@/lib/destino";
 
 const EYK_GOLD = "#d4a24a";
 const EYK_GOLD_LIGHT = "#e2b45c";
 const EYK_GOLD_SOFT = "rgba(212, 162, 74, 0.18)";
-const EYK_BG = "#0a0a0a";
 const OTP_LENGTH = 6;
 
 type Sancao = { mensagem: string; motivo: string; token: string | null };
@@ -103,6 +104,9 @@ function OtpInput({
 }
 
 export default function LoginPage() {
+  // Quem chegou aqui a partir de um link (ex: convite da escola) volta lá depois de entrar,
+  // mesmo que passe primeiro pelo registo.
+  useEffect(() => guardarDestinoDoEndereco(), []);
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
@@ -131,7 +135,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Credenciais inválidas. Tenta novamente.");
           return;
         }
-        window.location.assign("/inicio");
+        window.location.assign(consumirDestino(paginaInicial(res.user)));
       } catch (err) {
         const sancaoConta = sancaoDoErro(err);
         if (sancaoConta) {
@@ -163,7 +167,7 @@ export default function LoginPage() {
           setErrorMsg(res?.error || "Código inválido. Tenta novamente.");
           return;
         }
-        window.location.assign("/inicio");
+        window.location.assign(consumirDestino(paginaInicial(res.user)));
       } catch (err) {
         const sancaoConta = sancaoDoErro(err);
         if (sancaoConta) {
@@ -176,14 +180,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2" style={{ background: EYK_BG }}>
+    <div className="auth-page min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-background text-foreground">
       {/* Lado Esquerdo — Branding EYK */}
-      <aside className="relative overflow-hidden px-8 py-12 lg:px-16 lg:py-20 flex flex-col justify-between border-r border-white/5">
+      <aside className="auth-brand-panel relative overflow-hidden px-8 py-12 lg:px-16 lg:py-20 flex flex-col justify-between border-r border-white/5">
         <div className="absolute inset-0 z-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/assets/gif1.gif" alt="" aria-hidden className="h-full w-full object-cover" />
           <div
-            className="absolute inset-0"
+            className="auth-brand-overlay absolute inset-0"
             style={{
               background:
                 "linear-gradient(180deg, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.75) 40%, rgba(10,10,10,0.92) 100%)",
@@ -201,24 +205,18 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10 animate-in fade-in slide-in-from-left-2 duration-700">
-          <Link href="/" className="inline-block mb-12" aria-label="Página inicial EYK">
-            <span className="font-serif text-4xl font-bold tracking-tight" style={{ color: EYK_GOLD }}>
-              EYK
-            </span>
-            <span className="sr-only">Ekola Ya Kelela</span>
+          <Link href="/" className="relative mb-12 inline-block -translate-x-8 -translate-y-6 lg:-translate-x-14 lg:-translate-y-16" aria-label="Página inicial EYK — Ekola Ya Kelela">
+            <Image
+              src="/assets/EYK-logo-marca.png"
+              alt="EYK — Ekola Ya Kelela"
+              width={266}
+              height={207}
+              priority
+              className="h-16 w-auto object-contain"
+            />
           </Link>
 
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-8 border"
-            style={{
-              background: "rgba(212,162,74,0.12)",
-              borderColor: "rgba(212,162,74,0.28)",
-              color: EYK_GOLD_LIGHT,
-            }}
-          >
-            <Hand className="w-3.5 h-3.5" aria-hidden />
-            <span className="text-[11px] font-bold tracking-[0.04em] uppercase">Língua Gestual Inclusiva</span>
-          </div>
+          
 
           <h1 className="font-serif font-bold text-white leading-[1.1] max-w-[420px] mb-6 text-4xl lg:text-[42px]">
             Aprende em língua gestual com uma comunidade
@@ -235,7 +233,7 @@ export default function LoginPage() {
 
           <ul className="space-y-3 max-w-[380px]">
             {[
-              { icon: BookOpen, text: "Cursos em vídeo com intérprete LGP" },
+              { icon: BookOpen, text: "Cursos em vídeo com intérprete LGA" },
               { icon: Users, text: "Comunidade de alunos e professores" },
               { icon: Trophy, text: "Gamificação: moedas, níveis e ranking" },
             ].map(({ icon: TheIcon, text }, i) => (
@@ -267,7 +265,7 @@ export default function LoginPage() {
       <main className="flex items-center justify-center px-6 py-12 lg:px-16 lg:py-20">
         <div
           key={precisa2FA ? "2fa" : "login"}
-          className="w-full max-w-[460px] rounded-[28px] border border-white/[0.07] bg-white/[0.02] backdrop-blur-sm p-8 sm:p-10 shadow-[0_0_0_1px_rgba(212,162,74,0.04),0_30px_60px_-30px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-3 duration-700"
+          className="auth-form-card w-full max-w-[460px] rounded-[28px] border border-white/[0.07] bg-white/[0.02] backdrop-blur-sm p-8 sm:p-10 shadow-[0_0_0_1px_rgba(212,162,74,0.04),0_30px_60px_-30px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-3 duration-700"
         >
           {precisa2FA && (
             <div

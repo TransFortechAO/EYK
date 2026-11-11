@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Building2,
   ChevronRight,
   GraduationCap,
   Hand,
@@ -14,7 +15,6 @@ import {
   LayoutDashboard,
   LogOut,
   MoreHorizontal,
-  PlayCircle,
   Settings,
   ShieldAlert,
   ShieldCheck,
@@ -22,7 +22,6 @@ import {
   TrendingUp,
   Trophy,
   UserCog,
-  Users,
   Video,
   type LucideIcon,
 } from "lucide-react";
@@ -30,25 +29,29 @@ import { api, API_BASE_URL } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { INSTITUICOES_ATIVAS } from "@/lib/instituicoes/ativo";
+import { abasTelemovel, repartirAbas, restoParaMais, type GrupoMenu, type ItemNav } from "@/lib/instituicoes/navegacao";
+import { useInstituicaoOpcional } from "@/components/instituicao/contexto";
+import { ICONE_NAV } from "@/components/instituicao/icones-nav";
 
-type Item = { title: string; url: string; icon: LucideIcon };
+type Item = { title: string; url: string; icon: LucideIcon; contador?: number };
 
-// As mesmas rotas da barra lateral (app-sidebar.tsx), repartidas entre as
-// abas de baixo e o painel "Mais".
-const ABAS: Item[] = [
-  { title: "Início", url: "/inicio", icon: Home },
-  { title: "Cursos", url: "/cursos", icon: BookOpen },
-  { title: "Vídeos", url: "/videos", icon: PlayCircle },
-  { title: "Comunidade", url: "/comunidade", icon: Users },
-];
+// As mesmas rotas e a mesma ordem da barra lateral (app-sidebar.tsx): as 4 primeiras
+// entradas são as abas de baixo e o resto fica no "Mais", nos mesmos grupos. Para a
+// equipa EYK as abas são da Administração; para o professor, as suas ferramentas.
+function paraItem(i: ItemNav): Item {
+  return { title: i.titulo, url: i.url, icon: ICONE_NAV[i.icone], contador: i.contador };
+}
 
 const MAIS: Item[] = [
-  { title: "Novidades", url: "/notificacoes", icon: Bell },
+  { title: "Notificações", url: "/notificacoes", icon: Bell },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
+
+// Penúltimo do painel "Mais" (antes de "Sair"), como na barra lateral.
+const CONFIGURACOES: Item[] = [{ title: "Configurações", url: "/configuracoes", icon: Settings }];
 
 const PROFESSOR: Item[] = [
   { title: "Painel", url: "/professor", icon: LayoutDashboard },
@@ -58,6 +61,7 @@ const PROFESSOR: Item[] = [
 
 const ADMINISTRACAO: Item[] = [
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
+  ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },
@@ -97,6 +101,9 @@ function Grupo({ titulo, icone: Icone, itens, ativo, aoNavegar }: {
                 <item.icon className="h-5 w-5" aria-hidden />
               </span>
               <span className="flex-1 text-base font-medium text-foreground">{item.title}</span>
+              {!!item.contador && (
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-primary">{item.contador}</span>
+              )}
               <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden />
             </Link>
           </li>
@@ -116,11 +123,31 @@ export function BottomNav() {
   const ativo = (url: string) =>
     url === "/inicio" ? pathname === "/inicio" : pathname === url || pathname.startsWith(url + "/");
 
-  const itensMais = [
-    ...MAIS,
-    ...(user?.isTeacher ? PROFESSOR : []),
-    ...(user?.isStaff ? ADMINISTRACAO : []),
+  const escola = useInstituicaoOpcional();
+  const papel = escola?.atual?.membro.papel ?? null;
+  const contadores = escola?.contadores ?? { porRever: 0, trabalhos: 0, avisosPorLer: 0 };
+  const principais = abasTelemovel(papel, contadores).map(paraItem);
+  const resto = restoParaMais(papel, contadores);
+  const daEscola: Item[] = escola?.atual
+    ? resto.escola.map(paraItem)
+    : escola && !escola.aCarregar
+      ? [{ title: "Entrar numa escola", url: "/instituicao/aderir", icon: Building2 }]
+      : [];
+  const geralNoMais = resto.geral.map(paraItem);
+
+  // A mesma ordem da barra lateral (app-sidebar.tsx): Administração, Professor, principais,
+  // escola, Plataforma EYK e o resto. As 4 primeiras entradas são as abas.
+  const grupos: (GrupoMenu<Item> & { icone?: LucideIcon })[] = [
+    ...(user?.isStaff ? [{ id: "admin", titulo: "Administração", icone: ShieldCheck, itens: ADMINISTRACAO }] : []),
+    ...(user?.isTeacher ? [{ id: "professor", titulo: "Professor", icone: LayoutDashboard, itens: PROFESSOR }] : []),
+    { id: "principal", titulo: user?.isTeacher ? "Explorar" : undefined, icone: Home, itens: principais },
+    ...(daEscola.length ? [{ id: "escola", titulo: escola?.atual ? escola.atual.instituicao.nome : "Escola", icone: Building2, itens: daEscola }] : []),
+    ...(geralNoMais.length ? [{ id: "geral", titulo: "Plataforma EYK", icone: Home, itens: geralNoMais }] : []),
+    { id: "mais", titulo: "Mais", itens: MAIS },
   ];
+  const { abas, mais: gruposMais } = repartirAbas(grupos);
+
+  const itensMais = [...gruposMais.flatMap((g) => g.itens), ...CONFIGURACOES];
   // "Mais" fica ativo quando o painel está aberto ou a página pertence ao painel.
   // /configuracoes/administracao/* pertence ao grupo de administração.
   const maisAtivo = maisAberto || itensMais.some((i) => ativo(i.url));
@@ -144,25 +171,34 @@ export function BottomNav() {
     <>
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden pointer-events-none"
+        className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] computador:hidden pointer-events-none"
       >
         <ul className="pointer-events-auto mx-auto flex max-w-xl items-end justify-between rounded-[1.75rem] border border-border bg-card/95 px-2 py-2 shadow-elevated backdrop-blur-md">
-          {ABAS.map((aba) => {
-            const activa = ativo(aba.url) && !maisAberto;
+          {abas.map((aba) => {
+            // "/instituicao" (painel) não fica ativo nas subpáginas que têm aba própria.
+            const activa =
+              !maisAberto &&
+              (aba.url === "/instituicao" ? pathname === "/instituicao" : ativo(aba.url));
             return (
               <li key={aba.url} className="flex-1">
                 <Link
                   href={aba.url}
                   aria-current={activa ? "page" : undefined}
+                  aria-label={aba.contador ? `${aba.title} (${aba.contador} por ver)` : undefined}
                   className="flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11px] font-medium text-muted-foreground transition-colors"
                 >
                   <span
                     className={cn(
-                      "grid h-9 w-9 place-items-center rounded-full transition-colors",
+                      "relative grid h-9 w-9 place-items-center rounded-full transition-colors",
                       activa && "bg-primary text-primary-foreground shadow-soft",
                     )}
                   >
                     <aba.icon className="h-5 w-5" aria-hidden />
+                    {!!aba.contador && (
+                      <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold tabular-nums text-primary-foreground ring-2 ring-card" aria-hidden>
+                        {aba.contador > 9 ? "9+" : aba.contador}
+                      </span>
+                    )}
                   </span>
                   <span className={cn(activa && "text-primary")}>{aba.title}</span>
                 </Link>
@@ -195,7 +231,7 @@ export function BottomNav() {
         {/* O painel sobe por cima do conteúdo mas deixa a barra de baixo visível. */}
         <SheetContent
           side="bottom"
-          className="inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[55] max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-3xl border bg-card px-4 pb-2 shadow-elevated outline-none focus:outline-none focus-visible:ring-0 lg:hidden [&>button]:hidden"
+          className="inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[55] max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-3xl border bg-card px-4 pb-2 shadow-elevated outline-none focus:outline-none focus-visible:ring-0 computador:hidden [&>button]:hidden"
         >
           <div aria-hidden className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-muted-foreground/30" />
           <SheetHeader className="px-2 pt-3 text-left">
@@ -203,13 +239,19 @@ export function BottomNav() {
             <SheetDescription className="sr-only">Outras páginas da plataforma EYK.</SheetDescription>
           </SheetHeader>
 
-          <Grupo itens={MAIS} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          {user?.isTeacher && (
-            <Grupo titulo="Professor" icone={LayoutDashboard} itens={PROFESSOR} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          )}
-          {user?.isStaff && (
-            <Grupo titulo="Administração" icone={ShieldCheck} itens={ADMINISTRACAO} ativo={ativo} aoNavegar={() => setMaisAberto(false)} />
-          )}
+          {gruposMais.map((g, i) => (
+            <Grupo
+              key={g.id}
+              // O título só aparece quando há mais de um grupo, como na barra lateral.
+              titulo={gruposMais.length > 1 || i > 0 ? g.titulo : undefined}
+              icone={(g as { icone?: LucideIcon }).icone}
+              itens={g.itens}
+              ativo={ativo}
+              aoNavegar={() => setMaisAberto(false)}
+            />
+          ))}
+
+          <Grupo itens={CONFIGURACOES} ativo={(url) => pathname === url} aoNavegar={() => setMaisAberto(false)} />
 
           <button
             type="button"

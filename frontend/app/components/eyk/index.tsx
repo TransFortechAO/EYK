@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Calendar,
@@ -11,20 +13,26 @@ import {
   Hand,
   Share2,
   ExternalLink,
-  Check,
-  Link as LinkIcon,
   Star,
   EyeOff,
+  Pencil,
+  MessageCircle,
+  Repeat2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/UserAvatar";
-import { api, formatarDataCurta, type Course, type Video, type Post } from "@/lib/api";
+import { api, formatarDataCurta, mensagemDeErro, type Course, type Video, type Post } from "@/lib/api";
+import { useAuth } from "@/components/auth-gate";
+import { toast } from "sonner";
 import { PostComments } from "@/components/eyk/post-comments";
+import { GestoAnimado } from "@/components/ds/gesto-animado";
+import { ModalPartilha, PreviaPost } from "@/components/partilha/modal-partilha";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MenuModeracao } from "@/components/moderacao/denunciar";
 
 
@@ -34,20 +42,27 @@ export function PageHeader({
   title,
   description,
   children,
+  gesto,
 }: {
   title: string;
-  description?: string;
+  description?: ReactNode;
   children?: ReactNode;
+  /** Palavra do gesto de LGA mostrado ao lado do título (por omissão, o próprio título). */
+  gesto?: string;
 }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          {title}
-        </h1>
-        {description && (
-          <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">{description}</p>
-        )}
+      <div className="flex min-w-0 items-center gap-3">
+        {/* Gesto de LGA da palavra, se a equipa já tiver um validado (Design System). */}
+        <GestoAnimado palavra={gesto ?? title} className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
+        <div className="min-w-0">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            {title}
+          </h1>
+          {description && (
+            <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">{description}</p>
+          )}
+        </div>
       </div>
       {children && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">{children}</div>}
     </div>
@@ -153,20 +168,48 @@ export function StatCard({
   );
 }
 
+/**
+ * Link dentro de um cartão que já é um link (um <a> não pode estar dentro de
+ * outro): navega ao clicar ou com Enter, sem abrir o cartão.
+ */
+function LinkDentroDeCartao({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
+  const router = useRouter();
+  const ir = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(href);
+  };
+  return (
+    <span
+      role="link"
+      tabIndex={0}
+      className={cn("cursor-pointer", className)}
+      onClick={ir}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") ir(e);
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
 /* ---------- Course card ---------- */
 export function CourseCard({ course }: { course: Course }) {
   return (
     <Card className="group relative overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
+      <BotaoSalvar tipo="curso" id={course.id} variante="cartao" />
       <Link
         href={`/cursos/${course.id}`}
-        className="block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        // Telemóvel: cartão horizontal e compacto; a partir do tablet, vertical.
+        className="flex h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring sm:block"
       >
         <div
-          className="relative aspect-[16/9] w-full"
+          className="relative aspect-[16/9] w-[40%] shrink-0 self-start sm:w-full"
           style={{ background: course.thumbnail }}
           aria-hidden
         >
-          <Badge className="absolute left-3 top-3 rounded-full bg-background/90 text-foreground border-0 backdrop-blur">
+          <Badge className="absolute left-3 top-3 hidden rounded-full bg-background/90 text-foreground border-0 backdrop-blur sm:inline-flex">
             {course.category}
           </Badge>
           {typeof course.progress === "number" && (
@@ -179,9 +222,9 @@ export function CourseCard({ course }: { course: Course }) {
           )}
         </div>
 
-        <div className="space-y-3 p-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="rounded-full bg-secondary px-2 py-0.5">{course.level}</span>
+        <div className="min-w-0 flex-1 space-y-1.5 p-3 sm:space-y-3 sm:p-4">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span className="hidden rounded-full bg-secondary px-2 py-0.5 sm:inline">{course.level}</span>
             {course.durationLabel && (
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
@@ -200,7 +243,7 @@ export function CourseCard({ course }: { course: Course }) {
             )}
           </div>
 
-          <h3 className="font-serif text-lg font-semibold leading-snug text-foreground line-clamp-2">
+          <h3 className="font-serif text-base font-semibold leading-snug text-foreground line-clamp-2 sm:text-lg">
             {course.title}
           </h3>
 
@@ -216,18 +259,18 @@ export function CourseCard({ course }: { course: Course }) {
                 className="text-[10px]"
               />
               {course.teacherUserId ? (
-                <Link
+                <LinkDentroDeCartao
                   href={`/perfil/${course.teacherUserId}`}
                   className="hit truncate text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
                 >
                   {course.teacher}
-                </Link>
+                </LinkDentroDeCartao>
               ) : (
                 <span className="truncate text-xs text-muted-foreground">{course.teacher}</span>
               )}
             </div>
             {course.publishedAt && (
-              <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+              <span className="hidden shrink-0 items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
                 <Calendar className="h-3.5 w-3.5" />
                 {formatarDataCurta(course.publishedAt)}
               </span>
@@ -250,14 +293,17 @@ export function CourseCard({ course }: { course: Course }) {
 }
 
 /* ---------- Video card ---------- */
-export function VideoCard({ video }: { video: Video }) {
+export function VideoCard({ video, formatoYoutubeMobile = false }: { video: Video; formatoYoutubeMobile?: boolean }) {
   return (
+    <div className="relative">
+    <BotaoSalvar tipo="video" id={video.id} variante="cartao" />
     <Link
       href={`/videos/${video.id}`}
       className="group block outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
     >
-      <Card className="overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated">
-        <div className="relative aspect-video w-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+      {/* Telemóvel: cartão horizontal e compacto; a partir do tablet, vertical. */}
+      <Card className={`flex overflow-hidden border-border/70 shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated sm:block ${formatoYoutubeMobile ? "flex-col rounded-xl sm:flex-col" : ""}`}>
+        <div className={`relative aspect-video shrink-0 self-start bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center ${formatoYoutubeMobile ? "w-full sm:w-full" : "w-[40%] sm:w-full"}`}>
           {/* Thumbnail (se existir) */}
           {video.thumbnail ? (
             <div
@@ -267,7 +313,7 @@ export function VideoCard({ video }: { video: Video }) {
             />
           ) : (
             /* Fallback quando não há thumbnail */
-            <PlayCircle className="h-16 w-16 text-white/30 transition-transform duration-200 group-hover:scale-110" />
+            <PlayCircle className="h-10 w-10 text-white/30 transition-transform duration-200 group-hover:scale-110 sm:h-16 sm:w-16" />
           )}
 
           {/* Overlay com ícone de play (hover) */}
@@ -285,25 +331,25 @@ export function VideoCard({ video }: { video: Video }) {
           )}
         </div>
 
-        <div className="space-y-2 p-4">
-          <h3 className="font-serif text-base font-semibold leading-snug line-clamp-2">
+        <div className="min-w-0 flex-1 space-y-1.5 p-3 sm:space-y-2 sm:p-4">
+          <h3 className="font-serif text-sm font-semibold leading-snug line-clamp-2 sm:text-base">
             {video.title}
           </h3>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-x-2 text-xs text-muted-foreground">
             {video.teacherUserId ? (
-              <Link
+              <LinkDentroDeCartao
                 href={`/perfil/${video.teacherUserId}`}
                 className="hit truncate hover:text-foreground hover:underline underline-offset-2 transition-colors"
               >
                 {video.teacher}
-              </Link>
+              </LinkDentroDeCartao>
             ) : (
               <span className="truncate">{video.teacher}</span>
             )}
             <span className="shrink-0">{video.views.toLocaleString()} visualizações</span>
           </div>
           {video.publishedAt && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
               <Calendar className="h-3.5 w-3.5" />
               {formatarDataCurta(video.publishedAt)}
             </div>
@@ -311,6 +357,7 @@ export function VideoCard({ video }: { video: Video }) {
         </div>
       </Card>
     </Link>
+    </div>
   );
 }
 
@@ -329,14 +376,56 @@ export function PostCard({
   post,
   onToggleLike,
   onAutorBloqueado,
+  onRepostado,
+  abrirAoCarregar = false,
 }: {
   post: Post;
   onToggleLike?: () => void;
   /** Chamado depois de o utilizador bloquear o autor (para tirar os posts dele da lista). */
   onAutorBloqueado?: (userId: number) => void;
+  /** Chamado com o novo post depois de repostar (para o pôr no topo da lista). */
+  onRepostado?: (novo: Post) => void;
+  /** Abre logo o modal do post (ex: link partilhado /inicio?post=ID). */
+  abrirAoCarregar?: boolean;
 }) {
   const [liked, setLiked] = useState(post.liked || false);
   const [likes, setLikes] = useState(post.likes);
+  const [comentarios, setComentarios] = useState(post.comments);
+  const [modalAberto, setModalAberto] = useState(abrirAoCarregar);
+  const [partilhaAberta, setPartilhaAberta] = useState(false);
+  const { user } = useAuth();
+  const souAutor = user?.id != null && post.authorId != null && String(user.id) === String(post.authorId);
+  const [conteudo, setConteudo] = useState(post.content);
+  const [editadoEm, setEditadoEm] = useState(post.editadoEm);
+  const [aEditar, setAEditar] = useState(false);
+  const [texto, setTexto] = useState(post.content);
+  const [aGuardar, setAGuardar] = useState(false);
+
+  useEffect(() => {
+    setConteudo(post.content);
+    setEditadoEm(post.editadoEm);
+  }, [post.content, post.editadoEm]);
+
+  useEffect(() => {
+    if (abrirAoCarregar) setModalAberto(true);
+  }, [abrirAoCarregar]);
+
+  const guardarEdicao = async () => {
+    const novo = texto.trim();
+    if (!novo) return;
+    setAGuardar(true);
+    try {
+      const atualizado = await api.editarPost(post.id, novo);
+      setConteudo(atualizado.content);
+      setEditadoEm(atualizado.editadoEm);
+      setAEditar(false);
+      toast.success("Publicação editada.");
+    } catch (e) {
+      toast.error(mensagemDeErro(e, "Não foi possível editar a publicação."));
+    } finally {
+      setAGuardar(false);
+    }
+  };
 
   useEffect(() => {
     setLiked(post.liked || false);
@@ -356,62 +445,238 @@ export function PostCard({
     setLiked(!liked);
   };
 
+  // O que se partilha: num repost sem comentário, a publicação original.
+  const partilhaOriginal = Boolean(post.repostDe?.id && !conteudo && !post.repostDe.indisponivel);
+  const idPartilha = partilhaOriginal ? post.repostDe!.id! : post.id;
+  const autorPartilha = partilhaOriginal ? post.repostDe!.author ?? post.author : post.author;
+  const textoPartilha = partilhaOriginal ? post.repostDe!.content ?? "" : conteudo;
+  const iniciaisPartilha = partilhaOriginal ? post.repostDe!.initials ?? "??" : post.initials;
+  const fotoPartilha = post.imagem ?? (post.repostDe?.indisponivel ? null : post.repostDe?.imagem) ?? null;
+
+  const cabecalho = (emModal: boolean) => (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-10 w-10">
+          <UserAvatar
+            name={post.author}
+            initials={post.initials}
+            foto={post.authorFoto ?? undefined}
+            userId={post.authorId ?? undefined}
+          />
+        </Avatar>
+        <div>
+          {post.authorId ? (
+            <Link
+              href={`/perfil/${post.authorId}`}
+              className="font-medium text-sm hover:underline underline-offset-2 transition-colors"
+            >
+              {post.author}
+            </Link>
+          ) : (
+            <p className="font-medium text-sm">{post.author}</p>
+          )}
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            {post.repostDe && (
+              <>
+                <Repeat2 className="h-3.5 w-3.5" aria-hidden /> repostou ·
+              </>
+            )}
+            {post.timeAgo}
+            {editadoEm && " · editado"}
+          </p>
+        </div>
+      </div>
+      {!emModal && (
+        <div className="flex items-center gap-1">
+          {souAutor && !aEditar && conteudo && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                setTexto(conteudo);
+                setAEditar(true);
+              }}
+              aria-label="Editar publicação"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          <MenuModeracao
+            tipo="post"
+            id={post.id}
+            autorId={post.authorId}
+            autorNome={post.author}
+            onBloqueado={onAutorBloqueado}
+            itens={<BotaoSalvar tipo="post" id={post.id} variante="menu" />}
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const corpo = (emModal: boolean) => (
+    <>
+      {post.oculto && <AvisoOculto />}
+      {aEditar && !emModal ? (
+        <div className="space-y-2">
+          <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} className="text-sm" />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setAEditar(false)} disabled={aGuardar}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={() => void guardarEdicao()} disabled={aGuardar || !texto.trim()}>
+              Guardar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        conteudo && <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{conteudo}</p>
+      )}
+      {post.imagem && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.imagem}
+          alt={`Foto publicada por ${post.author}`}
+          loading="lazy"
+          className={cn("w-full rounded-xl bg-surface object-cover", emModal ? "max-h-[60vh]" : "max-h-[480px]")}
+        />
+      )}
+      {post.repostDe && <PostOriginal original={post.repostDe} />}
+    </>
+  );
+
   return (
-    <Card className="border-border/70 shadow-soft transition-shadow">
-      <div className="p-5 space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <UserAvatar
-                name={post.author}
-                initials={post.initials}
-                foto={post.authorFoto ?? undefined}
-                userId={post.authorId ?? undefined}
-              />
-            </Avatar>
-            <div>
-              {post.authorId ? (
-                <Link
-                  href={`/perfil/${post.authorId}`}
-                  className="font-medium text-sm hover:underline underline-offset-2 transition-colors"
-                >
-                  {post.author}
-                </Link>
-              ) : (
-                <p className="font-medium text-sm">{post.author}</p>
-              )}
-              <p className="text-xs text-muted-foreground">{post.timeAgo}</p>
+    <>
+      <Card className="border-border/70 shadow-soft transition-shadow">
+        <div className="space-y-4 p-5">
+          {cabecalho(false)}
+          {corpo(false)}
+          {/* Como num feed: reagir, comentar (abre o modal do post) e partilhar, com os números. */}
+          <div className="grid grid-cols-3 gap-2 border-t border-border/60 pt-2 sm:gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn("gap-2 text-xs sm:text-sm", liked && "text-primary")}
+              onClick={toggleLike}
+              aria-label={liked ? "Retirar reação" : "Reagir"}
+            >
+              <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
+              <span className="hidden sm:inline">Reações</span>
+              <span className="tabular-nums">{likes}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-xs sm:text-sm"
+              onClick={() => setModalAberto(true)}
+              aria-label={`Ver comentários (${comentarios})`}
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Comentários</span>
+              <span className="tabular-nums">{comentarios}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-xs sm:text-sm"
+              onClick={() => setPartilhaAberta(true)}
+            >
+              <Share2 className="h-4 w-4" />
+              <span>Partilhar</span>
+              {!!post.reposts && <span className="tabular-nums text-muted-foreground">{post.reposts}</span>}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Modal do post: a publicação e, por baixo, os comentários (com a caixa para comentar). */}
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Publicação de {post.author}</DialogTitle>
+            <DialogDescription>A publicação e os comentários.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 p-5 pr-12">
+            {cabecalho(true)}
+            {corpo(true)}
+            <div className="flex items-center gap-1 border-t border-border/60 pt-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn("gap-2 text-xs", liked && "text-primary")}
+                onClick={toggleLike}
+              >
+                <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
+                {likes}
+              </Button>
+              <span className="inline-flex items-center gap-2 px-3 text-xs text-muted-foreground">
+                <MessageCircle className="h-4 w-4" />
+                {comentarios} comentário{comentarios === 1 ? "" : "s"}
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <ShareButton url={`/comunidade?post=${post.id}`} titulo="Publicação na comunidade EYK" />
-            <MenuModeracao
-              tipo="post"
-              id={post.id}
-              autorId={post.authorId}
-              autorNome={post.author}
-              onBloqueado={onAutorBloqueado}
-            />
+          <div className="border-t border-border/60 bg-surface/40 p-5">
+            <PostComments postId={post.id} initialCount={comentarios} modo="modal" onTotalChange={setComentarios} />
           </div>
-        </div>
-        {post.oculto && <AvisoOculto />}
-        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{post.content}</p>
-        <div className="flex items-center gap-4 pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("gap-2 text-xs", liked && "text-primary")}
-            onClick={toggleLike}
-          >
-            <Hand className={cn("h-4 w-4", liked && "fill-primary")} />
-            {likes}
-          </Button>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* Comentários: mostra 2 de cada vez, com "Ver mais" */}
-        <PostComments postId={post.id} initialCount={post.comments} />
+      <ModalPartilha
+        aberto={partilhaAberta}
+        aoMudar={setPartilhaAberta}
+        url={`/comunidade/post/${idPartilha}`}
+        titulo={`Publicação de ${autorPartilha} na comunidade EYK`}
+        previsualizacao={<PreviaPost autor={autorPartilha} iniciais={iniciaisPartilha} texto={textoPartilha} foto={fotoPartilha} />}
+        post={post}
+        aoRepostar={onRepostado}
+      />
+    </>
+  );
+}
+
+/** A publicação original dentro de um repost. */
+function PostOriginal({ original }: { original: NonNullable<Post["repostDe"]> }) {
+  if (original.indisponivel) {
+    return (
+      <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+        Esta publicação já não está disponível.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2 rounded-xl border border-border/70 bg-surface/50 p-4">
+      <div className="flex items-center gap-2">
+        <Avatar className="h-7 w-7">
+          <UserAvatar
+            name={original.author ?? ""}
+            initials={original.initials ?? "??"}
+            foto={original.authorFoto ?? undefined}
+            userId={original.authorId ?? undefined}
+          />
+        </Avatar>
+        {original.authorId ? (
+          <Link href={`/perfil/${original.authorId}`} className="text-sm font-medium hover:underline underline-offset-2">
+            {original.author}
+          </Link>
+        ) : (
+          <span className="text-sm font-medium">{original.author}</span>
+        )}
+        <span className="text-xs text-muted-foreground">· {original.timeAgo}</span>
       </div>
-    </Card>
+      {original.content && (
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{original.content}</p>
+      )}
+      {original.imagem && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={original.imagem}
+          alt={`Foto publicada por ${original.author}`}
+          loading="lazy"
+          className="max-h-[480px] w-full rounded-lg bg-surface object-cover"
+        />
+      )}
+    </div>
   );
 }
 
@@ -544,47 +809,27 @@ export function ShareButton({
   url,
   titulo,
   className,
+  previsualizacao,
 }: {
   url: string;
   titulo?: string;
   className?: string;
+  /** Miniatura no modal (ex: capa do vídeo/curso). */
+  previsualizacao?: ReactNode;
 }) {
-  const [copiado, setCopiado] = useState(false);
-
-  const partilhar = async () => {
-    const absoluta = url.startsWith("http") ? url : `${window.location.origin}${url}`;
-
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ url: absoluta, title: titulo });
-        return;
-      } catch {
-        // utilizador cancelou a partilha nativa — cai para copiar o link
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(absoluta);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      /* clipboard indisponível neste browser */
-    }
-  };
-
+  const [aberto, setAberto] = useState(false);
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className={cn("h-8 w-8 shrink-0", className)}>
-          <Share2 className="h-4 w-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-2" align="end">
-        <Button variant="ghost" className="w-full justify-start gap-2 text-xs" onClick={() => void partilhar()}>
-          {copiado ? <Check className="h-4 w-4 text-primary" /> : <LinkIcon className="h-4 w-4" />}
-          {copiado ? "Link copiado!" : "Copiar link"}
-        </Button>
-      </PopoverContent>
-    </Popover>
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn("h-8 w-8 shrink-0", className)}
+        onClick={() => setAberto(true)}
+        aria-label="Partilhar"
+      >
+        <Share2 className="h-4 w-4" />
+      </Button>
+      <ModalPartilha aberto={aberto} aoMudar={setAberto} url={url} titulo={titulo ?? "EYK"} previsualizacao={previsualizacao} />
+    </>
   );
 }

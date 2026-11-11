@@ -84,11 +84,11 @@ def _resumo_utilizador(user) -> str:
 TIPOS = {
     'post': TipoConteudo(
         obter=_post, autor=lambda o: o.autor, resumo=lambda o: _cortar(o.conteudo),
-        link=lambda o: f'/comunidade?post={o.id}', apagavel=True, ocultar_automaticamente=True,
+        link=lambda o: f'/inicio?post={o.id}', apagavel=True, ocultar_automaticamente=True,
     ),
     'comentario': TipoConteudo(
         obter=_comentario, autor=lambda o: o.autor, resumo=lambda o: _cortar(o.conteudo),
-        link=lambda o: f'/comunidade?post={o.post_id}', apagavel=True, ocultar_automaticamente=True,
+        link=lambda o: f'/inicio?post={o.post_id}', apagavel=True, ocultar_automaticamente=True,
     ),
     'comentario_video': TipoConteudo(
         obter=_comentario_video, autor=lambda o: o.autor, resumo=lambda o: _cortar(o.conteudo),

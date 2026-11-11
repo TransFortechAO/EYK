@@ -69,7 +69,7 @@ export function PublicacoesPerfil({
                   <MessageCircle className="h-3.5 w-3.5" /> {p.comentarios}
                 </span>
                 {!p.oculto && (
-                  <Link href={`/comunidade?post=${p.id}`} className="hit ml-auto font-medium text-primary hover:underline">
+                  <Link href={`/inicio?post=${p.id}`} className="hit ml-auto font-medium text-primary hover:underline">
                     Ver na comunidade
                   </Link>
                 )}
@@ -121,74 +121,77 @@ export function CursosConcluidosPerfil({
   );
 }
 
-export function ConteudoProfessor({ perfil }: { perfil: PerfilPublico }) {
+export function CursosProfessor({ perfil }: { perfil: PerfilPublico }) {
   return (
-    <>
-      <section>
-        <SectionHeader title="Cursos" />
-        {perfil.cursos.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ainda sem cursos publicados.</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {perfil.cursos.map((c) => (
-              <Link key={c.id} href={`/cursos/${c.id}`} className="group">
-                <Card className="overflow-hidden shadow-soft transition-shadow group-hover:shadow-elevated">
-                  <div className="aspect-video bg-gradient-gold">
-                    {c.thumbnail && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.thumbnail} alt="" className="h-full w-full object-cover" />
+    <section>
+      <SectionHeader title="Cursos" />
+      {perfil.cursos.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Ainda sem cursos publicados.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {perfil.cursos.map((c) => (
+            <Link key={c.id} href={`/cursos/${c.id}`} className="group">
+              <Card className="overflow-hidden shadow-soft transition-shadow group-hover:shadow-elevated">
+                <div className="aspect-video bg-gradient-gold">
+                  {c.thumbnail && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.thumbnail} alt="" className="h-full w-full object-cover" />
+                  )}
+                </div>
+                <div className="space-y-1 p-4">
+                  <p className="line-clamp-2 font-medium">{c.titulo}</p>
+                  <p className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {c.alunos}</span>
+                    {c.media !== null && (
+                      <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5" /> {c.media}</span>
                     )}
-                  </div>
-                  <div className="space-y-1 p-4">
-                    <p className="line-clamp-2 font-medium">{c.titulo}</p>
-                    <p className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {c.alunos}</span>
-                      {c.media !== null && (
-                        <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5" /> {c.media}</span>
-                      )}
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-      <section>
-        <SectionHeader title="Vídeos" />
-        {perfil.videos.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ainda sem vídeos avulsos.</p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {perfil.videos.map((v) => (
-              <Link key={v.id} href={`/videos/${v.id}`} className="group">
-                <Card className="overflow-hidden shadow-soft transition-shadow group-hover:shadow-elevated">
-                  <div className="relative aspect-video bg-black/80">
-                    {v.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <PlayCircle className="absolute inset-0 m-auto h-10 w-10 text-white/70" />
-                    )}
-                    {v.duracaoSegundos > 0 && (
-                      <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] text-white">
-                        {formatarDuracaoCurta(v.duracaoSegundos)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-1 p-4">
-                    <p className="line-clamp-2 font-medium">{v.titulo}</p>
-                    <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <Eye className="h-3.5 w-3.5" /> {v.views} visualizações
-                    </p>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-    </>
+                  </p>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function VideosProfessor({ perfil }: { perfil: PerfilPublico }) {
+  return (
+    <section>
+      <SectionHeader title="Vídeos" />
+      {perfil.videos.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Ainda sem vídeos publicados.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {perfil.videos.map((v) => (
+            <Link key={v.id} href={`/videos/${v.id}`} className="group">
+              <Card className="overflow-hidden shadow-soft transition-shadow group-hover:shadow-elevated">
+                <div className="relative aspect-video bg-black/80">
+                  {v.thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.thumbnail} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <PlayCircle className="absolute inset-0 m-auto h-10 w-10 text-white/70" />
+                  )}
+                  {v.duracaoSegundos > 0 && (
+                    <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] text-white">
+                      {formatarDuracaoCurta(v.duracaoSegundos)}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-1 p-4">
+                  <p className="line-clamp-2 font-medium">{v.titulo}</p>
+                  <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Eye className="h-3.5 w-3.5" /> {v.views} visualizações
+                  </p>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

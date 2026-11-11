@@ -2,6 +2,7 @@
 
 import { useLimitesUpload } from "@/hooks/useLimitesUpload";
 import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -21,7 +22,6 @@ import {
   Film,
   FileText,
   Image as ImageIcon,
-  Search,
   PlayCircle,
   Clock,
 } from "lucide-react";
@@ -45,6 +45,7 @@ const EMPTY_FORM: ProfessorVideoPayload = {
   descricao: "",
   url_externa: "",
   ativo: true,
+  uso_ia_lga: false,
 };
 
 export default function ProfessorVideosPage() {
@@ -62,7 +63,8 @@ export default function ProfessorVideosPage() {
   const [submetendo, setSubmetendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [reordenando, setReordenando] = useState(false);
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [pesquisa] = usePesquisaPagina();
   const [filtro, setFiltro] = useState<FiltroEstado>("todos");
   const videoInputRef = useRef<HTMLInputElement>(null);
   const recursosInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +93,15 @@ export default function ProfessorVideosPage() {
     setModalAberto(true);
   };
 
+  // Ação rápida do Painel (?novo=1): abre logo o formulário de criar.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("novo") !== "1") return;
+    abrirCriar();
+    url.searchParams.delete("novo");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }, []);
+
   const abrirEditar = (video: ProfessorVideo) => {
     setEditando(video);
     setForm({
@@ -98,6 +109,7 @@ export default function ProfessorVideosPage() {
       descricao: video.descricao,
       url_externa: video.url_externa,
       ativo: video.ativo,
+      uso_ia_lga: video.uso_ia_lga,
     });
     setVideoFile(null);
     setRecursosNovos([]);
@@ -196,7 +208,8 @@ export default function ProfessorVideosPage() {
     setSubmetendo(true);
     setErro(null);
     try {
-      const payload: ProfessorVideoPayload = { ...form, arquivo: videoFile };
+      // Ao editar não se envia ficheiro de vídeo: o vídeo não se troca.
+      const payload: ProfessorVideoPayload = { ...form, arquivo: editando ? null : videoFile };
       if (editando) {
         await api.professor.atualizarVideo(editando.id, payload, recursosNovos);
       } else {
@@ -256,15 +269,7 @@ export default function ProfessorVideosPage() {
 
       {!loading && videos.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Pesquisar vídeo…"
-              className="rounded-full pl-9"
-            />
-          </div>
+          <CampoPesquisaPagina className="relative max-w-sm flex-1 computador:hidden" />
           <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FiltroEstado)}>
             <TabsList>
               <TabsTrigger value="todos">Todos</TabsTrigger>
@@ -455,48 +460,56 @@ export default function ProfessorVideosPage() {
                   Se não escolheres uma, é usado automaticamente um frame do vídeo.
                 </p>
               </div>
-              <div className="space-y-2">
-                <Label>Ficheiro de vídeo</Label>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={onVideoSelecionado}
-                  disabled={submetendo}
-                  className="sr-only"
-                />
-                <button
-                  type="button"
-                  onClick={escolherVideo}
-                  disabled={submetendo}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  Fazer upload de vídeo
-                </button>
-
-                {videoFile ? (
-                  <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <Film className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-                      <span className="truncate">{videoFile.name}</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setVideoFile(null)}
-                      disabled={submetendo}
-                      className="shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-50"
-                      aria-label="Remover ficheiro"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : editando?.arquivo ? (
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Film className="h-3.5 w-3.5 shrink-0" /> Já tem um ficheiro de vídeo enviado.
+              {editando ? (
+                // Ao editar não se troca o vídeo (o backend recusa): só texto, capa e recursos.
+                <div className="space-y-1.5">
+                  <Label>Vídeo</Label>
+                  <p className="flex items-start gap-2 rounded-lg border border-border/70 bg-surface/60 px-3 py-2 text-xs text-muted-foreground">
+                    <Film className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    O vídeo não pode ser trocado ao editar. Podes mudar o título, a descrição, a capa e os recursos. Para
+                    outro vídeo, publica-o como novo.
                   </p>
-                ) : null}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Ficheiro de vídeo <span className="font-normal text-muted-foreground">(máx. {limites.videoMb} MB)</span></Label>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={onVideoSelecionado}
+                    disabled={submetendo}
+                    className="sr-only"
+                  />
+                  <button
+                    type="button"
+                    onClick={escolherVideo}
+                    disabled={submetendo}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Fazer upload de vídeo
+                  </button>
+
+                  {videoFile ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Film className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                        <span className="truncate">{videoFile.name}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setVideoFile(null)}
+                        disabled={submetendo}
+                        className="shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                        aria-label="Remover ficheiro"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Recursos (PDF, opcional)</Label>
@@ -568,6 +581,16 @@ export default function ProfessorVideosPage() {
                     ))}
                   </ul>
                 )}
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <Switch aria-label="Autorizar seleção deste vídeo para investigação de IA LGA" disabled={!Boolean(editando?.arquivo || videoFile)} checked={Boolean(form.uso_ia_lga)} onCheckedChange={(v) => setForm({ ...form, uso_ia_lga: v })} />
+                  <div>
+                    <p className="text-sm font-medium">Autorizar seleção para investigação de IA LGA</p>
+                    <p className="text-xs text-muted-foreground">Ao ativar, autorizas a seleção de partes deste vídeo para investigação de IA LGA e confirmas ter os direitos e a autorização das pessoas que aparecem. Só conteúdo publicado, alojado na EYK e relevante é sugerido; links externos ficam excluídos. A equipa revê o gesto antes de o incluir no dataset. Podes retirar esta autorização ao desativar a opção.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">

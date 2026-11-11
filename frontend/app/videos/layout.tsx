@@ -1,9 +1,9 @@
 export const metadata = {
   title: "Vídeos · EYK",
-  description: "Conteúdos avulsos de todos os professores da plataforma EYK.",
+  description: "Aulas e explicações em vídeo, partilhadas pelos professores da plataforma EYK.",
   openGraph: {
     title: "Vídeos · EYK",
-    description: "Conteúdos avulsos de todos os professores da plataforma EYK.",
+    description: "Aulas e explicações em vídeo, partilhadas pelos professores da plataforma EYK.",
   },
 };
 

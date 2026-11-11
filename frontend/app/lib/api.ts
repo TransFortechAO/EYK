@@ -3,14 +3,26 @@ export const API_BASE_URL = (() => {
   // "/" (produção no Render) → caminhos relativos: o Next.js reencaminha
   // /api, /accounts, /media… para o Django (ver next.config.ts).
   const env = process.env.NEXT_PUBLIC_API_URL;
-  if (env) return env.replace(/\/$/, '');
+  if (env) {
+    const base = env.replace(/\/$/, '');
+    if (base === '/') return '';
+    // Em desenvolvimento, localhost no browser seria o computador visitante.
+    // O Next encaminha estes pedidos para o Django local.
+    if (
+      process.env.NODE_ENV === 'development' &&
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(?:\/api)?$/i.test(base)
+    ) {
+      return '';
+    }
+    return base;
+  }
 
-  // Sem NEXT_PUBLIC_API_URL definido: deriva o endereço da API a partir de
-  // onde o browser está a aceder à app (mesmo host, porta 8000). Isto faz
-  // o acesso pela rede local funcionar sem configuração — aceder por
-  // http://192.168.x.x:3000 chama automaticamente http://192.168.x.x:8000,
-  // em vez de tentar sempre "localhost" (que, visto de outro dispositivo,
-  // aponta para esse dispositivo, não para o servidor Django).
+  // Em desenvolvimento, os pedidos são relativos e o Next encaminha-os para
+  // o backend local, evitando CORS e a necessidade de expor a porta 8000.
+  if (process.env.NODE_ENV === 'development') return '';
+
+  // Fora do desenvolvimento, sem proxy configurado, usa a porta 8000 no host
+  // da página para instalações que servem a API diretamente.
   if (typeof window !== 'undefined') {
     return `${window.location.protocol}//${window.location.hostname}:8000`;
   }
@@ -203,6 +215,8 @@ export type Course = {
   ratingCount: number;
   /** O aluno autenticado concluiu o curso e pode descarregar o certificado. */
   certificadoDisponivel: boolean;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
 };
 
 export type Video = {
@@ -216,6 +230,8 @@ export type Video = {
   daysAgo: number;
   thumbnail: string;
   publishedAt: string | null;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
 };
 
 export type VideoDetail = {
@@ -237,6 +253,8 @@ export type VideoDetail = {
   durationLabel: string;
   recursos: CursoRecurso[];
   temLegenda: boolean;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
 };
 
 export type VideoComment = {
@@ -427,11 +445,69 @@ export type PalavraProibida = { id: number; termo: string; acao: 'bloquear' | 's
 
 export type ConfigPublica = {
   aviso: { ativo: boolean; tipo: 'info' | 'aviso' | 'manutencao'; mensagem: string; versao: string };
-  limites: { videoMb: number; pdfMb: number };
+  limites: { videoMb: number; aulaMb?: number; pdfMb: number };
+};
+
+/** Gesto de LGA em vídeo (ver docs/lga-icones-palavras.md). */
+export type NomeUtilizador = {
+  username: string;
+  disponivel: boolean;
+  sugestoes: string[];
+  nome_ocupado?: boolean;
+};
+
+export type GestoLGA = {
+  id: number;
+  palavra: string;
+  video: string | null;
+  validado: boolean;
+  validado_por: string;
+};
+
+export type AmostraLGA = {
+  id: number;
+  palavra: string;
+  variante: string;
+  estado: 'pendente' | 'validada' | 'rejeitada';
+  estadoLabel: string;
+  criadoEm: string;
+  notaRevisao: string;
+  autor?: string;
+  consentimentoVersao?: string;
+  consentidoEm?: string;
+  representanteConfirmado?: boolean;
+};
+
+export type RecolhaLGA = {
+  versaoConsentimento: string;
+  palavras: { nome: string; amostrasValidadas: number }[];
+  amostras: AmostraLGA[];
+};
+
+export type FonteDatasetLGA = {
+  id: number;
+  videoId: number;
+  titulo: string;
+  descricao: string;
+  professor: string;
+  curso: string | null;
+  duracaoSegundos: number;
+  videoUrl: string | null;
+  temLegenda: boolean;
+  pontuacao: number;
+  motivos: string[];
+  estado: 'sugerida' | 'aprovada' | 'rejeitada' | 'retirada';
+  palavra: string;
+  inicioSegundos: number | null;
+  fimSegundos: number | null;
+  notaRevisao: string;
+  consentimentoEm: string;
+  consentimentoVersao: string;
 };
 
 export type ConfigAdmin = {
   limite_video_mb: number;
+  limite_aula_mb: number;
   limite_pdf_mb: number;
   denuncias_para_ocultar: number;
   avisos_para_suspender: number;
@@ -491,6 +567,36 @@ export type Post = {
   comments: number;
   liked?: boolean;
   oculto?: boolean;
+  /** Quando o autor editou o conteúdo (mostra "editado"), ou null. */
+  editadoEm: string | null;
+  /** Repost: a publicação original (ou `indisponivel` se foi apagada/ocultada). */
+  repostDe?: PostOriginal | null;
+  /** Quantas vezes foi repostada. */
+  reposts?: number;
+  /** Foto da publicação (URL absoluto), se houver. */
+  imagem?: string | null;
+};
+
+export type PostOriginal = {
+  id: string | null;
+  indisponivel: boolean;
+  author?: string;
+  authorId?: number | null;
+  initials?: string;
+  authorFoto?: string | null;
+  content?: string;
+  imagem?: string | null;
+  timeAgo?: string;
+};
+
+/** Dados públicos para pré-visualizar um link partilhado (ver /api/partilha/). */
+export type DadosPartilha = {
+  tipo: "post" | "video" | "curso";
+  titulo: string;
+  descricao: string;
+  autor: string;
+  imagem: string | null;
+  categoria?: string | null;
 };
 
 export type Comentario = {
@@ -518,7 +624,7 @@ export type Notification = {
   body: string;
   timeAgo: string;
   read?: boolean;
-  /** Página a abrir ao clicar (ex: "/comunidade?post=3"). */
+  /** Página a abrir ao clicar (ex: "/inicio?post=3"). */
   link?: string | null;
 };
 
@@ -527,10 +633,36 @@ export type LeaderRow = {
   userId: number | null;
   name: string;
   initials: string;
-  foto?: string | null;
   coins: number;
   streak: number;
   isMe?: boolean;
+};
+
+/** "Continua a aprender" no Início. */
+export type EmAndamento = {
+  cursos: {
+    cursoId: number;
+    titulo: string;
+    categoria: string | null;
+    thumbnail: string | null;
+    progresso: number;
+    aulasVistas: number;
+    totalAulas: number;
+    ultimaAula: { id: number; titulo: string; segundos: number; duracao: number };
+  }[];
+  videos: { videoId: number; titulo: string; thumbnail: string | null; segundos: number; duracao: number }[];
+};
+
+/** Sugestão de professor para seguir (coluna lateral do Início). */
+export type ProfessorSugerido = {
+  professorId: number;
+  userId: number;
+  nome: string;
+  iniciais: string;
+  foto: string | null;
+  area: string;
+  seguidores: number;
+  cursos: number;
 };
 
 export type ProfessorLeaderRow = {
@@ -582,7 +714,7 @@ export type GamePanel = {
   nextLevelXp: number;
   initials: string;
   name: string;
-  foto?: string | null;
+  foto: string | null;
 };
 
 // =================== Tipos ADMIN (Painel de Gestão) ========================
@@ -718,6 +850,7 @@ export type ProfessorCurso = {
   videos: ProfessorCursoVideo[];
   recursos: ProfessorRecurso[];
   oculto: boolean;
+  uso_ia_lga?: boolean;
 };
 
 export type CursoRecurso = {
@@ -748,6 +881,7 @@ export type ProfessorCursoPayload = {
   descricao: string;
   categoria_nome?: string;
   ativo?: boolean;
+  uso_ia_lga?: boolean;
   thumbnail?: File | null;
 };
 
@@ -769,6 +903,7 @@ export type ProfessorVideo = {
   recursos: ProfessorRecurso[];
   oculto: boolean;
   tem_legenda: boolean;
+  uso_ia_lga?: boolean;
 };
 
 export type ProfessorVideoPayload = {
@@ -776,6 +911,7 @@ export type ProfessorVideoPayload = {
   descricao?: string;
   url_externa?: string;
   ativo?: boolean;
+  uso_ia_lga?: boolean;
   arquivo?: File | null;
   thumbnail?: File | null;
 };
@@ -904,6 +1040,7 @@ type RawProfessor = { nome_publico?: string };
 
 type RawCourse = {
   id?: number | string;
+  editado_em?: string | null;
   titulo?: string | null;
   professor_nome?: string | null;
   professor?: RawProfessor | null;
@@ -926,6 +1063,7 @@ type RawCourse = {
 
 type RawVideo = {
   id?: number | string;
+  editado_em?: string | null;
   titulo?: string | null;
   professor_nome?: string | null;
   professor_user_id?: number | null;
@@ -1009,6 +1147,8 @@ type RawCourseDetail = RawCourse & {
 
 type RawPost = {
   id?: number | string;
+  imagem?: string | null;
+  editado_em?: string | null;
   autor?: number | null;
   autor_nome?: string | null;
   autor_initials?: string | null;
@@ -1019,6 +1159,18 @@ type RawPost = {
   comentarios?: number | string | null;
   liked?: boolean | null;
   oculto?: boolean | null;
+  repost_de?: {
+    id: number | null;
+    indisponivel?: boolean;
+    autor?: number | null;
+    autor_nome?: string | null;
+    autor_initials?: string | null;
+    autor_foto?: string | null;
+    conteudo?: string | null;
+    imagem?: string | null;
+    time_ago?: string | null;
+  } | null;
+  reposts?: number | null;
 };
 
 type RawNotifType = Notification["type"] | (string & {});
@@ -1078,22 +1230,6 @@ type RawWalletEntry = {
 };
 
 // --- Helpers internos -----------------------------------------------------------------
-
-const COVERS = [
-  "linear-gradient(135deg,#B8892F,#E8C878)",
-  "linear-gradient(135deg,#2C1810,#8B5E34)",
-  "linear-gradient(135deg,#3D5A80,#98C1D9)",
-  "linear-gradient(135deg,#7B2D26,#D69F7E)",
-  "linear-gradient(135deg,#2F4858,#86BBD8)",
-  "linear-gradient(135deg,#4A4E69,#C9ADA7)",
-];
-
-function thumbnailFor(idLike: number | string): string {
-  const s = String(idLike);
-  let sum = 0;
-  for (let i = 0; i < s.length; i++) sum += s.charCodeAt(i);
-  return COVERS[sum % COVERS.length];
-}
 
 // Usa a imagem de capa real (enviada pelo professor ou gerada automaticamente
 // a partir de um frame do vídeo) quando existir; caso contrário mantém o
@@ -1188,6 +1324,7 @@ function _appendCursoPayload(formData: FormData, payload: Partial<ProfessorCurso
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
   if (payload.categoria_nome !== undefined) formData.append('categoria_nome', payload.categoria_nome);
   if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
+  if (payload.uso_ia_lga !== undefined) formData.append('uso_ia_lga', String(payload.uso_ia_lga));
 }
 
 function _appendVideoPayload(
@@ -1198,6 +1335,7 @@ function _appendVideoPayload(
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
   if (payload.url_externa !== undefined) formData.append('url_externa', payload.url_externa);
   if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
+  if (payload.uso_ia_lga !== undefined) formData.append('uso_ia_lga', String(payload.uso_ia_lga));
 }
 
 function initiais(name: string): string {
@@ -1213,12 +1351,13 @@ import {
   mockLeaderboard, mockBadges, mockWallet, courseCategories,
 } from "@/lib/mock-data";
 import { limparCacheApiOffline } from "@/lib/offline";
+import { thumbnailFor } from "@/lib/capas";
 
 // Os mocks de Video/Post (usados só como fallback antes de a BD ter dados)
 // não têm foto de professor/autor — completa com `null` para bater com os
 // tipos normalizados da API.
-const mockVideosComFoto: Video[] = mockVideos.map((v) => ({ ...v, teacherFoto: null }));
-const mockPostsComFoto: Post[] = mockPosts.map((p) => ({ ...p, authorFoto: null }));
+const mockVideosComFoto: Video[] = mockVideos.map((v) => ({ ...v, teacherFoto: null, editadoEm: null }));
+const mockPostsComFoto: Post[] = mockPosts.map((p) => ({ ...p, authorFoto: null, editadoEm: null }));
 
 // --- Normalizadores API → UI ----------------------------------------------------------
 
@@ -1245,6 +1384,7 @@ function normalizeCourse(raw: RawCourse): Course {
     rating: typeof raw?.media_avaliacoes === "number" ? raw.media_avaliacoes : null,
     ratingCount: Number(raw?.total_avaliacoes ?? 0) || 0,
     certificadoDisponivel: Boolean(raw?.certificado_disponivel),
+    editadoEm: raw?.editado_em || null,
   };
 }
 
@@ -1261,6 +1401,7 @@ function normalizeVideo(raw: RawVideo): Video {
     daysAgo: daysAgo(raw?.criado_em),
     thumbnail: coverOuThumbnail(raw?.id ?? "v", raw?.thumbnail),
     publishedAt: raw?.criado_em || null,
+    editadoEm: raw?.editado_em || null,
   };
 }
 
@@ -1286,6 +1427,7 @@ function normalizeVideoDetail(raw: RawVideoDetail): VideoDetail {
     durationLabel: formatarDuracaoCurta(durationSeconds),
     recursos: (raw?.recursos || []).map(normalizeCursoRecurso),
     temLegenda: Boolean(raw?.tem_legenda),
+    editadoEm: raw?.editado_em || null,
   };
 }
 
@@ -1400,6 +1542,22 @@ function normalizePost(raw: RawPost): Post {
     comments: Number(raw?.comentarios ?? 0),
     liked: Boolean(raw?.liked),
     oculto: Boolean(raw?.oculto),
+    editadoEm: raw?.editado_em || null,
+    repostDe: raw?.repost_de
+      ? {
+          id: raw.repost_de.id != null ? String(raw.repost_de.id) : null,
+          indisponivel: Boolean(raw.repost_de.indisponivel),
+          author: raw.repost_de.autor_nome || "Anónimo",
+          authorId: typeof raw.repost_de.autor === "number" ? raw.repost_de.autor : null,
+          initials: raw.repost_de.autor_initials || "??",
+          authorFoto: mediaUrl(raw.repost_de.autor_foto) ?? null,
+          content: raw.repost_de.conteudo || "",
+          imagem: mediaUrl(raw.repost_de.imagem) ?? null,
+          timeAgo: raw.repost_de.time_ago || "",
+        }
+      : null,
+    reposts: Number(raw?.reposts ?? 0),
+    imagem: mediaUrl(raw?.imagem) ?? null,
   };
 }
 
@@ -1451,6 +1609,46 @@ function normalizeComentario(raw: RawComentario): Comentario {
 
 export const api = {
   // =========================================================================
+  //  SALVOS (guardar para ver depois)
+  // =========================================================================
+  inicio: {
+    continuar: async (): Promise<EmAndamento> => fetchAPI<EmAndamento>('/api/inicio/continuar/'),
+
+    /** Cursos e vídeos para esta pessoa, cada um com o motivo da sugestão. */
+    recomendados: async (): Promise<{ cursos: (Course & { motivo: string })[]; videos: (Video & { motivo: string })[] }> => {
+      const r = await fetchAPI<{ cursos: (RawCourse & { motivo: string })[]; videos: (RawVideo & { motivo: string })[] }>('/api/inicio/recomendados/');
+      return {
+        cursos: r.cursos.map((c) => ({ ...normalizeCourse(c), motivo: c.motivo })),
+        videos: r.videos.map((v) => ({ ...normalizeVideo(v), motivo: v.motivo })),
+      };
+    },
+  },
+
+  /** Pesquisa em toda a plataforma (as pessoas vêm de pesquisarUtilizadores). */
+  pesquisar: async (q: string): Promise<{ cursos: Course[]; videos: Video[]; posts: Post[] }> => {
+    const r = await fetchAPI<{ cursos: RawCourse[]; videos: RawVideo[]; posts: RawPost[] }>(`/api/pesquisa/?q=${encodeURIComponent(q)}`);
+    return { cursos: r.cursos.map(normalizeCourse), videos: r.videos.map(normalizeVideo), posts: r.posts.map(normalizePost) };
+  },
+
+  salvos: {
+    ids: async (): Promise<string[]> => (await fetchAPI<{ ids: string[] }>('/api/salvos/ids/')).ids,
+
+    listar: async (): Promise<{ cursos: Course[]; videos: Video[]; posts: Post[] }> => {
+      const r = await fetchAPI<{ cursos: RawCourse[]; videos: RawVideo[]; posts: RawPost[] }>('/api/salvos/');
+      return { cursos: r.cursos.map(normalizeCourse), videos: r.videos.map(normalizeVideo), posts: r.posts.map(normalizePost) };
+    },
+
+    alternar: async (tipo: 'curso' | 'video' | 'post', id: string | number): Promise<{ salvo: boolean }> => {
+      try {
+        return await fetchAPI('/api/salvos/', { method: 'POST', body: JSON.stringify({ tipo, id }) });
+      } catch (err) {
+        const detalhe = (err as { data?: { detail?: string } }).data?.detail;
+        throw new Error(detalhe ?? 'Não foi possível guardar.');
+      }
+    },
+  },
+
+  // =========================================================================
   //  AUTENTICAÇÃO
   // =========================================================================
   login: async (username: string, password: string) => {
@@ -1473,15 +1671,21 @@ export const api = {
   // NOTA: assume que existe (ou vai ser criado) o endpoint '/accounts/auth/register/'
   // no backend Django, seguindo a mesma convenção de '/accounts/auth/login/'.
   // Confirmar com o backend antes de usar em produção.
-  register: async (username: string, email: string, password: string, ref?: string) => {
+  register: async (dados: { nome: string; username: string; email: string; password: string; ref?: string }) => {
     const res = await fetchAPI<{ ok: boolean; user: AuthUser; error?: string }>(
       '/accounts/auth/register/',
-      {
-        method: 'POST',
-        body: JSON.stringify(ref ? { username, email, password, ref } : { username, email, password }),
-      },
+      { method: 'POST', body: JSON.stringify(dados) },
     );
     return res;
+  },
+  /** Registo: propõe um nome de utilizador a partir do nome, ou verifica o escolhido. Nunca lança erro. */
+  nomeUtilizador: async (nome: string, username = ''): Promise<NomeUtilizador | null> => {
+    const params = new URLSearchParams({ nome, username });
+    try {
+      return await fetchAPI<NomeUtilizador>(`/accounts/auth/nome-utilizador/?${params}`);
+    } catch {
+      return null;
+    }
   },
   logout: async () => {
     limparCacheApiOffline();
@@ -1645,9 +1849,11 @@ export const api = {
   // =========================================================================
   //  COMUNIDADE (posts, comentários, reações)
   // =========================================================================
-  getPosts: async (): Promise<Post[]> => {
+  /** Feed aleatório; `destaque` (link partilhado) garante essa publicação em primeiro. */
+  getPosts: async (destaque?: string | null): Promise<Post[]> => {
     try {
-      const res = await fetchAPI<RawPost[]>('/api/comunidade/posts/');
+      const query = destaque ? `?post=${encodeURIComponent(destaque)}` : '';
+      const res = await fetchAPI<RawPost[]>(`/api/comunidade/posts/${query}`);
       if (Array.isArray(res) && res.length > 0) {
         return res.map(normalizePost);
       }
@@ -1656,9 +1862,27 @@ export const api = {
     }
     return mockPostsComFoto;
   },
-  createPost: async (conteudo: string): Promise<Post> => {
-    const res = await fetchAPI<RawPost>('/api/comunidade/posts/', {
+  createPost: async (conteudo: string, imagem?: File | null): Promise<Post> => {
+    let body: string | FormData = JSON.stringify({ conteudo });
+    if (imagem) {
+      body = new FormData();
+      body.append('conteudo', conteudo);
+      body.append('imagem', imagem);
+    }
+    const res = await fetchAPI<RawPost>('/api/comunidade/posts/', { method: 'POST', body });
+    return normalizePost(res);
+  },
+  /** Reposta a publicação de alguém (com um comentário opcional). */
+  repostar: async (postId: string | number, conteudo = ""): Promise<Post> => {
+    const res = await fetchAPI<RawPost>(`/api/comunidade/posts/${postId}/repostar/`, {
       method: 'POST',
+      body: JSON.stringify({ conteudo }),
+    });
+    return normalizePost(res);
+  },
+  editarPost: async (postId: string | number, conteudo: string): Promise<Post> => {
+    const res = await fetchAPI<RawPost>(`/api/comunidade/posts/${postId}/`, {
+      method: 'PATCH',
       body: JSON.stringify({ conteudo }),
     });
     return normalizePost(res);
@@ -1754,20 +1978,20 @@ export const api = {
   getDadosGamificacao: async (): Promise<GamePanel> => {
     try {
       const res = await fetchAPI<GamePanel>('/api/gamificacao/');
-      if (res) return { ...res, foto: mediaUrl(res.foto) };
+      if (res) return res;
     } catch {
       /* fallback */
     }
     return {
       coins: 0, xp: 0, streak: 0, streakRecord: 0, level: 1,
-      levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante",
+      levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante", foto: null,
     };
   },
   getLeaderboard: async (): Promise<LeaderRow[]> => {
     try {
       const res = await fetchAPI<LeaderRow[]>('/api/leaderboard/');
       if (Array.isArray(res) && res.length > 0) {
-        return res.map((row) => ({ ...row, foto: mediaUrl(row.foto) }));
+        return res;
       }
     } catch {
       /* fallback */
@@ -1877,6 +2101,60 @@ export const api = {
         return null;
       }
     },
+    /** Gestos de LGA validados, por palavra → URL do vídeo. Nunca lança erro. */
+    gestos: async (): Promise<Record<string, string>> => {
+      try {
+        const res = await fetchAPI<Record<string, string>>('/api/plataforma/gestos/');
+        return Object.fromEntries(Object.entries(res ?? {}).map(([p, url]) => [p, mediaUrl(url) ?? url]));
+      } catch {
+        return {};
+      }
+    },
+    // ── Gestão dos gestos (equipa EYK) ──
+    listarGestos: async (): Promise<GestoLGA[]> => {
+      const res = await fetchAPI<GestoLGA[]>('/api/plataforma/admin/gestos/');
+      return (res ?? []).map((g) => ({ ...g, video: mediaUrl(g.video) ?? g.video }));
+    },
+    enviarGesto: async (dados: { palavra: string; video: File; validado: boolean; validadoPor: string }): Promise<GestoLGA> => {
+      const form = new FormData();
+      form.append('palavra', dados.palavra);
+      form.append('video', dados.video);
+      form.append('validado', dados.validado ? 'true' : 'false');
+      form.append('validado_por', dados.validadoPor);
+      return await fetchAPI<GestoLGA>('/api/plataforma/admin/gestos/', { method: 'POST', body: form });
+    },
+    atualizarGesto: async (id: number, dados: { validado?: boolean; validado_por?: string }): Promise<GestoLGA> => {
+      return await fetchAPI<GestoLGA>(`/api/plataforma/admin/gestos/${id}/`, { method: 'PATCH', body: JSON.stringify(dados) });
+    },
+    apagarGesto: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/plataforma/admin/gestos/${id}/`, { method: 'DELETE' });
+    },
+    recolhaLGA: async (): Promise<RecolhaLGA> => fetchAPI('/api/plataforma/amostras-lga/'),
+    enviarAmostraLGA: async (dados: { palavra: string; variante: string; video: File; consentimentoVersao: string }) => {
+      const form = new FormData();
+      form.append('palavra', dados.palavra);
+      form.append('variante', dados.variante);
+      form.append('video', dados.video);
+      form.append('consentimento', 'true');
+      form.append('consentimento_versao', dados.consentimentoVersao);
+      form.append('representante_confirmado', 'true');
+      return fetchAPI<AmostraLGA>('/api/plataforma/amostras-lga/', { method: 'POST', body: form });
+    },
+    apagarAmostraLGA: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/plataforma/amostras-lga/${id}/`, { method: 'DELETE' });
+    },
+    adminAmostrasLGA: async (): Promise<AmostraLGA[]> => fetchAPI('/api/plataforma/admin/amostras-lga/'),
+    reverAmostraLGA: async (id: number, estado: AmostraLGA['estado'], notaRevisao = ''): Promise<AmostraLGA> =>
+      fetchAPI(`/api/plataforma/admin/amostras-lga/${id}/`, {
+        method: 'PATCH', body: JSON.stringify({ estado, notaRevisao }),
+      }),
+    adminFontesDatasetLGA: async (): Promise<FonteDatasetLGA[]> => fetchAPI('/api/plataforma/admin/fontes-dataset-lga/'),
+    reverFonteDatasetLGA: async (id: number, dados: {
+      estado: 'aprovada' | 'rejeitada'; palavra?: string; inicioSegundos?: number | null;
+      fimSegundos?: number | null; notaRevisao?: string;
+    }): Promise<FonteDatasetLGA> => fetchAPI(`/api/plataforma/admin/fontes-dataset-lga/${id}/`, {
+      method: 'PATCH', body: JSON.stringify(dados),
+    }),
   },
 
   admin: {
@@ -2310,6 +2588,10 @@ export const api = {
   },
   apagarRecursoCurso: async (cursoId: string | number, recursoId: number): Promise<void> => {
     await fetchAPI(`/api/cursos/${cursoId}/recursos/${recursoId}/`, { method: 'DELETE' });
+  },
+  professoresSugeridos: async (): Promise<ProfessorSugerido[]> => {
+    const lista = await fetchAPI<ProfessorSugerido[]>('/api/professores/sugeridos/');
+    return lista.map((p) => ({ ...p, foto: mediaUrl(p.foto) }));
   },
   seguirProfessor: async (professorId: string | number) => {
     return await fetchAPI<{ seguindo: boolean; seguidores: number }>(

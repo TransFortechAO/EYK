@@ -95,6 +95,14 @@ export default function PoliticaPrivacidadePage() {
             identificáveis. Por isso, os utilizadores devem evitar publicar dados pessoais de terceiros sem
             autorização adequada.
           </p>
+          <p>
+            Um professor pode autorizar separadamente a utilização de um vídeo ou curso público para investigação e
+            desenvolvimento de ferramentas de reconhecimento de Língua Gestual Angolana. O sistema só sugere conteúdos
+            autorizados, alojados na EYK e com sinais de relevância para LGA; uma pessoa autorizada revê o vídeo e
+            identifica os gestos e segmentos antes de os incluir no conjunto de dados. Conteúdos externos, rascunhos,
+            conteúdos ocultos e conteúdos sem essa autorização não são selecionados. A autorização pode ser retirada
+            nas definições do vídeo ou curso.
+          </p>
         </SubSecao>
         <SubSecao titulo="3.5. Dados técnicos e de segurança">
           <Lista

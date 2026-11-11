@@ -53,6 +53,9 @@ class Badge(models.Model):
     descricao = models.CharField(max_length=255)
     icone = models.CharField(max_length=50, help_text='Nome do ícone lucide-react (ex: "Flame").')
     ordem = models.PositiveIntegerField(default=0)
+    # Quem a pode ganhar: as de professor nunca aparecem a um aluno, nem as de aluno a um professor.
+    PUBLICOS = [('todos', 'Todos'), ('aluno', 'Alunos'), ('professor', 'Professores')]
+    publico = models.CharField(max_length=10, choices=PUBLICOS, default='todos')
 
     class Meta:
         ordering = ['ordem']

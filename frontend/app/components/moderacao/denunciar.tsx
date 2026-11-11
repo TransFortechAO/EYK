@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Ban, Flag, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -223,6 +223,7 @@ export function MenuModeracao({
   autorNome,
   onBloqueado,
   className,
+  itens,
 }: {
   tipo: TipoConteudoDenuncia;
   id: number | string;
@@ -230,11 +231,16 @@ export function MenuModeracao({
   autorNome: string;
   onBloqueado?: (userId: number) => void;
   className?: string;
+  /** Itens que aparecem primeiro (ex: Salvar), também no conteúdo do próprio autor. */
+  itens?: ReactNode;
 }) {
   const { user } = useAuth();
   const bloquear = useBloquear();
   const [denunciar, setDenunciar] = useState(false);
-  if (!user || autorId === user.id) return null;
+  if (!user) return null;
+  // Ninguém se denuncia nem se bloqueia a si próprio; o resto do menu fica.
+  const deOutro = autorId !== user.id;
+  if (!deOutro && !itens) return null;
 
   return (
     <>
@@ -245,12 +251,15 @@ export function MenuModeracao({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onSelect={() => setDenunciar(true)} className="gap-2">
-            <Flag className="h-4 w-4" /> Denunciar
-          </DropdownMenuItem>
-          {autorId != null && (
+          {itens}
+          {deOutro && (
+            <DropdownMenuItem onSelect={() => setDenunciar(true)} className="gap-2">
+              <Flag className="h-4 w-4" /> Denunciar
+            </DropdownMenuItem>
+          )}
+          {deOutro && autorId != null && (
             <DropdownMenuItem
-              className="gap-2 text-red-500 focus:text-red-500"
+              className="gap-2 text-destructive focus:text-destructive"
               onSelect={() => {
                 void bloquear(autorId, autorNome).then((bloqueado) => {
                   if (bloqueado) onBloqueado?.(autorId);

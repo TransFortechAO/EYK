@@ -9,8 +9,8 @@ from rest_framework.response import Response
 
 from apps.accounts.models import User
 
-from .models import AlunoBadge, Badge, Carteira, Ofensiva, TransacaoMoeda
-from .services import nivel_info, progresso_badges, verificar_badges
+from .models import AlunoBadge, Carteira, Ofensiva, TransacaoMoeda
+from .services import badges_de, nivel_info, progresso_badges, verificar_badges
 
 MOTIVO_LABEL = {
     'curso_concluido': 'Curso concluído',
@@ -107,9 +107,7 @@ def leaderboard_list(request):
     ).annotate(
         _coins=Subquery(carteira_saldo, output_field=IntegerField()),
         _streak=Subquery(ofensiva_dias, output_field=IntegerField()),
-    ).select_related('professor', 'aluno').order_by(
-        F('_coins').desc(nulls_last=True), F('_streak').desc(nulls_last=True),
-    )[:20]
+    ).order_by(F('_coins').desc(nulls_last=True), F('_streak').desc(nulls_last=True))[:20]
 
     resultado = []
     for idx, u in enumerate(users, start=1):
@@ -120,7 +118,6 @@ def leaderboard_list(request):
             'userId': u.id,
             'name': _get_name(u),
             'initials': _get_initials(u),
-            'foto': _get_photo(u),
             'coins': coins,
             'streak': streak,
             'isMe': u.id == request.user.id,
@@ -136,12 +133,8 @@ def badges_list(request):
     progresso = progresso_badges(user)
     desbloqueados = set(AlunoBadge.objects.filter(utilizador=user).values_list('badge__slug', flat=True))
 
-    badges = Badge.objects.all()
-    if not user.is_teacher:
-        badges = badges.exclude(slug__in=('professor-popular', 'professor-influente', 'mentor'))
-
     resultado = []
-    for badge in badges.order_by('ordem'):
+    for badge in badges_de(user).order_by('ordem'):
         info = progresso.get(badge.slug, {'progresso': 0})
         earned = badge.slug in desbloqueados
         resultado.append({

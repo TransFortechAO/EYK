@@ -287,6 +287,17 @@ class TestCursoInscrever:
         response = client.post(reverse("curso-inscrever", args=[curso.id]))
         assert response.status_code == 403
 
+    def test_professor_que_tambem_e_aluno_nao_se_inscreve_no_proprio_curso(self, client, professor_user, professor):
+        # Quem se registou como aluno e depois passou a professor tem os dois perfis.
+        from apps.alunos.models import Aluno
+
+        Aluno.objects.get_or_create(profile=professor_user)
+        curso = Curso.objects.create(professor=professor, titulo="C", descricao="d")
+        client.force_login(professor_user)
+        response = client.post(reverse("curso-inscrever", args=[curso.id]))
+        assert response.status_code == 403
+        assert not Inscricao.objects.filter(curso=curso).exists()
+
     def test_curso_inexistente_404(self, client, aluno_user):
         client.force_login(aluno_user)
         response = client.post(reverse("curso-inscrever", args=[999999]))

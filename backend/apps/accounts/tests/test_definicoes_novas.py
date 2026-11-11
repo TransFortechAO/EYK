@@ -200,7 +200,7 @@ class TestEmailsDeNotificacao:
         url = reverse('api-comentario-list', args=[post.id])
 
         _post(client, url, {'conteudo': 'Muito bom!'})
-        assert Notificacao.objects.filter(utilizador=maria, tipo='comunidade', link=f'/comunidade?post={post.id}').exists()
+        assert Notificacao.objects.filter(utilizador=maria, tipo='comunidade', link=f'/inicio?post={post.id}').exists()
         assert len(mail.outbox) == 1 and mail.outbox[0].to == ['maria@example.com']
 
         _post(client, url, {'conteudo': 'Outro comentário'})

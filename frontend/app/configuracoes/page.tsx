@@ -335,28 +335,29 @@ function Configuracoes() {
       <PageHeader title="Configurações" description="Personaliza a tua experiência na plataforma EYK." />
 
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="-mx-1 overflow-x-auto px-1 pb-1">
-          <TabsList className="bg-surface w-max">
-            <TabsTrigger value="perfil" className="gap-2">
-              <User className="h-4 w-4" /> Perfil
-            </TabsTrigger>
-            <TabsTrigger value="notificacoes" className="gap-2">
-              <Bell className="h-4 w-4" /> Notificações
-            </TabsTrigger>
-            <TabsTrigger value="reproducao" className="gap-2">
-              <PlayCircle className="h-4 w-4" /> Reprodução
-            </TabsTrigger>
-            <TabsTrigger value="aparencia" className="gap-2">
-              <Palette className="h-4 w-4" /> Aparência e acessibilidade
-            </TabsTrigger>
-            <TabsTrigger value="privacidade" className="gap-2">
-              <Lock className="h-4 w-4" /> Privacidade
-            </TabsTrigger>
-            <TabsTrigger value="seguranca" className="gap-2">
-              <Shield className="h-4 w-4" /> Segurança
-            </TabsTrigger>
-          </TabsList>
-        </div>
+        {/* Os separadores ajustam-se ao ecrã: 3 por linha no telemóvel, 6 numa linha a partir do tablet. */}
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-surface p-1 sm:grid-cols-6">
+          <TabsTrigger value="perfil" className="flex-col gap-1 px-1 py-2 text-xs sm:text-sm lg:flex-row lg:gap-2">
+            <User className="h-4 w-4" /> Perfil
+          </TabsTrigger>
+          <TabsTrigger value="notificacoes" className="flex-col gap-1 px-1 py-2 text-xs sm:text-sm lg:flex-row lg:gap-2">
+            <Bell className="h-4 w-4" /> Notificações
+          </TabsTrigger>
+          <TabsTrigger value="reproducao" className="flex-col gap-1 px-1 py-2 text-xs sm:text-sm lg:flex-row lg:gap-2">
+            <PlayCircle className="h-4 w-4" /> Reprodução
+          </TabsTrigger>
+          <TabsTrigger value="aparencia" className="flex-col gap-1 px-1 py-2 text-xs sm:text-sm lg:flex-row lg:gap-2">
+            <Palette className="h-4 w-4" />
+            <span className="xl:hidden">Aparência</span>
+            <span className="hidden xl:inline">Aparência e acessibilidade</span>
+          </TabsTrigger>
+          <TabsTrigger value="privacidade" className="flex-col gap-1 px-1 py-2 text-xs sm:text-sm lg:flex-row lg:gap-2">
+            <Lock className="h-4 w-4" /> Privacidade
+          </TabsTrigger>
+          <TabsTrigger value="seguranca" className="flex-col gap-1 px-1 py-2 text-xs sm:text-sm lg:flex-row lg:gap-2">
+            <Shield className="h-4 w-4" /> Segurança
+          </TabsTrigger>
+        </TabsList>
 
         <div className="mt-6">
           {/* ═══════════════ PERFIL ═══════════════ */}

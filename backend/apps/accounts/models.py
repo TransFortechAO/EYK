@@ -95,7 +95,7 @@ class Notificacao(models.Model):
     utilizador = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificacoes')
     tipo = models.CharField(max_length=20, choices=TIPOS, default='novidade')
     mensagem = models.TextField()
-    # Caminho do frontend a abrir ao clicar (ex: "/comunidade?post=3").
+    # Caminho do frontend a abrir ao clicar (ex: "/inicio?post=3").
     link = models.CharField(max_length=255, blank=True)
     lida = models.BooleanField(default=False)
     criado_em = models.DateTimeField(auto_now_add=True)

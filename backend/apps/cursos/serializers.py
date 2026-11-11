@@ -47,7 +47,7 @@ class CursoVideoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail', 'ordem',
             'duracao_segundos', 'total_likes', 'assistido', 'recursos',
-            'posicao_segundos', 'posicao_atualizada_em', 'tem_legenda',
+            'posicao_segundos', 'posicao_atualizada_em', 'tem_legenda', 'editado_em',
         ]
 
     def get_tem_legenda(self, obj):
@@ -114,6 +114,15 @@ class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Curso
         fields = '__all__'
+
+    def to_representation(self, instance):
+        dados = super().to_representation(instance)
+        # A autorização para IA é visível ao professor no painel, não aos alunos
+        # nem à API pública do catálogo de cursos.
+        dados.pop('uso_ia_lga', None)
+        dados.pop('uso_ia_lga_em', None)
+        dados.pop('uso_ia_lga_versao', None)
+        return dados
 
     def get_media_avaliacoes(self, obj):
         # `.all()` reaproveita o prefetch_related('avaliacoes') da listagem.

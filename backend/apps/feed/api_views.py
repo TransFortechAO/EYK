@@ -14,6 +14,8 @@ from .models import Comentario, Post, ReacaoComentario, ReacaoPost
 from .serializers import ComentarioSerializer, PostSerializer
 
 MOEDAS_POR_POST = 2
+TAMANHO_FEED = 50
+TAMANHO_MAX_IMAGEM_POST = 5 * 1024 * 1024  # fotos nas publicações da comunidade
 
 
 def _contexto(request):
@@ -39,7 +41,7 @@ def _notificar_comentario(request, post, comentario, parent):
     original (resposta) — nunca a própria pessoa nem quem a bloqueou."""
     autor = request.user
     nome = autor.get_display_name() or autor.username
-    link = f'/comunidade?post={post.id}'
+    link = f'/inicio?post={post.id}'
     avisados = {autor.id}
     if parent and parent.autor_id not in avisados and not estao_bloqueados(autor, parent.autor):
         notificar(
@@ -58,17 +60,23 @@ def _notificar_comentario(request, post, comentario, parent):
 @permission_classes([permissions.IsAuthenticated])
 def post_list(request):
     if request.method == 'POST':
-        conteudo = request.data.get('conteudo', '').strip()
-        if not conteudo:
+        conteudo = (request.data.get('conteudo') or '').strip()
+        imagem = request.FILES.get('imagem')
+        if not conteudo and not imagem:
             return Response(
-                {'detail': 'O conteúdo do post é obrigatório.'},
+                {'detail': 'Escreve alguma coisa ou junta uma foto.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        if imagem:
+            if not (imagem.content_type or '').startswith('image/'):
+                return Response({'detail': 'Só podes juntar imagens.'}, status=status.HTTP_400_BAD_REQUEST)
+            if imagem.size > TAMANHO_MAX_IMAGEM_POST:
+                return Response({'detail': 'A imagem pode ter no máximo 5MB.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             termos = verificar_publicacao(request.user, conteudo, 'post')
         except ConteudoRecusado as erro:
             return Response({'detail': erro.mensagem}, status=erro.status)
-        post = Post.objects.create(autor=request.user, conteudo=conteudo)
+        post = Post.objects.create(autor=request.user, conteudo=conteudo, imagem=imagem)
         sinalizar_se_necessario('post', post, termos)
         # Recompensa a participação na comunidade — mesma mecânica de
         # carteira/XP usada nas outras ações gamificadas da plataforma.
@@ -77,9 +85,118 @@ def post_list(request):
         serializer = PostSerializer(post, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    posts = _visiveis(Post.objects.select_related('autor'), request).order_by('-criado_em')[:50]
+    # Feed aleatório entre todas as publicações, antigas e recentes, para quem entra
+    # não sentir que perdeu nada. `?post=ID` (link partilhado, notificação) vem primeiro.
+    visiveis = _visiveis(Post.objects.select_related('autor'), request)
+    posts = list(visiveis.order_by('?')[:TAMANHO_FEED])
+    destaque = request.query_params.get('post', '')
+    if destaque.isdigit():
+        alvo = visiveis.filter(pk=destaque).first()
+        if alvo:
+            posts = [alvo, *[p for p in posts if p.pk != alvo.pk]]
     serializer = PostSerializer(posts, many=True, context=_contexto(request))
     return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def post_repostar(request, post_id):
+    """Reposta a publicação de alguém na comunidade, com um comentário opcional.
+    Aponta sempre para a publicação original (repostar um repost reposta o original)."""
+    alvo = get_object_or_404(_visiveis(Post.objects.select_related('autor', 'repost_de'), request), pk=post_id)
+    original = alvo.repost_de or alvo
+    if original.oculto or estao_bloqueados(request.user, original.autor):
+        return Response({'detail': 'Esta publicação não pode ser repostada.'}, status=status.HTTP_400_BAD_REQUEST)
+    conteudo = (request.data.get('conteudo') or '').strip()
+    if not conteudo and Post.objects.filter(autor=request.user, repost_de=original, conteudo='').exists():
+        return Response({'detail': 'Já repostaste esta publicação.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        termos = verificar_publicacao(request.user, conteudo, 'post')
+    except ConteudoRecusado as erro:
+        return Response({'detail': erro.mensagem}, status=erro.status)
+    post = Post.objects.create(autor=request.user, conteudo=conteudo, repost_de=original)
+    if conteudo:
+        sinalizar_se_necessario('post', post, termos)
+    if original.autor_id != request.user.id:
+        nome = request.user.get_display_name() or request.user.username
+        notificar(
+            original.autor, 'comunidade', f'{nome} repostou a tua publicação: "{_resumo(original.conteudo)}"',
+            link=f'/inicio?post={post.id}',
+        )
+    return Response(PostSerializer(post, context=_contexto(request)).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def partilha_publica(request, tipo, obj_id):
+    """Dados mínimos para a pré-visualização de um link partilhado noutras redes
+    (título, excerto, autor e capa). Público — os robôs das redes não têm sessão —,
+    por isso só devolve o que é preciso e nada do que está oculto."""
+    if tipo == 'post':
+        post = get_object_or_404(
+            Post.objects.select_related('autor', 'repost_de__autor'), pk=obj_id, oculto=False, autor__is_active=True,
+        )
+        nome = post.autor.get_display_name() or post.autor.username
+        # Num repost entram a foto e a legenda da publicação original.
+        original = post.repost_de if post.repost_de and not post.repost_de.oculto else None
+        texto = ' — '.join(t for t in (post.conteudo, original.conteudo if original else '') if t)
+        imagem = post.imagem or (original.imagem if original else None)
+        return Response({
+            'tipo': 'post',
+            'titulo': f'{nome} na comunidade EYK',
+            'descricao': _resumo(texto, 220),
+            'autor': nome,
+            'imagem': imagem.url if imagem else None,
+        })
+    if tipo == 'video':
+        from apps.professores.models import Video
+
+        video = get_object_or_404(Video.objects.select_related('professor'), pk=obj_id, ativo=True, oculto=False)
+        return Response({
+            'tipo': 'video',
+            'titulo': video.titulo,
+            'descricao': _resumo(video.descricao, 220),
+            'autor': video.professor.nome_publico,
+            'imagem': video.thumbnail.url if video.thumbnail else None,
+        })
+    if tipo == 'curso':
+        from apps.cursos.models import Curso
+
+        curso = get_object_or_404(
+            Curso.objects.select_related('professor', 'categoria'), pk=obj_id, ativo=True, oculto=False,
+        )
+        return Response({
+            'tipo': 'curso',
+            'titulo': curso.titulo,
+            'descricao': _resumo(curso.descricao, 220),
+            'autor': curso.professor.nome_publico,
+            'categoria': curso.categoria.nome if curso.categoria_id else None,
+            'imagem': curso.thumbnail.url if curso.thumbnail else None,
+        })
+    return Response({'detail': 'Tipo desconhecido.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def post_detail(request, post_id):
+    """O autor edita o texto da sua publicação; fica marcada como editada."""
+    post = get_object_or_404(Post, pk=post_id)
+    if post.autor_id != request.user.id:
+        return Response({'detail': 'Sem permissão para editar esta publicação.'}, status=status.HTTP_403_FORBIDDEN)
+    conteudo = (request.data.get('conteudo') or '').strip()
+    if not conteudo:
+        return Response({'detail': 'O conteúdo do post é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        # 'bio' = só o filtro de palavras (editar não conta para os limites de frequência).
+        termos = verificar_publicacao(request.user, conteudo, 'bio')
+    except ConteudoRecusado as erro:
+        return Response({'detail': erro.mensagem}, status=erro.status)
+    if conteudo != post.conteudo:
+        post.conteudo = conteudo
+        post.editado_em = timezone.now()
+        post.save(update_fields=['conteudo', 'editado_em'])
+        sinalizar_se_necessario('post', post, termos)
+    return Response(PostSerializer(post, context=_contexto(request)).data)
 
 
 @api_view(['POST'])

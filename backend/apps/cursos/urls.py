@@ -6,12 +6,18 @@ from apps.accounts.api_notificacoes import (
     notificacao_marcar_lida,
     notificacao_nao_lidas,
 )
+from apps.alunos.api_salvos import salvos, salvos_ids
+from apps.cursos.api_inicio import continuar_aprender, recomendados
+from apps.cursos.api_pesquisa import pesquisa
 from apps.feed.api_views import (
     comentario_detail,
     comentario_list,
     comentario_reagir,
+    partilha_publica,
+    post_detail,
     post_list,
     post_react,
+    post_repostar,
 )
 from apps.gamificacao.api_views import (
     badges_list,
@@ -20,6 +26,7 @@ from apps.gamificacao.api_views import (
     leaderboard_list,
     leaderboard_professores_mensal,
 )
+from apps.professores.api_sugestoes import professores_sugeridos
 from apps.professores.api_views import professor_toggle_seguir
 
 from .views import (
@@ -68,13 +75,24 @@ urlpatterns = [
     path('professor/', include('apps.professores.urls_api')),
     path('moderacao/', include('apps.moderacao.urls')),
     path('plataforma/', include('apps.plataforma.urls')),
+    path('instituicoes/', include('apps.instituicoes.urls')),
+    path('professores/sugeridos/', professores_sugeridos, name='api-professores-sugeridos'),
     path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),
+    path('comunidade/posts/<int:post_id>/', post_detail, name='api-post-detail'),
     path('comunidade/posts/<int:post_id>/reagir/', post_react, name='api-post-react'),
+    path('comunidade/posts/<int:post_id>/repostar/', post_repostar, name='api-post-repostar'),
+    path('partilha/<str:tipo>/<int:obj_id>/', partilha_publica, name='api-partilha-publica'),
     path('comunidade/posts/<int:post_id>/comentarios/', comentario_list, name='api-comentario-list'),
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/', comentario_detail, name='api-comentario-detail'),
     path('comunidade/posts/<int:post_id>/comentarios/<int:comentario_id>/reagir/', comentario_reagir, name='api-comentario-reagir'),
+
+    path('pesquisa/', pesquisa, name='pesquisa'),
+    path('inicio/continuar/', continuar_aprender, name='inicio-continuar'),
+    path('inicio/recomendados/', recomendados, name='inicio-recomendados'),
+    path('salvos/', salvos, name='salvos'),
+    path('salvos/ids/', salvos_ids, name='salvos-ids'),
 
     path('notificacoes/', notificacao_list, name='notificacao-list'),
     path('notificacoes/nao-lidas/', notificacao_nao_lidas, name='notificacao-nao-lidas'),

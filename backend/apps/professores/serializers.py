@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import serializers
 
@@ -51,6 +52,7 @@ class ProfessorCursoVideoSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'titulo', 'arquivo', 'url_externa', 'thumbnail', 'ordem', 'duracao_segundos', 'recursos',
             'oculto', 'tem_legenda',
+            'uso_ia_lga',
         ]
         read_only_fields = fields
 
@@ -75,13 +77,13 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
         model = Curso
         fields = [
             'id', 'titulo', 'descricao', 'categoria', 'categoria_nome', 'preco',
-            'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em',
+            'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em', 'editado_em',
             'total_inscritos', 'total_visualizacoes', 'conclusao_media', 'duracao_total_segundos',
-            'videos', 'recursos', 'oculto',
+            'videos', 'recursos', 'oculto', 'uso_ia_lga', 'uso_ia_lga_em', 'uso_ia_lga_versao',
         ]
         read_only_fields = [
-            'id', 'criado_em', 'atualizado_em', 'total_inscritos', 'total_visualizacoes',
-            'conclusao_media', 'duracao_total_segundos', 'videos', 'recursos', 'oculto',
+            'id', 'criado_em', 'atualizado_em', 'editado_em', 'total_inscritos', 'total_visualizacoes',
+            'conclusao_media', 'duracao_total_segundos', 'videos', 'recursos', 'oculto', 'uso_ia_lga_em', 'uso_ia_lga_versao',
         ]
 
     def get_total_inscritos(self, obj):
@@ -107,6 +109,9 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
         if categoria_nome:
             categoria, _ = Categoria.objects.get_or_create(nome=categoria_nome)
             validated_data['categoria'] = categoria
+        if validated_data.get('uso_ia_lga'):
+            validated_data['uso_ia_lga_em'] = timezone.now()
+            validated_data['uso_ia_lga_versao'] = 'conteudo-ia-lga-v1'
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -118,6 +123,13 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
                 validated_data['categoria'] = categoria
             else:
                 validated_data['categoria'] = None
+        if 'uso_ia_lga' in validated_data:
+            if validated_data['uso_ia_lga']:
+                validated_data['uso_ia_lga_em'] = timezone.now()
+                validated_data['uso_ia_lga_versao'] = 'conteudo-ia-lga-v1'
+            else:
+                validated_data['uso_ia_lga_em'] = None
+                validated_data['uso_ia_lga_versao'] = ''
         return super().update(instance, validated_data)
 
 
@@ -132,14 +144,14 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
         model = Video
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail',
-            'criado_em', 'atualizado_em', 'ativo', 'ordem', 'duracao_segundos',
+            'criado_em', 'atualizado_em', 'editado_em', 'ativo', 'ordem', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
-            'oculto', 'tem_legenda',
+            'oculto', 'tem_legenda', 'uso_ia_lga', 'uso_ia_lga_em', 'uso_ia_lga_versao',
         ]
         read_only_fields = [
-            'id', 'criado_em', 'atualizado_em', 'duracao_segundos',
+            'id', 'criado_em', 'atualizado_em', 'editado_em', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
-            'oculto', 'tem_legenda',
+            'oculto', 'tem_legenda', 'uso_ia_lga_em', 'uso_ia_lga_versao',
         ]
 
     def get_tem_legenda(self, obj):
@@ -166,6 +178,22 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
         if not arquivo and not url_externa:
             raise serializers.ValidationError('Indica um ficheiro de vídeo ou um link externo.')
         return attrs
+
+    def create(self, validated_data):
+        if validated_data.get('uso_ia_lga'):
+            validated_data['uso_ia_lga_em'] = timezone.now()
+            validated_data['uso_ia_lga_versao'] = 'conteudo-ia-lga-v1'
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if 'uso_ia_lga' in validated_data:
+            if validated_data['uso_ia_lga']:
+                validated_data['uso_ia_lga_em'] = timezone.now()
+                validated_data['uso_ia_lga_versao'] = 'conteudo-ia-lga-v1'
+            else:
+                validated_data['uso_ia_lga_em'] = None
+                validated_data['uso_ia_lga_versao'] = ''
+        return super().update(instance, validated_data)
 
 
 class ReacaoVideoSerializer(serializers.ModelSerializer):

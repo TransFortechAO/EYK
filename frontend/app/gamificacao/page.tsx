@@ -21,18 +21,31 @@ import {
   Gift,
   Check,
   Copy,
+  Eye,
 } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/eyk";
+import { DesafiosEscola } from "@/components/instituicao/escola";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar } from "@/components/ui/avatar";
+import { useSecoesMoveis } from "@/components/ds/secoes-moveis";
 import { cn } from "@/lib/utils";
 import { api, type Badge, type WalletEntry, type GamePanel } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
 import { UserAvatar } from "@/components/UserAvatar";
 
+// Telemóvel/tablet: cada tipo de elemento no seu separador (no computador vê-se tudo).
+const SEPARADORES = [
+  { id: "resumo", rotulo: "Resumo" },
+  { id: "conquistas", rotulo: "Conquistas" },
+  { id: "moedas", rotulo: "Moedas" },
+] as const;
+
 const badgeIcons: Record<string, typeof Sparkles> = {
+  // Conquistas de professor.
+  Eye,
+  TrendingUp,
   PlayCircle,
   Video,
   Flame,
@@ -53,6 +66,8 @@ export default function GamificacaoPage() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [wallet, setWallet] = useState<WalletEntry[]>([]);
   const [linkCopiado, setLinkCopiado] = useState(false);
+  // Esconde no telemóvel/tablet o que não é do separador escolhido (Design System).
+  const { so, separadores } = useSecoesMoveis(SEPARADORES);
 
   const copiarLinkConvite = async () => {
     if (!user?.username) return;
@@ -84,7 +99,7 @@ export default function GamificacaoPage() {
 
   const p = panel || {
     coins: 0, xp: 0, streak: 0, streakRecord: 0, level: 1,
-    levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante",
+    levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante", foto: null,
   };
   const xpNeeded = Math.max(0, p.nextLevelXp - p.xp);
 
@@ -92,25 +107,27 @@ export default function GamificacaoPage() {
     <div className="space-y-8">
       <PageHeader title="Gamificação" description="Conquistas, moedas e progresso — acompanha a tua jornada." />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {separadores}
+
+      <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-5", so("resumo"))}>
         <StatCard icon={Coins} label="Moedas EYK" value={p.coins} tone="gold" />
         <StatCard icon={Zap} label="XP total" value={p.xp} />
-        <StatCard icon={Flame} label="Meus dias de ofensiva" value={`${p.streak} dias`} tone="streak" />
-        <StatCard icon={Target} label="Recorde de dias de ofensiva" value={`${p.streakRecord} dias`} />
+        <StatCard icon={Flame} label="Streak atual" value={`${p.streak} dias`} tone="streak" />
+        <StatCard icon={Target} label="Recorde streak" value={`${p.streakRecord} dias`} />
         <StatCard icon={TrendingUp} label="Nível atual" value={`Nível ${p.level}`} tone="success" />
       </div>
 
-      <Card className="p-6 shadow-soft">
+      <Card className={cn("p-6 shadow-soft", so("resumo"))}>
         <div className="flex flex-col sm:flex-row sm:items-end gap-6">
           <Avatar className="h-20 w-20 shrink-0 shadow-md">
             <UserAvatar
               noLink
+              size={80}
               className="text-2xl bg-gradient-gold text-primary-foreground font-serif font-bold"
               name={p.name}
               initials={p.initials}
-              foto={user?.foto ?? p.foto}
               userId={user?.id}
-              size={80}
+              foto={user?.foto ?? p.foto}
             />
           </Avatar>
           <div className="flex-1 space-y-2">
@@ -137,7 +154,12 @@ export default function GamificacaoPage() {
         </div>
       </Card>
 
-      <section className="space-y-4">
+      {/* Com escola parceira: desafios de prática de LGA da escola e das turmas. */}
+      <div className={so("resumo")}>
+        <DesafiosEscola />
+      </div>
+
+      <section className={cn("space-y-4", so("conquistas"))}>
         <h2 className="font-serif text-xl font-semibold flex items-center gap-2">
           <Award className="h-5 w-5 text-primary" />
           Conquistas
@@ -181,7 +203,7 @@ export default function GamificacaoPage() {
         </div>
       </section>
 
-      <Card className="p-6 shadow-soft">
+      <Card className={cn("p-6 shadow-soft", so("moedas"))}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-gold/15 text-primary">
@@ -205,7 +227,7 @@ export default function GamificacaoPage() {
         </div>
       </Card>
 
-      <section className="space-y-4">
+      <section className={cn("space-y-4", so("moedas"))}>
         <h2 className="font-serif text-xl font-semibold flex items-center gap-2">
           <History className="h-5 w-5 text-primary" />
           Histórico de moedas

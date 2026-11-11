@@ -72,8 +72,27 @@ export function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
+  const ctx = useSidebar();
+  const { state, isMobile, openMobile, setOpenMobile } = ctx;
   const collapsed = collapsible === "icon" && state === "collapsed";
+
+  // Recolhida: abre ao passar o cursor (ou ao navegar com o teclado), empurrando
+  // o conteúdo para não ficar por cima dele; fecha ao sair.
+  const [espreitar, setEspreitar] = React.useState(false);
+  const atrasoRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abrir = () => {
+    if (!collapsed) return;
+    if (atrasoRef.current) clearTimeout(atrasoRef.current);
+    atrasoRef.current = setTimeout(() => setEspreitar(true), 120);
+  };
+  const fechar = () => {
+    if (atrasoRef.current) clearTimeout(atrasoRef.current);
+    setEspreitar(false);
+  };
+  React.useEffect(() => {
+    if (!collapsed) setEspreitar(false);
+  }, [collapsed]);
+  const estreita = collapsed && !espreitar;
 
   if (isMobile) {
     return (
@@ -92,28 +111,48 @@ export function Sidebar({
     );
   }
 
+
   return (
-    <aside
-      data-state={state}
-      data-variant={variant}
-      data-collapsible={collapsible}
+    // Ocupa a largura que a barra tem no momento, por isso o conteúdo acompanha-a.
+    <div
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col max-lg:hidden text-sidebar-foreground transition-[width] duration-200 ease-linear",
-        collapsed ? "w-[3.5rem]" : "w-64",
+        "shrink-0 movel:hidden transition-[width] duration-200 ease-linear",
         variant === "floating"
-          ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar shadow-soft"
-          : "border-r border-sidebar-border bg-sidebar",
-        className,
+          ? estreita ? "w-[5.5rem]" : "w-[17rem]"
+          : estreita ? "w-[4.5rem]" : "w-64",
       )}
-      {...props}
     >
-      <div className="flex h-full w-full flex-col overflow-hidden">{children}</div>
-    </aside>
+      <aside
+        data-state={estreita ? "collapsed" : "expanded"}
+        data-variant={variant}
+        data-collapsible={collapsible}
+        onMouseEnter={abrir}
+        onMouseLeave={fechar}
+        onFocusCapture={abrir}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) fechar();
+        }}
+        className={cn(
+          "sticky top-0 z-40 flex h-screen flex-col text-sidebar-foreground transition-[width] duration-200 ease-linear",
+          estreita ? "w-[4.5rem]" : "w-64",
+          variant === "floating"
+            ? "m-2 h-[calc(100vh-1rem)] rounded-2xl border border-sidebar-border bg-sidebar"
+            : "border-r border-sidebar-border bg-sidebar",
+          className,
+        )}
+        {...props}
+      >
+        <SidebarContext.Provider value={{ ...ctx, state: estreita ? "collapsed" : "expanded" }}>
+          <div className="flex h-full w-full flex-col overflow-hidden">{children}</div>
+        </SidebarContext.Provider>
+      </aside>
+    </div>
   );
 }
 
 export function SidebarTrigger({ className, ...props }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, state, isMobile } = useSidebar();
+  if (!isMobile && state === "collapsed") return null;
   return (
     <Button
       variant="ghost"
@@ -137,9 +176,15 @@ export function SidebarFooter({ className, ...props }: React.ComponentProps<"div
 }
 
 export function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
+  const { state, isMobile } = useSidebar();
   return (
     <div
-      className={cn("flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-2", className)}
+      className={cn(
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-2",
+        // Recolhida não há espaço para a barra de deslocamento: tapava os ícones.
+        !isMobile && state === "collapsed" && "[scrollbar-width:none]",
+        className,
+      )}
       {...props}
     />
   );
@@ -151,6 +196,22 @@ export function SidebarSeparator({ className, ...props }: React.ComponentProps<"
 
 export function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("relative flex w-full min-w-0 flex-col p-2", className)} {...props} />;
+}
+
+/** Título de um grupo (ex: "Professor"). Esconde-se com a barra recolhida. */
+export function SidebarGroupLabel({ className, ...props }: React.ComponentProps<"p">) {
+  const { state, isMobile } = useSidebar();
+  return (
+    <p
+      className={cn(
+        "whitespace-nowrap px-2 pb-1.5 text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/60",
+        // Mantém o espaço, para os ícones não subirem ao recolher.
+        !isMobile && state === "collapsed" && "invisible",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function SidebarGroupContent({ className, ...props }: React.ComponentProps<"div">) {
@@ -182,7 +243,10 @@ export const SidebarMenuButton = React.forwardRef<
       data-active={isActive}
       title={!isMobile && state === "collapsed" ? tooltip : undefined}
       className={cn(
-        "flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm text-sidebar-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex w-full items-center overflow-hidden whitespace-nowrap rounded-lg text-left text-sidebar-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring [&>svg]:shrink-0",
+        // Igual aberta ou recolhida: o ícone não muda de tamanho nem de lugar; com a
+        // barra recolhida o texto fica simplesmente fora da largura do botão.
+        "h-11 gap-3 px-2 text-[0.9375rem] [&>svg]:size-[1.375rem]",
         className,
       )}
       {...props}

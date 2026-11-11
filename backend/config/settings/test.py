@@ -33,3 +33,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 
 # Media files for tests
 MEDIA_ROOT = '/tmp/test_media/'
+PRIVADO_ROOT = '/tmp/test_privado/'
+PRIVADO_BUCKET = ''
+PRIVADO_ACCESS_KEY_ID = ''
+PRIVADO_SECRET_ACCESS_KEY = ''

@@ -35,6 +35,34 @@ from .serializers import (
 User = get_user_model()
 
 
+def cursos_visiveis(utilizador):
+    # Pré-carrega tudo o que o CourseSerializer precisa (vídeos + os seus
+    # gostos/visualizações, inscrições, engajamento) numa única ronda de
+    # queries, em vez de uma query extra por curso — e outra por vídeo
+    # dentro de cada curso — como acontecia antes (bug de N+1 clássico,
+    # o maior responsável por listagens lentas desta API).
+    videos_ativos = Video.objects.filter(ativo=True, oculto=False).order_by('ordem', 'criado_em').prefetch_related(
+        'reacoes', 'visualizacoes', 'recursos',
+        # Só as posições do próprio utilizador ("retomar onde ficaste").
+        Prefetch(
+            'posicoes',
+            queryset=PosicaoVisualizacao.objects.filter(utilizador=utilizador),
+            to_attr='minhas_posicoes',
+        ),
+    )
+    return (
+        Curso.objects.filter(ativo=True, oculto=False)
+        .select_related('professor', 'categoria')
+        .prefetch_related(
+            Prefetch('videos', queryset=videos_ativos, to_attr='videos_ativos'),
+            'inscricoes',
+            'engajamentos',
+            'recursos',
+            Prefetch('avaliacoes', queryset=AvaliacaoCurso.objects.filter(oculto=False)),
+        )
+    )
+
+
 class CursoViewSet(viewsets.ModelViewSet):
     """Listagem pública de cursos (só leitura). A criação/edição/remoção dos
     próprios cursos é feita pelo professor através de /api/professor/cursos/,
@@ -44,31 +72,7 @@ class CursoViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'head', 'options']
 
     def get_queryset(self):
-        # Pré-carrega tudo o que o CourseSerializer precisa (vídeos + os seus
-        # gostos/visualizações, inscrições, engajamento) numa única ronda de
-        # queries, em vez de uma query extra por curso — e outra por vídeo
-        # dentro de cada curso — como acontecia antes (bug de N+1 clássico,
-        # o maior responsável por listagens lentas desta API).
-        videos_ativos = Video.objects.filter(ativo=True, oculto=False).order_by('ordem', 'criado_em').prefetch_related(
-            'reacoes', 'visualizacoes', 'recursos',
-            # Só as posições do próprio utilizador ("retomar onde ficaste").
-            Prefetch(
-                'posicoes',
-                queryset=PosicaoVisualizacao.objects.filter(utilizador=self.request.user),
-                to_attr='minhas_posicoes',
-            ),
-        )
-        return (
-            Curso.objects.filter(ativo=True, oculto=False)
-            .select_related('professor', 'categoria')
-            .prefetch_related(
-                Prefetch('videos', queryset=videos_ativos, to_attr='videos_ativos'),
-                'inscricoes',
-                'engajamentos',
-                'recursos',
-                Prefetch('avaliacoes', queryset=AvaliacaoCurso.objects.filter(oculto=False)),
-            )
-        )
+        return cursos_visiveis(self.request.user)
 
 
 @api_view(['GET'])
@@ -377,6 +381,12 @@ def curso_inscrever(request, pk):
         curso = Curso.objects.get(pk=pk, ativo=True, oculto=False)
     except Curso.DoesNotExist:
         return Response({'detail': 'Curso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if curso.professor.user_id == request.user.id:
+        return Response(
+            {'detail': 'Não te podes inscrever no teu próprio curso.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     from apps.alunos.models import Aluno
 

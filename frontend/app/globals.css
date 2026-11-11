@@ -4,6 +4,77 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
+ * Navegação: telemóveis e tablets (ecrãs tácteis até 1366px, incluindo o iPad
+ * deitado) usam o menu de baixo; computadores usam a barra lateral.
+ */
+@custom-variant movel {
+  @media (max-width: 1023.98px) {
+    @slot;
+  }
+  @media (pointer: coarse) and (max-width: 1366px) {
+    @slot;
+  }
+}
+@custom-variant computador {
+  @media (min-width: 1024px) and (pointer: fine), (min-width: 1367px) {
+    @slot;
+  }
+}
+
+/* Player de curso/vídeo ocupa toda a largura disponível em telemóveis e tablets,
+   como o player móvel do YouTube; o conteúdo abaixo mantém o padding da página. */
+.player-youtube-mobile {
+  @media (max-width: 639.98px) {
+    width: calc(100% + 1rem);
+    margin-inline: -0.5rem;
+    border-radius: 0.75rem;
+  }
+
+  @media (min-width: 640px) and (max-width: 767.98px) {
+    width: calc(100% + 2rem);
+    margin-inline: -1rem;
+    border-radius: 0.75rem;
+  }
+
+  @media (min-width: 768px) and (max-width: 1023.98px) {
+    width: calc(100% + 3rem);
+    margin-inline: -1.5rem;
+    border-radius: 0.75rem;
+  }
+
+  @media (pointer: coarse) and (min-width: 1024px) and (max-width: 1366px) {
+    width: calc(100% + 1rem);
+    margin-left: -1.5rem;
+    margin-right: 0.5rem;
+    border-radius: 0.75rem;
+  }
+}
+
+/* Grelha de vídeos em formato de feed, com a mesma pequena margem do player. */
+.videos-youtube-mobile {
+  @media (max-width: 639.98px) {
+    width: calc(100% + 1rem);
+    margin-inline: -0.5rem;
+  }
+
+  @media (min-width: 640px) and (max-width: 767.98px) {
+    width: calc(100% + 2rem);
+    margin-inline: -1rem;
+  }
+
+  @media (min-width: 768px) and (max-width: 1023.98px) {
+    width: calc(100% + 3rem);
+    margin-inline: -1.5rem;
+  }
+
+  @media (pointer: coarse) and (min-width: 1024px) and (max-width: 1366px) {
+    width: calc(100% + 1rem);
+    margin-left: -1.5rem;
+    margin-right: 0.5rem;
+  }
+}
+
+/*
  * EYK Design System — cream + gold, serif titles, sans body.
  * Tokens are semantic and defined in oklch. Never hard-code colors in components.
  */
@@ -39,6 +110,8 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-streak: var(--streak);
   --color-streak-foreground: var(--streak-foreground);
   --color-border: var(--border);
@@ -94,6 +167,8 @@
   --destructive-foreground: oklch(1 0 0);
   --success: oklch(0.62 0.14 155);
   --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.52 0.12 75);
+  --info: oklch(0.48 0.12 235);
   --streak: oklch(0.65 0.2 40);
   --streak-foreground: oklch(1 0 0);
 
@@ -107,13 +182,14 @@
   --chart-4: oklch(0.55 0.14 250);
   --chart-5: oklch(0.7 0.14 320);
 
-  --sidebar: #f4e1bc;
-  --sidebar-foreground: #55432a;
+  /* A barra é como um cartão: a mesma cor e a mesma borda fina. */
+  --sidebar: var(--card);
+  --sidebar-foreground: #4a3b25;
   --sidebar-primary: #b27f1e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ead0a0;
-  --sidebar-accent-foreground: #55432a;
-  --sidebar-border: oklch(0 0 0 / 8%);
+  --sidebar-accent: oklch(0.95 0.025 85);
+  --sidebar-accent-foreground: #4a3b25;
+  --sidebar-border: var(--border);
   --sidebar-ring: #b27f1e;
 
   --gradient-gold: linear-gradient(135deg, oklch(0.68 0.13 78), oklch(0.82 0.14 85));
@@ -144,6 +220,8 @@
   --destructive-foreground: oklch(0.13 0 0);
   --success: oklch(0.72 0.16 155);
   --success-foreground: oklch(0.13 0 0);
+  --warning: oklch(0.8 0.14 80);
+  --info: oklch(0.78 0.11 235);
   --streak: oklch(0.75 0.19 55);
   --streak-foreground: oklch(0.13 0 0);
   --border: oklch(1 0 0 / 10%);
@@ -154,13 +232,13 @@
   --chart-3: oklch(0.75 0.19 55);
   --chart-4: oklch(0.7 0.14 250);
   --chart-5: oklch(0.78 0.16 320);
-  --sidebar: #17130f;
+  --sidebar: var(--card);
   --sidebar-foreground: #f0ece4;
   --sidebar-primary: #e8a80c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #241d17;
+  --sidebar-accent: oklch(0.22 0.01 85);
   --sidebar-accent-foreground: #f0ece4;
-  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-border: var(--border);
   --sidebar-ring: #e8a80c;
   --gradient-gold: linear-gradient(135deg, oklch(0.68 0.13 78), oklch(0.86 0.13 88));
   --gradient-surface: linear-gradient(180deg, oklch(0.17 0 0), oklch(0.13 0 0));
@@ -362,4 +440,44 @@ video::cue {
 body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/* Login e registo acompanham o tema escolhido na página inicial. */
+html:not(.dark) .auth-page .auth-brand-panel {
+  border-color: rgb(24 24 27 / 0.12);
+}
+
+html:not(.dark) .auth-page .auth-brand-overlay {
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.82) 0%,
+    rgb(255 255 255 / 0.76) 40%,
+    rgb(255 255 255 / 0.9) 100%
+  ) !important;
+}
+
+html:not(.dark) .auth-page .auth-brand-panel [class*="text-white"] {
+  color: #292524 !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card {
+  border-color: rgb(24 24 27 / 0.12);
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: 0 24px 60px -32px rgb(0 0 0 / 0.24);
+}
+
+html:not(.dark) .auth-page .auth-form-card [class*="text-white"] {
+  color: #292524 !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card [class*="border-white"] {
+  border-color: rgb(24 24 27 / 0.14) !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card [class*="bg-white/"] {
+  background-color: rgb(24 24 27 / 0.035) !important;
+}
+
+html:not(.dark) .auth-page .auth-form-card input::placeholder {
+  color: #78716c !important;
 }

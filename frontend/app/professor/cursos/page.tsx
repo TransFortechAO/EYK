@@ -2,6 +2,7 @@
 
 import { useLimitesUpload } from "@/hooks/useLimitesUpload";
 import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
+import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -18,7 +19,6 @@ import {
   Film,
   FileText,
   Image as ImageIcon,
-  Search,
   Clock,
   Paperclip,
 } from "lucide-react";
@@ -50,6 +50,7 @@ const EMPTY_FORM: ProfessorCursoPayload = {
   descricao: "",
   categoria_nome: "",
   ativo: true,
+  uso_ia_lga: false,
 };
 
 export default function ProfessorCursosPage() {
@@ -57,7 +58,8 @@ export default function ProfessorCursosPage() {
   const confirm = useConfirm();
   const [cursos, setCursos] = useState<ProfessorCurso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pesquisa, setPesquisa] = useState("");
+  // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
+  const [pesquisa] = usePesquisaPagina();
   const [filtro, setFiltro] = useState<FiltroEstado>("todos");
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<ProfessorCurso | null>(null);
@@ -65,7 +67,6 @@ export default function ProfessorCursosPage() {
   const [videosNovos, setVideosNovos] = useState<File[]>([]);
   const [recursosNovos, setRecursosNovos] = useState<File[]>([]);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  const [apagandoVideoId, setApagandoVideoId] = useState<number | null>(null);
   const [apagandoRecursoId, setApagandoRecursoId] = useState<number | null>(null);
   const [enviandoRecursoAulaId, setEnviandoRecursoAulaId] = useState<number | null>(null);
   const [apagandoRecursoAulaId, setApagandoRecursoAulaId] = useState<number | null>(null);
@@ -100,6 +101,15 @@ export default function ProfessorCursosPage() {
     setModalAberto(true);
   };
 
+  // Ação rápida do Painel (?novo=1): abre logo o formulário de criar.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("novo") !== "1") return;
+    abrirCriar();
+    url.searchParams.delete("novo");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+  }, []);
+
   const abrirEditar = (curso: ProfessorCurso) => {
     setEditando(curso);
     setForm({
@@ -107,6 +117,7 @@ export default function ProfessorCursosPage() {
       descricao: curso.descricao,
       categoria_nome: curso.categoria || "",
       ativo: curso.ativo,
+      uso_ia_lga: curso.uso_ia_lga,
     });
     setVideosNovos([]);
     setRecursosNovos([]);
@@ -138,9 +149,9 @@ export default function ProfessorCursosPage() {
     const ficheiros = Array.from(e.target.files || []);
     e.target.value = "";
     if (ficheiros.length === 0) return;
-    const grande = ficheiros.find((f) => f.size > limites.videoMb * 1024 * 1024);
+    const grande = ficheiros.find((f) => f.size > limites.aulaMb * 1024 * 1024);
     if (grande) {
-      setErro(`"${grande.name}" tem mais de ${limites.videoMb}MB, o máximo por vídeo.`);
+      setErro(`"${grande.name}" tem mais de ${limites.aulaMb}MB, o máximo por aula.`);
       return;
     }
     setVideosNovos((prev) => [...prev, ...ficheiros]);
@@ -194,28 +205,6 @@ export default function ProfessorCursosPage() {
       setErro(err instanceof Error ? err.message : "Erro ao remover o recurso.");
     } finally {
       setApagandoRecursoId(null);
-    }
-  };
-
-  const apagarVideoExistente = async (video: { id: number }) => {
-    if (!editando) return;
-    const confirmado = await confirm({
-      title: "Remover vídeo",
-      description: "O vídeo será removido deste curso. Esta ação não pode ser desfeita.",
-      confirmLabel: "Remover",
-      destructive: true,
-    });
-    if (!confirmado) return;
-    setApagandoVideoId(video.id);
-    try {
-      await api.professor.apagarVideoCurso(editando.id, video.id);
-      const cursoAtualizado = { ...editando, videos: editando.videos.filter((v) => v.id !== video.id) };
-      setEditando(cursoAtualizado);
-      setCursos((prev) => prev.map((c) => (c.id === cursoAtualizado.id ? cursoAtualizado : c)));
-    } catch (err) {
-      setErro(err instanceof Error ? err.message : "Erro ao remover o vídeo.");
-    } finally {
-      setApagandoVideoId(null);
     }
   };
 
@@ -297,7 +286,8 @@ export default function ProfessorCursosPage() {
     setErro(null);
     try {
       if (editando) {
-        await api.professor.atualizarCurso(editando.id, form, videosNovos, recursosNovos);
+        // Ao editar não se enviam vídeos novos: as aulas não se trocam.
+        await api.professor.atualizarCurso(editando.id, form, [], recursosNovos);
       } else {
         await api.professor.criarCurso(form, videosNovos, recursosNovos);
       }
@@ -340,15 +330,7 @@ export default function ProfessorCursosPage() {
 
       {!loading && cursos.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-              placeholder="Pesquisar curso…"
-              className="rounded-full pl-9"
-            />
-          </div>
+          <CampoPesquisaPagina className="relative max-w-sm flex-1 computador:hidden" />
           <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FiltroEstado)}>
             <TabsList>
               <TabsTrigger value="todos">Todos</TabsTrigger>
@@ -537,15 +519,24 @@ export default function ProfessorCursosPage() {
                   disabled={submetendo}
                   className="sr-only"
                 />
-                <button
-                  type="button"
-                  onClick={escolherVideos}
-                  disabled={submetendo}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
-                >
-                  <Upload className="h-4 w-4" />
-                  {editando ? "Adicionar mais vídeos" : "Fazer upload de vídeos (1 ou mais)"}
-                </button>
+                {editando ? (
+                  // Ao editar não se trocam, acrescentam ou apagam aulas (o backend recusa).
+                  <p className="flex items-start gap-2 rounded-lg border border-border/70 bg-surface/60 px-3 py-2 text-xs text-muted-foreground">
+                    <Film className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    As aulas não podem ser trocadas, acrescentadas ou apagadas ao editar. Podes mudar o título, a descrição, a
+                    capa e os recursos, e as legendas e os recursos de cada aula.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={escolherVideos}
+                    disabled={submetendo}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 px-4 py-4 text-sm text-muted-foreground transition hover:border-amber-400/60 hover:text-foreground disabled:opacity-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Fazer upload de vídeos (1 ou mais) · máx. {limites.aulaMb} MB por aula
+                  </button>
+                )}
 
                 {editando && editando.videos.length > 0 && (
                   <>
@@ -579,15 +570,6 @@ export default function ProfessorCursosPage() {
                                   {formatarDuracaoCurta(video.duracao_segundos)}
                                 </span>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => void apagarVideoExistente(video)}
-                                disabled={apagandoVideoId === video.id}
-                                className="text-red-400 hover:text-red-300 disabled:opacity-50"
-                                aria-label={`Remover ${video.titulo}`}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
                             </span>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 pl-5">
@@ -741,6 +723,16 @@ export default function ProfessorCursosPage() {
                     ))}
                   </ul>
                 )}
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <Switch aria-label="Autorizar seleção deste curso para investigação de IA LGA" checked={Boolean(form.uso_ia_lga)} onCheckedChange={(v) => setForm({ ...form, uso_ia_lga: v })} />
+                  <div>
+                    <p className="text-sm font-medium">Autorizar seleção de aulas para investigação de IA LGA</p>
+                    <p className="text-xs text-muted-foreground">Ao ativar, autorizas a seleção de partes das aulas para investigação de IA LGA e confirmas ter os direitos e a autorização das pessoas filmadas. Só aulas alojadas na EYK e relevantes são sugeridas; a equipa revê e identifica os segmentos antes de os incluir no dataset. Podes retirar esta autorização ao desativar a opção.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">

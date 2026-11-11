@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Eye, Calendar, Clock } from "lucide-react";
 import { ShareButton } from "@/components/eyk";
+import { BotaoSalvar } from "@/components/ds/botao-salvar";
+import { PreviaConteudo } from "@/components/partilha/modal-partilha";
+import { RecursosAnexos } from "@/components/curso/recursos-anexos";
 import { VideoComments } from "@/components/eyk/video-comments";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -169,7 +172,7 @@ export default function VideoPlayerPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         {/* Coluna principal: player + info */}
         <div className="min-w-0 space-y-6">
-          <Card className="overflow-hidden rounded-3xl border-0 shadow-xl shadow-black/5 bg-black/5 backdrop-blur-sm">
+          <Card className="player-youtube-mobile overflow-hidden rounded-3xl border-0 shadow-xl shadow-black/5 bg-black/5 backdrop-blur-sm">
             <div ref={playerWrapRef} className="relative aspect-video">
               <ModernVideoPlayer
                 fileUrl={video.fileUrl}
@@ -181,7 +184,6 @@ export default function VideoPlayerPage() {
                 hasPrevious={watchHistory.length > 0}
                 onNext={goToNextVideo}
                 onPrevious={goToPreviousVideo}
-                recursos={video.recursos}
                 temLegenda={video.temLegenda}
               />
             </div>
@@ -206,7 +208,12 @@ export default function VideoPlayerPage() {
           <div className="flex items-start justify-between gap-3">
             <h1 className="font-serif text-2xl font-semibold leading-snug sm:text-3xl">{video.title}</h1>
             <div className="flex shrink-0 items-center gap-1">
-              <ShareButton url={`/videos/${video.id}`} titulo={video.title} />
+              <BotaoSalvar tipo="video" id={video.id} variante="acao" />
+              <ShareButton
+                url={`/videos/${video.id}`}
+                titulo={video.title}
+                previsualizacao={<PreviaConteudo capa={video.thumbnail} titulo={video.title} rotulo="Vídeo" autor={video.teacher} />}
+              />
               <BotaoDenunciar tipo="video" id={video.id} autorId={video.teacherUserId} />
             </div>
           </div>
@@ -227,7 +234,10 @@ export default function VideoPlayerPage() {
                 ) : (
                   <p className="truncate text-sm font-medium">{video.teacher}</p>
                 )}
-                <p className="text-xs text-muted-foreground">Professor EYK</p>
+                <p className="text-xs text-muted-foreground">
+                  Professor EYK
+                  {video.editadoEm && " · editado"}
+                </p>
               </div>
             </div>
             <Button
@@ -249,6 +259,9 @@ export default function VideoPlayerPage() {
               </p>
             </Card>
           )}
+
+          {/* Recursos do vídeo: aqui, e não dentro do player. */}
+          <RecursosAnexos recursos={video.recursos} />
 
           <VideoComments videoId={video.id} />
         </div>
