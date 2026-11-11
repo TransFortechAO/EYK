@@ -1984,7 +1984,7 @@ export const api = {
     }
     return {
       coins: 0, xp: 0, streak: 0, streakRecord: 0, level: 1,
-      levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante",
+      levelProgress: 0, nextLevelXp: 500, initials: "?", name: "Estudante", foto: null,
     };
   },
   getLeaderboard: async (): Promise<LeaderRow[]> => {

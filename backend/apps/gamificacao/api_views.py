@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import CharField, F, IntegerField, OuterRef, Subquery, Sum, Value
 from django.utils import timezone
 from rest_framework import permissions
@@ -30,6 +31,17 @@ def _get_initials(user: User) -> str:
 
 def _get_name(user: User) -> str:
     return user.get_display_name()
+
+
+def _get_photo(user: User) -> str | None:
+    try:
+        photo = user.professor.foto
+    except ObjectDoesNotExist:
+        try:
+            photo = user.aluno.foto
+        except ObjectDoesNotExist:
+            return None
+    return photo.url if photo else None
 
 
 def _format_date_transacao(criado_em: datetime) -> str:
