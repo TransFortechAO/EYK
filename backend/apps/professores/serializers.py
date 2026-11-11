@@ -1,5 +1,5 @@
-from django_otp.plugins.otp_totp.models import TOTPDevice
 from django.utils import timezone
+from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import serializers
 
 from apps.cursos.models import Categoria, Curso

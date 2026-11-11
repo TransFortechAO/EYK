@@ -12,13 +12,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from apps.cursos.models import Categoria
-
+from apps.instituicoes.armazenamento import servir
 from apps.professores.models import Video
 
 from .models import AmostraLGA, Anuncio, ConfiguracaoPlataforma, FonteDatasetLGA, GestoLGA
 from .servicos import configuracao, limpar_cache_configuracao
 from .tasks import enviar_anuncio, enviar_lembrete_agora
-from apps.instituicoes.armazenamento import servir
 
 # Sem notícias do beat há mais do que isto (corre de 5 em 5 min) → o painel
 # avisa que o worker do Celery está parado.

@@ -10,10 +10,6 @@ import {
   Instagram,
   Facebook,
   Linkedin,
-  PlayCircle,
-  Users,
-  Trophy,
-  Captions,
   Moon,
   Sun,
 } from "lucide-react";
