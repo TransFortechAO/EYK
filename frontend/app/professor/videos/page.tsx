@@ -413,7 +413,7 @@ export default function ProfessorVideosPage() {
             </DialogTitle>
           </DialogHeader>
 
-          <form id="form-video" onSubmit={submeter} className="flex-1 space-y-4 overflow-y-auto p-5">
+          <form id="form-video" onSubmit={submeter} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
               <div className="space-y-2">
                 <Label htmlFor="v-titulo">Título</Label>
                 <Input id="v-titulo" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
