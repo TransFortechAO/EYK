@@ -25,7 +25,7 @@ const SEPARADORES = [
   { id: "professores", rotulo: "Professores", icone: GraduationCap },
 ] as const;
 
-type Linha = { chave: string; posicao: number; userId: number | null; name: string; initials: string; isMe?: boolean; valor: ReactNode };
+type Linha = { chave: string; posicao: number; userId: number | null; name: string; initials: string; foto?: string | null; isMe?: boolean; valor: ReactNode };
 
 function Podio({ rows }: { rows: LeaderRow[] }) {
   const top3 = rows.slice(0, 3);
@@ -42,6 +42,7 @@ function Podio({ rows }: { rows: LeaderRow[] }) {
               <UserAvatar
                 name={row.name}
                 initials={row.initials}
+                foto={row.foto}
                 userId={row.userId ?? undefined}
                 size={56}
                 noLink
@@ -90,6 +91,7 @@ function Lista({ linhas, rotuloValor }: { linhas: Linha[]; rotuloValor: string }
                   noLink
                   name={l.name}
                   initials={l.initials}
+                  foto={l.foto}
                   userId={l.userId ?? undefined}
                   size={36}
                   backgroundColor="transparent"
@@ -134,19 +136,15 @@ export default function LeaderboardPage() {
   const meuRankProfessor = professores.find((r) => r.isMe);
 
   const porRank: Linha[] = useMemo(
-    () => rows.slice(3).map((r) => ({ chave: `${r.rank}-${r.name}`, posicao: r.rank, userId: r.userId, name: r.name, initials: r.initials, isMe: r.isMe, valor: <><Coins className="h-4 w-4 text-primary" />{r.coins}</> })),
+    () => rows.slice(3).map((r) => ({ chave: `${r.rank}-${r.name}`, posicao: r.rank, userId: r.userId, name: r.name, initials: r.initials, foto: r.foto, isMe: r.isMe, valor: <><Coins className="h-4 w-4 text-primary" />{r.coins}</> })),
     [rows],
   );
   const porStreak: Linha[] = useMemo(
-    () => [...rows].sort((a, b) => b.streak - a.streak).map((r, i) => ({ chave: `${r.rank}-${r.name}`, posicao: i + 1, userId: r.userId, name: r.name, initials: r.initials, isMe: r.isMe, valor: <><Flame className="h-4 w-4 text-streak" />{r.streak} dias</> })),
-    [rows],
-  );
-  const porMoedas: Linha[] = useMemo(
-    () => [...rows].sort((a, b) => b.coins - a.coins).map((r, i) => ({ chave: `${r.rank}-${r.name}`, posicao: i + 1, userId: r.userId, name: r.name, initials: r.initials, isMe: r.isMe, valor: <><Coins className="h-4 w-4 text-primary" />{r.coins}</> })),
+    () => [...rows].sort((a, b) => b.streak - a.streak).map((r, i) => ({ chave: `${r.rank}-${r.name}`, posicao: i + 1, userId: r.userId, name: r.name, initials: r.initials, foto: r.foto, isMe: r.isMe, valor: <><Flame className="h-4 w-4 text-streak" />{r.streak} dias</> })),
     [rows],
   );
   const dosProfessores: Linha[] = useMemo(
-    () => professores.map((r) => ({ chave: `${r.rank}-${r.name}`, posicao: r.rank, userId: r.userId, name: r.name, initials: r.initials, isMe: r.isMe, valor: <><Coins className="h-4 w-4 text-primary" />{r.coins}</> })),
+    () => professores.map((r) => ({ chave: `${r.rank}-${r.name}`, posicao: r.rank, userId: r.userId, name: r.name, initials: r.initials, foto: r.foto, isMe: r.isMe, valor: <><Coins className="h-4 w-4 text-primary" />{r.coins}</> })),
     [professores],
   );
 
@@ -179,7 +177,7 @@ export default function LeaderboardPage() {
 
           <TabsContent value="moedas" className="space-y-6">
             <StatCard icon={Coins} label="As tuas moedas EYK" value={meStats.coins} tone="gold" />
-            <Lista linhas={porMoedas} rotuloValor="Moedas" />
+
           </TabsContent>
 
           <TabsContent value="professores" className="space-y-6">

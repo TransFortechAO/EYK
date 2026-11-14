@@ -633,6 +633,7 @@ export type LeaderRow = {
   userId: number | null;
   name: string;
   initials: string;
+  foto?: string | null;
   coins: number;
   streak: number;
   isMe?: boolean;
@@ -670,6 +671,7 @@ export type ProfessorLeaderRow = {
   userId: number | null;
   name: string;
   initials: string;
+  foto?: string | null;
   coins: number;
   isMe?: boolean;
 };

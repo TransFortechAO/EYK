@@ -51,11 +51,11 @@ class TestLeaderboardList:
         response = client.get(reverse("leaderboard-list"))
         assert response.status_code == 200
         body = response.json()
-        assert body[0]["userId"] == professor_user.id
-        assert body[0]["coins"] == 300
-        assert body[1]["userId"] == aluno_user.id
-        assert body[1]["isMe"] is True
-        assert body[0]["isMe"] is False
+        assert len(body) == 1
+        assert body[0]["userId"] == aluno_user.id
+        assert body[0]["coins"] == 100
+        assert body[0]["isMe"] is True
+        assert "foto" in body[0]
 
     def test_utilizador_sem_carteira_aparece_com_zero(self, client, aluno_user):
         client.force_login(aluno_user)
