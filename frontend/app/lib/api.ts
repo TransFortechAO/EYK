@@ -633,6 +633,7 @@ export type LeaderRow = {
   userId: number | null;
   name: string;
   initials: string;
+  foto?: string | null;
   coins: number;
   streak: number;
   isMe?: boolean;
@@ -670,6 +671,7 @@ export type ProfessorLeaderRow = {
   userId: number | null;
   name: string;
   initials: string;
+  foto?: string | null;
   coins: number;
   isMe?: boolean;
 };
@@ -892,6 +894,7 @@ export type ProfessorVideo = {
   arquivo: string | null;
   url_externa: string;
   thumbnail: string | null;
+  categoria: string | null;
   criado_em: string;
   atualizado_em: string;
   ativo: boolean;
@@ -909,6 +912,7 @@ export type ProfessorVideo = {
 export type ProfessorVideoPayload = {
   titulo: string;
   descricao?: string;
+  categoria_nome?: string;
   url_externa?: string;
   ativo?: boolean;
   uso_ia_lga?: boolean;
@@ -1333,6 +1337,7 @@ function _appendVideoPayload(
 ) {
   if (payload.titulo !== undefined) formData.append('titulo', payload.titulo);
   if (payload.descricao !== undefined) formData.append('descricao', payload.descricao);
+  if (payload.categoria_nome !== undefined) formData.append('categoria_nome', payload.categoria_nome);
   if (payload.url_externa !== undefined) formData.append('url_externa', payload.url_externa);
   if (payload.ativo !== undefined) formData.append('ativo', String(payload.ativo));
   if (payload.uso_ia_lga !== undefined) formData.append('uso_ia_lga', String(payload.uso_ia_lga));

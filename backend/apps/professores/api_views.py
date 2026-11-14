@@ -31,7 +31,7 @@ MSG_NAO_TROCAR_AULAS = (
     'Ao editar um curso não é possível trocar, acrescentar ou apagar aulas. '
     'Muda o título, a descrição, a capa ou os recursos.'
 )
-CAMPOS_CONTEUDO_VIDEO = ('titulo', 'descricao', 'thumbnail')
+CAMPOS_CONTEUDO_VIDEO = ('titulo', 'descricao', 'categoria_id', 'thumbnail')
 CAMPOS_CONTEUDO_CURSO = ('titulo', 'descricao', 'categoria_id', 'preco', 'duracao', 'thumbnail')
 
 
@@ -152,6 +152,7 @@ def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
         video = Video.objects.create(
             professor=professor,
             curso=curso,
+            categoria=curso.categoria,
             titulo=f'{curso.titulo} — vídeo {ordem_inicial + indice + 1}',
             arquivo=arquivo,
             ativo=True,

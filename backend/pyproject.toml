@@ -32,8 +32,7 @@ testpaths = ["tests", "apps"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-select = ["E", "F", "I", "W"]
-ignore = ["E501"]
 
 [tool.ruff.lint]
 select = ["I"]
+ignore = ["E501"]

@@ -47,6 +47,9 @@ class CandidaturaProfessor(models.Model):
 
 
 class Video(models.Model):
+    categoria = models.ForeignKey(
+        'cursos.Categoria', on_delete=models.SET_NULL, null=True, blank=True, related_name='videos',
+    )
     professor = models.ForeignKey(Professor, on_delete=models.CASCADE, related_name='videos')
     curso = models.ForeignKey(
         'cursos.Curso', on_delete=models.CASCADE, related_name='videos', null=True, blank=True,

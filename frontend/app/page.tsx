@@ -102,7 +102,7 @@ export default function LandingPage() {
           aria-hidden
           className="h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-white/90 dark:bg-[#0a0a0a]/85" />
+        <div className="absolute inset-0 bg-[#faf8f3]/94 dark:bg-[#0a0a0a]/85" />
       </div>
 
       {/* Conteúdo acima do fundo */}

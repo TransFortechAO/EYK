@@ -103,6 +103,7 @@ def leaderboard_list(request):
     # Ficam de fora: quem escolheu não aparecer (Configurações → Privacidade),
     # contas banidas e administradores (não competem no ranking).
     users = User.objects.filter(
+        is_student=True, is_teacher=False,
         aparecer_ranking=True, banido=False, is_active=True, is_staff=False, is_superuser=False,
     ).annotate(
         _coins=Subquery(carteira_saldo, output_field=IntegerField()),
@@ -118,6 +119,7 @@ def leaderboard_list(request):
             'userId': u.id,
             'name': _get_name(u),
             'initials': _get_initials(u),
+            'foto': _get_photo(u),
             'coins': coins,
             'streak': streak,
             'isMe': u.id == request.user.id,
@@ -192,6 +194,7 @@ def leaderboard_professores_mensal(request):
             'userId': u.id,
             'name': _get_name(u),
             'initials': _get_initials(u),
+            'foto': _get_photo(u),
             'coins': row['total'],
             'isMe': u.id == request.user.id,
         })
