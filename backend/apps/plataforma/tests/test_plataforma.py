@@ -86,11 +86,14 @@ class TestCategorias:
         url = reverse('plataforma-admin-categorias')
         assert _json(client, 'post', url, {'nome': 'Matemática'}).status_code == 201
         assert _json(client, 'post', url, {'nome': 'matemática'}).status_code == 400
-        categoria = Categoria.objects.get()
+        categoria = Categoria.objects.get(nome='Matemática')
         Curso.objects.create(professor=professor, titulo='C', descricao='d', categoria=categoria)
-        assert client.get(url).json()[0]['totalCursos'] == 1
+        categorias = client.get(url).json()
+        assert next(c for c in categorias if c['id'] == categoria.id)['totalCursos'] == 1
 
         detalhe = reverse('plataforma-admin-categoria', args=[categoria.id])
-        assert _json(client, 'patch', detalhe, {'nome': 'Números'}).json()[0]['nome'] == 'Números'
-        assert client.delete(detalhe).json() == []
+        categorias = _json(client, 'patch', detalhe, {'nome': 'Números'}).json()
+        assert next(c for c in categorias if c['id'] == categoria.id)['nome'] == 'Números'
+        categorias = client.delete(detalhe).json()
+        assert all(c['id'] != categoria.id for c in categorias)
         assert Curso.objects.get().categoria is None
