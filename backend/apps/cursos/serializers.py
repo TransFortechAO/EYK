@@ -35,6 +35,7 @@ class RecursoCursoSerializer(serializers.ModelSerializer):
 
 
 class CursoVideoSerializer(serializers.ModelSerializer):
+    categoria_nome = serializers.CharField(source='categoria.nome', read_only=True, allow_null=True)
     total_likes = serializers.SerializerMethodField()
     assistido = serializers.SerializerMethodField()
     recursos = serializers.SerializerMethodField()
@@ -46,6 +47,7 @@ class CursoVideoSerializer(serializers.ModelSerializer):
         model = Video
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail', 'ordem',
+            'categoria_nome',
             'duracao_segundos', 'total_likes', 'assistido', 'recursos',
             'posicao_segundos', 'posicao_atualizada_em', 'tem_legenda', 'editado_em',
         ]
@@ -217,6 +219,7 @@ class CourseSerializer(serializers.ModelSerializer):
 
 
 class VideoSerializer(serializers.ModelSerializer):
+    categoria_nome = serializers.CharField(source='categoria.nome', read_only=True, allow_null=True)
     professor_nome = serializers.CharField(source='professor.nome_publico', read_only=True)
     professor_user_id = serializers.IntegerField(source='professor.user_id', read_only=True)
     professor_foto = serializers.SerializerMethodField()

@@ -1,6 +1,7 @@
 "use client";
 
 import { useLimitesUpload } from "@/hooks/useLimitesUpload";
+import { CategoriaSelect } from "@/components/categoria-select";
 import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
 import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -43,6 +44,7 @@ type FiltroEstado = "todos" | "publicado" | "rascunho";
 const EMPTY_FORM: ProfessorVideoPayload = {
   titulo: "",
   descricao: "",
+  categoria_nome: "",
   url_externa: "",
   ativo: true,
   uso_ia_lga: false,
@@ -52,6 +54,7 @@ export default function ProfessorVideosPage() {
   const limites = useLimitesUpload();
   const confirm = useConfirm();
   const [videos, setVideos] = useState<ProfessorVideo[]>([]);
+  const [categorias, setCategorias] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState<ProfessorVideo | null>(null);
@@ -81,6 +84,7 @@ export default function ProfessorVideosPage() {
 
   useEffect(() => {
     void carregar();
+    void api.getCategories().then((lista) => setCategorias(lista.filter((nome) => nome !== "Todos")));
   }, []);
 
   const abrirCriar = () => {
@@ -107,6 +111,7 @@ export default function ProfessorVideosPage() {
     setForm({
       titulo: video.titulo,
       descricao: video.descricao,
+      categoria_nome: video.categoria || "",
       url_externa: video.url_externa,
       ativo: video.ativo,
       uso_ia_lga: video.uso_ia_lga,
@@ -298,13 +303,24 @@ export default function ProfessorVideosPage() {
           Nenhum vídeo corresponde à pesquisa/filtro.
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-5 sm:grid-cols-2">
           {videosFiltrados.map((video) => {
             const index = videos.indexOf(video);
             return (
-              <Card key={video.id} className="p-4 shadow-soft flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Card key={video.id} className="overflow-hidden shadow-soft flex flex-col">
+                <div
+                  className="relative h-36 w-full bg-gradient-gold/20 bg-cover bg-center"
+                  style={video.thumbnail ? { backgroundImage: `url('${video.thumbnail}')` } : undefined}
+                >
+                  {!video.thumbnail && <div className="absolute inset-0 grid place-items-center"><PlayCircle className="h-10 w-10 opacity-60" /></div>}
+                  <div className="absolute right-3 top-3 flex gap-1.5">
+                    {video.oculto && <Badge className="bg-red-600/90 text-white border-0 shadow">Oculto pela moderação</Badge>}
+                    {video.ativo ? <Badge className="bg-emerald-500/90 text-white border-0 shadow">Publicado</Badge> : <Badge className="bg-amber-500/90 text-white border-0 shadow">Rascunho</Badge>}
+                  </div>
+                </div>
+                <div className="flex flex-1 flex-col gap-3 p-5">
                 {semFiltroAtivo && (
-                  <div className="flex flex-row gap-1 shrink-0 self-start sm:flex-col">
+                  <div className="flex flex-row gap-1 shrink-0 self-start">
                     <button
                       type="button"
                       disabled={index === 0 || reordenando}
@@ -326,31 +342,12 @@ export default function ProfessorVideosPage() {
                   </div>
                 )}
 
-                <div
-                  className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-secondary bg-cover bg-center text-secondary-foreground"
-                  style={video.thumbnail ? { backgroundImage: `url('${video.thumbnail}')` } : undefined}
-                >
-                  {!video.thumbnail && <PlayCircle className="h-6 w-6 opacity-60" />}
-                </div>
-
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="font-medium truncate">{video.titulo}</p>
-                    {video.ativo ? (
-                      <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shrink-0">Publicado</Badge>
-                    ) : (
-                      <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 shrink-0">Rascunho</Badge>
-                    )}
-                    {video.oculto && (
-                      <Badge
-                        className="bg-red-500/15 text-red-300 border-red-500/30 shrink-0"
-                        title="Ocultado pela moderação depois de denúncias. Recebeste uma notificação com o link para contestar."
-                      >
-                        Oculto pela moderação
-                      </Badge>
-                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                    <span>{video.categoria || "Sem categoria"}</span>
                     {video.duracao_segundos > 0 && (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" /> {formatarDuracaoCurta(video.duracao_segundos)}
@@ -376,7 +373,7 @@ export default function ProfessorVideosPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirEditar(video)}>
                     <Pencil className="h-3.5 w-3.5" /> Editar
                   </Button>
@@ -393,6 +390,7 @@ export default function ProfessorVideosPage() {
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
+                </div>
                 </div>
               </Card>
             );
@@ -421,6 +419,11 @@ export default function ProfessorVideosPage() {
               <div className="space-y-2">
                 <Label htmlFor="v-descricao">Descrição</Label>
                 <Textarea id="v-descricao" rows={3} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="v-categoria">Categoria</Label>
+                <CategoriaSelect id="v-categoria" value={form.categoria_nome || ""} categorias={categorias} onChange={(categoria_nome) => setForm({ ...form, categoria_nome })} placeholder="Ex: Língua Gestual Angolana" />
+                <p className="text-xs text-muted-foreground">Escolhe uma categoria sugerida ou escreve <strong>#</strong> seguido de uma nova categoria.</p>
               </div>
               <div className="space-y-2">
                 <Label>Imagem de capa (opcional)</Label>

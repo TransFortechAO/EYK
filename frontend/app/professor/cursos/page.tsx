@@ -2,6 +2,7 @@
 
 import { useLimitesUpload } from "@/hooks/useLimitesUpload";
 import { BotaoLegendas } from "@/components/curso/BotaoLegendas";
+import { CategoriaSelect } from "@/components/categoria-select";
 import { CampoPesquisaPagina, usePesquisaPagina } from "@/components/pesquisa-pagina";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -57,6 +58,7 @@ export default function ProfessorCursosPage() {
   const limites = useLimitesUpload();
   const confirm = useConfirm();
   const [cursos, setCursos] = useState<ProfessorCurso[]>([]);
+  const [categorias, setCategorias] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
   const [pesquisa] = usePesquisaPagina();
@@ -89,6 +91,7 @@ export default function ProfessorCursosPage() {
 
   useEffect(() => {
     void carregar();
+    void api.getCategories().then((lista) => setCategorias(lista.filter((nome) => nome !== "Todos")));
   }, []);
 
   const abrirCriar = () => {
@@ -463,12 +466,14 @@ export default function ProfessorCursosPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="c-categoria">Categoria</Label>
-                <Input
+                <CategoriaSelect
                   id="c-categoria"
-                  value={form.categoria_nome}
-                  onChange={(e) => setForm({ ...form, categoria_nome: e.target.value })}
-                  placeholder="Ex: Programação"
+                  value={form.categoria_nome || ""}
+                  categorias={categorias}
+                  onChange={(categoria_nome) => setForm({ ...form, categoria_nome })}
+                  placeholder="Ex: Língua Gestual Angolana"
                 />
+                <p className="text-xs text-muted-foreground">Escolhe uma categoria sugerida ou escreve <strong>#</strong> seguido de uma nova categoria.</p>
               </div>
               <div className="space-y-2">
                 <Label>Imagem de capa (opcional)</Label>

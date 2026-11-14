@@ -105,7 +105,7 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
         return RecursoCursoSerializer(obj.recursos.all(), many=True, context=self.context).data
 
     def create(self, validated_data):
-        categoria_nome = (validated_data.pop('categoria_nome', '') or '').strip()
+        categoria_nome = (validated_data.pop('categoria_nome', '') or '').strip().removeprefix('#').strip()
         if categoria_nome:
             categoria, _ = Categoria.objects.get_or_create(nome=categoria_nome)
             validated_data['categoria'] = categoria
@@ -117,7 +117,7 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         categoria_nome = validated_data.pop('categoria_nome', None)
         if categoria_nome is not None:
-            categoria_nome = categoria_nome.strip()
+            categoria_nome = categoria_nome.strip().removeprefix('#').strip()
             if categoria_nome:
                 categoria, _ = Categoria.objects.get_or_create(nome=categoria_nome)
                 validated_data['categoria'] = categoria
@@ -134,6 +134,8 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
 
 
 class ProfessorVideoSerializer(serializers.ModelSerializer):
+    categoria_nome = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    categoria = serializers.CharField(source='categoria.nome', read_only=True, allow_null=True)
     total_likes = serializers.SerializerMethodField()
     total_visualizacoes = serializers.SerializerMethodField()
     total_comentarios = serializers.SerializerMethodField()
@@ -144,6 +146,7 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
         model = Video
         fields = [
             'id', 'titulo', 'descricao', 'arquivo', 'url_externa', 'thumbnail',
+            'categoria', 'categoria_nome',
             'criado_em', 'atualizado_em', 'editado_em', 'ativo', 'ordem', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
             'oculto', 'tem_legenda', 'uso_ia_lga', 'uso_ia_lga_em', 'uso_ia_lga_versao',
@@ -180,12 +183,24 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        nome = (validated_data.pop('categoria_nome', '') or '').strip().removeprefix('#').strip()
+        if nome:
+            categoria, _ = Categoria.objects.get_or_create(nome=nome)
+            validated_data['categoria'] = categoria
         if validated_data.get('uso_ia_lga'):
             validated_data['uso_ia_lga_em'] = timezone.now()
             validated_data['uso_ia_lga_versao'] = 'conteudo-ia-lga-v1'
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
+        nome = validated_data.pop('categoria_nome', None)
+        if nome is not None:
+            nome = nome.strip().removeprefix('#').strip()
+            if nome:
+                categoria, _ = Categoria.objects.get_or_create(nome=nome)
+                validated_data['categoria'] = categoria
+            else:
+                validated_data['categoria'] = None
         if 'uso_ia_lga' in validated_data:
             if validated_data['uso_ia_lga']:
                 validated_data['uso_ia_lga_em'] = timezone.now()

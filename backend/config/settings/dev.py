@@ -1,4 +1,5 @@
 import os
+from django.db.backends.signals import connection_created
 
 from .base import *
 
@@ -13,8 +14,21 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        # Dá margem a pedidos simultâneos do servidor de desenvolvimento sem
+        # falhar imediatamente quando uma escrita SQLite está em curso.
+        'OPTIONS': {'timeout': 30},
     }
 }
+
+
+def _activar_wal_sqlite(sender, connection, **kwargs):
+    """Permite leituras enquanto o SQLite processa uma escrita local."""
+    if connection.vendor == 'sqlite':
+        with connection.cursor() as cursor:
+            cursor.execute('PRAGMA journal_mode=WAL')
+
+
+connection_created.connect(_activar_wal_sqlite, dispatch_uid='eyk_dev_sqlite_wal', weak=False)
 
 # CORS permissivo apenas no ambiente de desenvolvimento.
 CORS_ALLOW_ALL_ORIGINS = True
