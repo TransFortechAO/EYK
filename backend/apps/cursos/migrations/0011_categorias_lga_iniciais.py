@@ -1,6 +1,5 @@
 from django.db import migrations
 
-
 CATEGORIAS = [
     'Alfabeto dactilológico e números',
     'Cumprimentos e expressões de cortesia',
