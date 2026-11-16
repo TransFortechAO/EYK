@@ -56,8 +56,8 @@ function ConcluirCandidatura() {
     startTransition(async () => {
       try {
         const res = await api.concluirCandidaturaProfessor(token, password);
-        // Conta criada e sessão iniciada: vai direto para a área do professor.
-        window.location.assign(res.user ? "/professor" : "/login");
+        // Conta criada (como aluno) e sessão iniciada: no Início abre o formulário da candidatura.
+        window.location.assign(res.user ? "/inicio" : "/login");
       } catch (err) {
         setErro(mensagemDeErro(err, "Não foi possível criar a conta. Tenta novamente."));
       }

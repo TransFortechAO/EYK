@@ -144,11 +144,51 @@ export function mensagemDeErro(err: unknown, fallback: string): string {
 
 // --- Tipos de UI (igual aos do mock-data.ts — compatibilidade total) ------------------
 
+export type EstadoCandidatura =
+  | "por_completar"
+  | "submetida"
+  | "em_analise"
+  | "correcao_pedida"
+  | "aprovada"
+  | "rejeitada"
+  | "suspensa";
+
+export type TipoDocumentoCandidatura = "diploma" | "certificado" | "video" | "portefolio" | "outro";
+
+export type DocumentoCandidatura = {
+  id: number;
+  tipo: TipoDocumentoCandidatura;
+  titulo: string;
+  nome: string | null;
+  tamanhoBytes: number;
+  link: string | null;
+  /** Endereço protegido (só o candidato e a equipa EYK o abrem). */
+  url: string | null;
+};
+
+export type Candidatura = {
+  estado: EstadoCandidatura;
+  nome: string;
+  email: string;
+  telefone: string;
+  area: string;
+  apresentacao: string;
+  tipoQualificacao: "formal" | "competencia" | null;
+  experiencia: string;
+  portefolioUrl: string;
+  mensagem: string | null;
+  submetidaEm: string | null;
+  editavel: boolean;
+  documentos: DocumentoCandidatura[];
+};
+
 export type AuthUser = {
   id: number;
   name: string;
   username: string;
   email: string;
+  /** Candidatura a professor em curso (null para quem não se candidatou ou já é professor). */
+  candidaturaProfessor?: { estado: EstadoCandidatura; mensagem: string | null } | null;
   bio?: string;
   foto?: string | null;
   initials: string;
@@ -1735,6 +1775,27 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ token }) },
     );
   },
+  /** A candidatura a professor do próprio (Fase 1: completar, juntar documentos, submeter). */
+  candidatura: {
+    obter: async (): Promise<Candidatura | null> =>
+      (await fetchAPI<{ candidatura: Candidatura | null }>('/api/candidatura/')).candidatura,
+    guardar: async (dados: Partial<Pick<Candidatura, 'area' | 'telefone' | 'apresentacao' | 'experiencia' | 'portefolioUrl'>> & { tipoQualificacao?: string }): Promise<Candidatura> =>
+      (await fetchAPI<{ candidatura: Candidatura }>('/api/candidatura/', { method: 'PATCH', body: JSON.stringify(dados) })).candidatura,
+    carregarDocumento: async (dados: { tipo: TipoDocumentoCandidatura; titulo?: string; ficheiro?: File; link?: string }): Promise<DocumentoCandidatura> => {
+      const corpo = new FormData();
+      corpo.append('tipo', dados.tipo);
+      if (dados.titulo) corpo.append('titulo', dados.titulo);
+      if (dados.ficheiro) corpo.append('ficheiro', dados.ficheiro);
+      if (dados.link) corpo.append('link', dados.link);
+      return fetchAPI<DocumentoCandidatura>('/api/candidatura/documentos/', { method: 'POST', body: corpo });
+    },
+    removerDocumento: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/candidatura/documentos/${id}/`, { method: 'DELETE' });
+    },
+    submeter: async (): Promise<Candidatura> =>
+      (await fetchAPI<{ candidatura: Candidatura }>('/api/candidatura/submeter/', { method: 'POST' })).candidatura,
+  },
+
   concluirCandidaturaProfessor: async (token: string, password: string) => {
     return await fetchAPI<{ ok: boolean; user: AuthUser | null }>(
       '/accounts/auth/professor/candidatura/concluir/',

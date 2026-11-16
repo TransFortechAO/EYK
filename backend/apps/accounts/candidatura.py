@@ -1,12 +1,11 @@
-"""Candidatura pública a professor — fluxo sem intervenção humana:
+"""Candidatura a professor — início do processo:
 
-1. A pessoa preenche "Quero ser professor" (nome, email, …).
+1. A pessoa preenche o separador "Professor" do registo (nome, email, …).
 2. Recebe um email com um link (válido 3 dias, de uso único).
-3. No link escolhe a sua palavra-passe: a conta de professor é criada, o email
-   fica confirmado e a sessão é iniciada.
-
-Ainda sem limites para novos professores — o tratamento de abusos vem depois
-(as candidaturas ficam guardadas e visíveis no admin do Django).
+3. No link escolhe a palavra-passe: a conta é criada **como aluno**, o email fica
+   confirmado e a sessão é iniciada. A candidatura fica `por_completar`.
+4. No primeiro login completa a candidatura (apps/professores/api_candidatura.py);
+   só a aprovação da equipa EYK dá as funções de professor.
 """
 import json
 import re
@@ -24,7 +23,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from apps.gamificacao.services import processar_atividade_diaria
-from apps.professores.models import CandidaturaProfessor, Professor
+from apps.professores.candidaturas import mudar_estado
+from apps.professores.models import CandidaturaProfessor
 
 from .emails import candidatura_do_token, enviar_email_candidatura
 from .models import User
@@ -134,7 +134,7 @@ def candidatura_validar(request):
 @csrf_exempt
 @require_POST
 def candidatura_concluir(request):
-    """POST /accounts/auth/professor/candidatura/concluir/ — cria a conta de professor."""
+    """POST /accounts/auth/professor/candidatura/concluir/ — cria a conta (como aluno)."""
     corpo = _corpo(request)
     if corpo is None:
         return _json({'ok': False, 'error': 'Pedido inválido.'}, 400)
@@ -166,19 +166,16 @@ def candidatura_concluir(request):
                     password=password,
                     first_name=candidatura.nome[:150],
                     phone_number=candidatura.telefone[:20] or None,
-                    is_teacher=True,
+                    # Aluno até a equipa EYK aprovar a candidatura.
+                    is_teacher=False,
                     email_verificado=True,  # chegou aqui pelo link enviado para este email
                     perfil_completo=False,
                 )
-                Professor.objects.create(
-                    user=user,
-                    nome_publico=candidatura.nome[:150],
-                    area=candidatura.area,
-                    bio=candidatura.apresentacao,
-                )
                 candidatura.user = user
                 candidatura.concluida_em = timezone.now()
-                candidatura.save(update_fields=['user', 'concluida_em', 'atualizado_em'])
+                candidatura.estado = CandidaturaProfessor.POR_COMPLETAR
+                candidatura.save(update_fields=['user', 'concluida_em', 'estado', 'atualizado_em'])
+                mudar_estado(candidatura, CandidaturaProfessor.POR_COMPLETAR, user, 'Conta criada.', registar_apenas=True)
             break
         except IntegrityError:
             user = None
