@@ -194,6 +194,6 @@ def submeter(request):
     for conta in get_user_model().objects.filter(is_staff=True, is_active=True):
         notificar(
             conta, 'novidade', f'Nova candidatura a professor: {c.nome} ({c.area}).',
-            link='/configuracoes/administracao/professores', enviar_por_email=False,
+            link='/configuracoes/administracao/candidaturas', enviar_por_email=False,
         )
     return Response({'candidatura': candidatura_json(c)})

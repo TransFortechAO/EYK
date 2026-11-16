@@ -26,7 +26,7 @@ from apps.gamificacao.api_views import (
     leaderboard_list,
     leaderboard_professores_mensal,
 )
-from apps.professores import api_candidatura
+from apps.professores import api_admin_candidaturas, api_candidatura
 from apps.professores.api_sugestoes import professores_sugeridos
 from apps.professores.api_views import professor_toggle_seguir
 
@@ -79,6 +79,10 @@ urlpatterns = [
     path('instituicoes/', include('apps.instituicoes.urls')),
     path('professores/sugeridos/', professores_sugeridos, name='api-professores-sugeridos'),
     path('candidatura/', api_candidatura.minha_candidatura, name='candidatura'),
+    path('admin/candidaturas/', api_admin_candidaturas.lista, name='admin-candidaturas'),
+    path('admin/candidaturas/<int:candidatura_id>/', api_admin_candidaturas.detalhe, name='admin-candidatura'),
+    path('admin/candidaturas/<int:candidatura_id>/decidir/', api_admin_candidaturas.decidir, name='admin-candidatura-decidir'),
+    path('admin/candidaturas/<int:candidatura_id>/notas/', api_admin_candidaturas.notas, name='admin-candidatura-notas'),
     path('candidatura/submeter/', api_candidatura.submeter, name='candidatura-submeter'),
     path('candidatura/documentos/', api_candidatura.documentos, name='candidatura-documentos'),
     path('candidatura/documentos/<int:documento_id>/', api_candidatura.documento, name='candidatura-documento'),

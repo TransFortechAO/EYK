@@ -261,7 +261,7 @@ export function CandidaturaProfessor() {
   const textos: Record<string, string> = {
     por_completar: "Completa a tua candidatura a professor para a equipa EYK a poder analisar.",
     correcao_pedida: "A equipa EYK pediu uma correção à tua candidatura a professor.",
-    submetida: "A tua candidatura a professor foi enviada e aguarda a decisão da equipa EYK. Enquanto esperas, usa a EYK como aluno.",
+    submetida: "A tua candidatura a professor foi enviada e aguarda a decisão da equipa EYK (avisamos-te na app e por email). Enquanto esperas, usa a EYK como aluno.",
     em_analise: "A tua candidatura a professor está em análise. Enquanto esperas, usa a EYK como aluno.",
     rejeitada: `A tua candidatura a professor não foi aprovada${mensagem ? `: ${mensagem}` : "."}`,
     suspensa: "A tua autorização de professor está suspensa.",

@@ -182,6 +182,35 @@ export type Candidatura = {
   documentos: DocumentoCandidatura[];
 };
 
+export type AcaoCandidatura = "em_analise" | "aprovar" | "rejeitar" | "corrigir";
+
+export type LinhaCandidatura = {
+  id: number;
+  nome: string;
+  email: string;
+  area: string;
+  estado: EstadoCandidatura;
+  tipoQualificacao: "formal" | "competencia" | null;
+  submetidaEm: string | null;
+  documentos: number;
+};
+
+export type ListaCandidaturas = {
+  candidaturas: LinhaCandidatura[];
+  contagens: Record<string, number>;
+  areas: string[];
+};
+
+export type CandidaturaAdmin = Candidatura & {
+  id: number;
+  userId: number;
+  criadaEm: string;
+  decididaEm: string | null;
+  decididaPor: string | null;
+  historico: { de: EstadoCandidatura | null; para: EstadoCandidatura; por: string; mensagem: string; em: string }[];
+  notas: { id: number; autor: string; texto: string; em: string }[];
+};
+
 export type AuthUser = {
   id: number;
   name: string;
@@ -2224,6 +2253,21 @@ export const api = {
   },
 
   admin: {
+    /** Candidaturas a professor: a equipa EYK analisa e decide (Fase 2). */
+    candidaturas: {
+      listar: async (filtro: { estado?: string; area?: string; q?: string }): Promise<ListaCandidaturas> => {
+        const p = new URLSearchParams();
+        if (filtro.estado) p.set('estado', filtro.estado);
+        if (filtro.area) p.set('area', filtro.area);
+        if (filtro.q) p.set('q', filtro.q);
+        return fetchAPI<ListaCandidaturas>(`/api/admin/candidaturas/?${p.toString()}`);
+      },
+      obter: async (id: number): Promise<CandidaturaAdmin> => fetchAPI<CandidaturaAdmin>(`/api/admin/candidaturas/${id}/`),
+      decidir: async (id: number, acao: AcaoCandidatura, mensagem = ''): Promise<CandidaturaAdmin> =>
+        fetchAPI<CandidaturaAdmin>(`/api/admin/candidaturas/${id}/decidir/`, { method: 'POST', body: JSON.stringify({ acao, mensagem }) }),
+      nota: async (id: number, texto: string): Promise<CandidaturaAdmin> =>
+        fetchAPI<CandidaturaAdmin>(`/api/admin/candidaturas/${id}/notas/`, { method: 'POST', body: JSON.stringify({ texto }) }),
+    },
     // ── Moderação ──────────────────────────────────────────────────────
     filaModeracao: async (estado: 'pendente' | 'resolvida' | 'rejeitada' = 'pendente') => {
       return await fetchAPI<{ itens: ItemFilaModeracao[]; contadores: { pendentes: number; contestacoes: number } }>(

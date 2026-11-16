@@ -107,6 +107,17 @@ class DocumentoCandidatura(models.Model):
         ordering = ['criado_em', 'id']
 
 
+class NotaCandidatura(models.Model):
+    """Nota interna da equipa EYK (ex: parecer de um especialista externo). O candidato não a vê."""
+    candidatura = models.ForeignKey(CandidaturaProfessor, on_delete=models.CASCADE, related_name='notas')
+    autor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='+')
+    texto = models.TextField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['criado_em', 'id']
+
+
 class HistoricoCandidatura(models.Model):
     """Cada mudança de estado: quem, quando, de → para e a mensagem. Nunca se edita."""
     candidatura = models.ForeignKey(CandidaturaProfessor, on_delete=models.CASCADE, related_name='historico')
