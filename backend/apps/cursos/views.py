@@ -51,7 +51,7 @@ def cursos_visiveis(utilizador):
         ),
     )
     return (
-        Curso.objects.filter(ativo=True, oculto=False)
+        Curso.objects.filter(ativo=True, oculto=False, professor__ativo=True)
         .select_related('professor', 'categoria')
         .prefetch_related(
             Prefetch('videos', queryset=videos_ativos, to_attr='videos_ativos'),
@@ -108,7 +108,7 @@ def video_list(request):
     tab = request.query_params.get('tab', 'recent')
 
     videos_queryset = (
-        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True)
+        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True, professor__ativo=True)
         .select_related('professor')
         .prefetch_related('reacoes', 'visualizacoes', 'recursos')
     )
@@ -132,7 +132,7 @@ def video_list(request):
 @permission_classes([permissions.IsAuthenticated])
 def video_detail(request, pk):
     try:
-        video = Video.objects.select_related('professor').get(pk=pk, ativo=True, oculto=False, curso__isnull=True)
+        video = Video.objects.select_related('professor').get(pk=pk, ativo=True, oculto=False, professor__ativo=True, curso__isnull=True)
     except Video.DoesNotExist:
         return Response({'detail': 'Vídeo não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 

@@ -3,8 +3,10 @@ import json
 
 import pytest
 from django.core import mail
+from django.utils import timezone
 
 from apps.accounts.models import Notificacao, User
+from apps.professores.conduta import VERSAO
 from apps.professores.models import CandidaturaProfessor as C
 from apps.professores.models import HistoricoCandidatura, Professor
 
@@ -20,7 +22,10 @@ def staff(client):
 
 def _candidatura(n=1, estado=C.SUBMETIDA, area='LGA'):
     user = User.objects.create_user(username=f'cand{n}', password='SenhaForte123!', email=f'cand{n}@eyk.ao', email_verificado=True)
-    return C.objects.create(nome=f'Candidato {n}', email=user.email, user=user, estado=estado, area=area, apresentacao='Bio')
+    return C.objects.create(
+        nome=f'Candidato {n}', email=user.email, user=user, estado=estado, area=area, apresentacao='Bio',
+        identidade_verificada_em=timezone.now(), conduta_versao=VERSAO, conduta_aceite_em=timezone.now(),
+    )
 
 
 def _decidir(client, c, acao, mensagem=''):

@@ -14,9 +14,18 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def candidato(client):
     user = User.objects.create_user(username='ana', password='SenhaForte123!', email='ana@eyk.ao')
-    c = CandidaturaProfessor.objects.create(nome='Ana Silva', email='ana@eyk.ao', user=user)
+    c = CandidaturaProfessor.objects.create(
+        nome='Ana Silva', email='ana@eyk.ao', user=user,
+        referencias=[{'nome': 'Maria', 'contacto': 'maria@x.ao', 'relacao': 'Diretora'}],
+    )
+    # Identidade (Fase 3) já junta: os testes da Fase 1 tratam do resto.
+    DocumentoCandidatura.objects.create(candidatura=c, tipo='identidade', link='https://x.ao/bi')
     client.force_login(user)
     return user, c
+
+
+def _submeter(client, conduta=True):
+    return client.post('/api/candidatura/submeter/', json.dumps({'aceitarConduta': conduta}), content_type='application/json')
 
 
 def _patch(client, dados):
@@ -48,19 +57,19 @@ def test_sem_candidatura(client):
 
 def test_formal_exige_diploma_ou_certificado(client, candidato):
     _patch(client, {'area': 'Matemática', 'tipoQualificacao': 'formal'})
-    r = client.post('/api/candidatura/submeter/')
+    r = _submeter(client)
     assert r.status_code == 400 and 'diploma ou certificado' in r.json()['detail']
     assert _doc(client).status_code == 201
-    assert client.post('/api/candidatura/submeter/').json()['candidatura']['estado'] == 'submetida'
+    assert _submeter(client).json()['candidatura']['estado'] == 'submetida'
 
 
 def test_competencia_aceita_portefolio_sem_certificado(client, candidato):
     _patch(client, {'area': 'LGA', 'tipoQualificacao': 'competencia'})
-    assert 'experiência' in client.post('/api/candidatura/submeter/').json()['detail']
+    assert 'experiência' in _submeter(client).json()['detail']
     _patch(client, {'experiencia': 'Intérprete há 10 anos'})
-    assert 'Mostra o teu trabalho' in client.post('/api/candidatura/submeter/').json()['detail']
+    assert 'Mostra o teu trabalho' in _submeter(client).json()['detail']
     _doc(client, tipo='video', nome=None, link='https://youtu.be/abc')
-    r = client.post('/api/candidatura/submeter/')
+    r = _submeter(client)
     assert r.status_code == 200, r.content
 
 
@@ -68,7 +77,7 @@ def test_depois_de_submeter_nao_se_edita_e_a_equipa_e_avisada(client, candidato)
     staff = User.objects.create_user(username='s', password='SenhaForte123!', email='s@eyk.ao', is_staff=True)
     _patch(client, {'area': 'LGA', 'tipoQualificacao': 'formal'})
     doc = _doc(client).json()
-    client.post('/api/candidatura/submeter/')
+    _submeter(client)
     assert _patch(client, {'area': 'outra'}).status_code == 400
     assert _doc(client).status_code == 400
     assert client.delete(f'/api/candidatura/documentos/{doc["id"]}/').status_code == 400
@@ -89,7 +98,7 @@ def test_correcao_pedida_volta_a_ser_editavel(client, candidato):
 
 def test_documento_privado_so_para_o_proprio_e_a_equipa(client, candidato):
     url = _doc(client).json()['url']
-    assert url == f'/api/candidatura/documentos/{DocumentoCandidatura.objects.get().id}/'
+    assert url == f'/api/candidatura/documentos/{DocumentoCandidatura.objects.get(tipo='diploma').id}/'
     r = client.get(url)
     assert r.status_code == 200 and b''.join(r.streaming_content) == b'%PDF-1.4'
     outro = User.objects.create_user(username='o', password='SenhaForte123!', email='o@eyk.ao')

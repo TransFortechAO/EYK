@@ -44,7 +44,7 @@ def pesquisa(request):
         _todas(['titulo', 'descricao', 'categoria__nome', *pessoa], palavras),
     ).distinct()[:MAXIMO_POR_TIPO]
     videos = (
-        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True)
+        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True, professor__ativo=True)
         .filter(_todas(['titulo', 'descricao', *pessoa], palavras))
         .select_related('professor')
         .prefetch_related('reacoes', 'visualizacoes', 'recursos')

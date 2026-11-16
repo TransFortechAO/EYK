@@ -31,6 +31,8 @@ class Curso(models.Model):
     # completo da tabela em cada pedido, cada vez mais lento com o crescimento.
     ativo = models.BooleanField(default=True, db_index=True)
     oculto = models.BooleanField(default=False, db_index=True)  # ver Video.oculto
+    # Destinado a crianças e adolescentes: só com AutorizacaoMenores autorizada.
+    para_criancas = models.BooleanField(default=False)
     publicado_em = models.DateField(null=True, blank=True)
 
     # Autorização expressa do professor para avaliar e selecionar aulas do curso

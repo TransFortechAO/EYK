@@ -65,9 +65,34 @@ def lista(request):
     })
 
 
+def _monitorizacao(c: C) -> dict | None:
+    """Para quem já é (ou foi) professor: denúncias, conteúdos ocultados e avaliações baixas."""
+    from apps.cursos.models import AvaliacaoCurso, Curso
+    from apps.moderacao.models import Denuncia
+
+    from .models import Video
+
+    prof = Professor.objects.filter(user=c.user).first()
+    if not prof:
+        return None
+    denuncias = Denuncia.objects.filter(alvo=c.user)
+    return {
+        'denuncias': denuncias.count(),
+        'denunciasPendentes': denuncias.filter(estado='pendente').count(),
+        'denunciasConfirmadas': denuncias.filter(estado='resolvida').count(),
+        'conteudosOcultos': Curso.objects.filter(professor=prof, oculto=True).count() + Video.objects.filter(professor=prof, oculto=True).count(),
+        'avaliacoesBaixas': AvaliacaoCurso.objects.filter(curso__professor=prof, estrelas__lte=2).count(),
+        'condutaAceite': prof.conduta_versao or None,
+    }
+
+
 def _detalhe(c: C) -> dict:
     return {
         **candidatura_json(c),
+        'identidadeVerificadaEm': c.identidade_verificada_em.isoformat() if c.identidade_verificada_em else None,
+        'referenciasVerificadasEm': c.referencias_verificadas_em.isoformat() if c.referencias_verificadas_em else None,
+        'condutaAceiteEm': c.conduta_aceite_em.isoformat() if c.conduta_aceite_em else None,
+        'monitorizacao': _monitorizacao(c),
         'id': c.id,
         'userId': c.user_id,
         'criadaEm': c.criado_em.isoformat(),
@@ -104,6 +129,8 @@ ACOES = {
     'aprovar': C.APROVADA,
     'rejeitar': C.REJEITADA,
     'corrigir': C.CORRECAO_PEDIDA,
+    'suspender': C.SUSPENSA,
+    'reativar': C.APROVADA,
 }
 
 
@@ -122,10 +149,15 @@ def _avisar(c: C, acao: str, mensagem: str) -> None:
             f'A equipa EYK pediu uma correção à tua candidatura a professor: {mensagem}',
             'A tua candidatura a professor precisa de uma correção',
         ),
+        'suspender': (
+            f'A tua autorização de professor foi suspensa. Motivo: {mensagem}',
+            'A tua autorização de professor foi suspensa',
+        ),
+        'reativar': ('A tua autorização de professor foi reativada. Já podes voltar ao Painel.', 'A tua autorização de professor foi reativada'),
     }
     texto, assunto = textos[acao]
     notificar(
-        c.user, 'novidade', texto, link='/professor' if acao == 'aprovar' else LINK_CANDIDATO,
+        c.user, 'novidade', texto, link='/professor' if acao in ('aprovar', 'reativar') else LINK_CANDIDATO,
         categoria_email=None, assunto_email=assunto, enviar_por_email=bool(assunto),
     )
 
@@ -144,6 +176,12 @@ def decidir(request, candidatura_id):
         return _erro('Indica o motivo da rejeição: o candidato vai recebê-lo.')
     if acao == 'corrigir' and not mensagem:
         return _erro('Diz ao candidato o que deve completar ou corrigir.')
+    if acao == 'suspender' and not mensagem:
+        return _erro('Indica o motivo da suspensão: o professor vai recebê-lo.')
+    if acao == 'aprovar' and not c.identidade_verificada_em:
+        return _erro('Confirma primeiro a identidade do candidato (documento de identificação).')
+    if acao == 'reativar' and c.estado != C.SUSPENSA:
+        return _erro('Só se reativa um professor suspenso.')
     if len(mensagem) > 2000:
         return _erro('A mensagem tem no máximo 2000 caracteres.')
 
@@ -156,16 +194,26 @@ def decidir(request, candidatura_id):
         if acao != 'em_analise':
             c.decidida_em = timezone.now()
             c.decidida_por = request.user
-            c.mensagem_decisao = '' if acao == 'aprovar' else mensagem
+            c.mensagem_decisao = '' if acao in ('aprovar', 'reativar') else mensagem
             c.save(update_fields=['decidida_em', 'decidida_por', 'mensagem_decisao', 'atualizado_em'])
-        if acao == 'aprovar':
+        if acao in ('aprovar', 'reativar'):
             user = c.user
             user.is_teacher = True
             user.save(update_fields=['is_teacher'])
-            Professor.objects.get_or_create(
+            prof, _ = Professor.objects.get_or_create(
                 user=user,
                 defaults={'nome_publico': c.nome[:150], 'area': c.area, 'bio': c.apresentacao},
             )
+            prof.ativo = True
+            # A conduta aceite na candidatura vale para o professor.
+            if c.conduta_versao and not prof.conduta_versao:
+                prof.conduta_versao, prof.conduta_aceite_em = c.conduta_versao, c.conduta_aceite_em
+            prof.save(update_fields=['ativo', 'conduta_versao', 'conduta_aceite_em'])
+        if acao == 'suspender':
+            # Perde a área de professor e os conteúdos deixam de se ver (ficam guardados).
+            c.user.is_teacher = False
+            c.user.save(update_fields=['is_teacher'])
+            Professor.objects.filter(user=c.user).update(ativo=False)
     _avisar(c, acao, mensagem)
     return Response(_detalhe(_candidatura(c.pk)))
 
@@ -184,3 +232,23 @@ def notas(request, candidatura_id):
         return _erro('A nota tem no máximo 4000 caracteres.')
     NotaCandidatura.objects.create(candidatura=c, autor=request.user, texto=texto)
     return Response(_detalhe(c), status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def verificar(request, candidatura_id):
+    """Marca (ou desmarca) a identidade e as referências como verificadas."""
+    c = _candidatura(candidatura_id)
+    if not c:
+        return _erro('Candidatura não encontrada.', status.HTTP_404_NOT_FOUND)
+    campo = {'identidade': 'identidade_verificada_em', 'referencias': 'referencias_verificadas_em'}.get(request.data.get('o_que'))
+    if not campo:
+        return _erro('Indica o que verificar.')
+    setattr(c, campo, timezone.now() if request.data.get('verificado') else None)
+    c.save(update_fields=[campo, 'atualizado_em'])
+    texto = 'Identidade' if campo.startswith('identidade') else 'Referências'
+    NotaCandidatura.objects.create(
+        candidatura=c, autor=request.user, texto=f'{texto} {"verificada(s)" if request.data.get("verificado") else "por verificar"}.',
+    )
+    return Response(_detalhe(c))
+

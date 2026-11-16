@@ -123,7 +123,7 @@ def recomendados(request):
         cursos.append((pontos, c, motivo))
     cursos.sort(key=lambda x: (-x[0], -x[1].id))
 
-    videos_q = Video.objects.filter(ativo=True, oculto=False, curso__isnull=True)
+    videos_q = Video.objects.filter(ativo=True, oculto=False, curso__isnull=True, professor__ativo=True)
     if user.is_teacher:
         videos_q = videos_q.filter(Q(professor__user=user) | ~Q(id__in=vistos))
     else:

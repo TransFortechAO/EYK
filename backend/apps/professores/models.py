@@ -9,7 +9,11 @@ class Professor(models.Model):
     bio = models.TextField(blank=True)
     area = models.CharField(max_length=100, blank=True)
     foto = models.ImageField(upload_to='professores/', blank=True)
+    # Falso enquanto suspenso: perde a área de professor e os conteúdos deixam de se ver.
     ativo = models.BooleanField(default=True)
+    # Código de conduta aceite (ver conduta.VERSAO).
+    conduta_versao = models.CharField(max_length=20, blank=True)
+    conduta_aceite_em = models.DateTimeField(null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     views_creditadas = models.PositiveIntegerField(
         default=0, help_text='Nº de blocos de 20 visualizações já pagos (evita pagar duas vezes o mesmo bloco).',
@@ -68,6 +72,12 @@ class CandidaturaProfessor(models.Model):
     )
     # Justificação da rejeição ou o que corrigir (mostrado ao candidato).
     mensagem_decisao = models.TextField(blank=True)
+    # Fase 3: segurança.
+    referencias = models.JSONField(default=list, blank=True)
+    conduta_versao = models.CharField(max_length=20, blank=True)
+    conduta_aceite_em = models.DateTimeField(null=True, blank=True)
+    identidade_verificada_em = models.DateTimeField(null=True, blank=True)
+    referencias_verificadas_em = models.DateTimeField(null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     concluida_em = models.DateTimeField(null=True, blank=True)
@@ -92,6 +102,7 @@ class DocumentoCandidatura(models.Model):
         ('certificado', 'Certificado'),
         ('video', 'Vídeo de demonstração'),
         ('portefolio', 'Portefólio'),
+        ('identidade', 'Documento de identificação'),
         ('outro', 'Outra evidência'),
     ]
     candidatura = models.ForeignKey(CandidaturaProfessor, on_delete=models.CASCADE, related_name='documentos')
@@ -163,6 +174,8 @@ class Video(models.Model):
     # Ocultado pela moderação — distinto de `ativo`, que o professor controla
     # (o professor não consegue voltar a mostrar um vídeo oculto).
     oculto = models.BooleanField(default=False, db_index=True)
+    # Destinado a crianças e adolescentes: só com AutorizacaoMenores autorizada.
+    para_criancas = models.BooleanField(default=False)
     # Legendas em WebVTT (os .srt são convertidos no upload).
     legenda = models.FileField(upload_to='videos/legendas/', null=True, blank=True)
 
@@ -291,3 +304,38 @@ class Seguidor(models.Model):
 
     def __str__(self):
         return f'{self.utilizador} segue {self.professor}'
+
+
+def _caminho_autorizacao(instancia, nome: str) -> str:
+    import os
+
+    return f'autorizacoes-menores/{instancia.professor_id}/{os.path.basename(nome)}'
+
+
+class AutorizacaoMenores(models.Model):
+    """Autorização para ensinar crianças e adolescentes, separada da aprovação de professor.
+    Só com ela se marca um curso ou vídeo como "Para crianças e adolescentes"."""
+    NAO_PEDIDA, PEDIDA, AUTORIZADA, RECUSADA, RETIRADA = 'nao_pedida', 'pedida', 'autorizada', 'recusada', 'retirada'
+    ESTADOS = [
+        (NAO_PEDIDA, 'Não pedida'),
+        (PEDIDA, 'Pedida'),
+        (AUTORIZADA, 'Autorizada'),
+        (RECUSADA, 'Recusada'),
+        (RETIRADA, 'Retirada'),
+    ]
+    professor = models.OneToOneField(Professor, on_delete=models.CASCADE, related_name='autorizacao_menores')
+    estado = models.CharField(max_length=12, choices=ESTADOS, default=NAO_PEDIDA, db_index=True)
+    # Formação ou experiência em proteção de crianças.
+    formacao = models.TextField(blank=True)
+    # Registo criminal ou declaração equivalente (privado).
+    documento = models.FileField(storage=_storage_privado, upload_to=_caminho_autorizacao, max_length=300, blank=True)
+    nome_documento = models.CharField(max_length=255, blank=True)
+    declaracao_aceite_em = models.DateTimeField(null=True, blank=True)
+    pedida_em = models.DateTimeField(null=True, blank=True)
+    decidida_em = models.DateTimeField(null=True, blank=True)
+    decidida_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    motivo = models.TextField(blank=True)
+
+    def __str__(self):
+        return f'{self.professor} — {self.get_estado_display()}'
+

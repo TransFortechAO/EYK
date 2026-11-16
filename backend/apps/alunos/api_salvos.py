@@ -15,7 +15,7 @@ from .models import Salvo
 
 def _videos_visiveis():
     return (
-        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True)
+        Video.objects.filter(ativo=True, oculto=False, curso__isnull=True, professor__ativo=True)
         .select_related('professor')
         .prefetch_related('reacoes', 'visualizacoes', 'recursos')
     )

@@ -15,6 +15,7 @@ from apps.accounts.notificacoes import notificar
 from apps.instituicoes.armazenamento import categoria_de, servir
 
 from .candidaturas import EDITAVEIS, TransicaoInvalida, mudar_estado
+from .conduta import VERSAO as CONDUTA_VERSAO
 from .models import CandidaturaProfessor, DocumentoCandidatura
 
 MAX_DOCUMENTOS = 10
@@ -60,6 +61,8 @@ def candidatura_json(c: CandidaturaProfessor) -> dict:
         'portefolioUrl': c.portefolio_url,
         'mensagem': c.mensagem_decisao or None,
         'submetidaEm': c.submetida_em.isoformat() if c.submetida_em else None,
+        'referencias': c.referencias or [],
+        'condutaVersao': c.conduta_versao or None,
         'editavel': c.estado in EDITAVEIS,
         'documentos': [_documento_json(d) for d in c.documentos.all()],
     }
@@ -98,6 +101,20 @@ def minha_candidatura(request):
         if tipo not in ('', 'formal', 'competencia'):
             return _erro('Tipo de qualificação inválido.')
         c.tipo_qualificacao = tipo
+    if 'referencias' in d:
+        refs = d.get('referencias') or []
+        if not isinstance(refs, list) or len(refs) > 2:
+            return _erro('Indica no máximo duas referências.')
+        limpas = []
+        for r in refs:
+            nome = (str((r or {}).get('nome') or '')).strip()[:120]
+            contacto = (str((r or {}).get('contacto') or '')).strip()[:120]
+            relacao = (str((r or {}).get('relacao') or '')).strip()[:120]
+            if nome or contacto:
+                if not nome or not contacto:
+                    return _erro('Cada referência precisa de nome e contacto.')
+                limpas.append({'nome': nome, 'contacto': contacto, 'relacao': relacao})
+        c.referencias = limpas
     if 'portefolioUrl' in d:
         url = (d.get('portefolioUrl') or '').strip()
         if url and not _url_valido(url):
@@ -167,10 +184,15 @@ def _o_que_falta(c: CandidaturaProfessor) -> str | None:
         return 'Escolhe o tipo de qualificação: formal ou competência demonstrada.'
     if c.tipo_qualificacao == 'formal' and not any(d.tipo in ('diploma', 'certificado') for d in docs):
         return 'Junta pelo menos um diploma ou certificado.'
+    if not any(d.tipo == 'identidade' for d in docs):
+        return 'Junta o teu documento de identificação (só a equipa EYK o vê).'
+    if not c.referencias:
+        return 'Indica pelo menos uma referência (alguém que confirme o teu trabalho).'
     if c.tipo_qualificacao == 'competencia':
         if not c.experiencia.strip():
             return 'Descreve a tua experiência: o que já ensinaste ou fizeste nesta área.'
-        if not docs and not c.portefolio_url:
+        # O documento de identificação não é uma evidência de competência.
+        if not [d for d in docs if d.tipo != 'identidade'] and not c.portefolio_url:
             return 'Mostra o teu trabalho: junta um portefólio, um vídeo de demonstração ou outra evidência.'
     return None
 
@@ -183,7 +205,12 @@ def submeter(request):
         return recusa
     if (falta := _o_que_falta(c)):
         return _erro(falta)
+    if not request.data.get('aceitarConduta'):
+        return _erro('Aceita o código de conduta dos professores para enviar a candidatura.')
     with transaction.atomic():
+        c.conduta_versao = CONDUTA_VERSAO
+        c.conduta_aceite_em = timezone.now()
+        c.save(update_fields=['conduta_versao', 'conduta_aceite_em', 'atualizado_em'])
         try:
             mudar_estado(c, CandidaturaProfessor.SUBMETIDA, request.user, 'Candidatura enviada pelo candidato.')
         except TransicaoInvalida as erro:
