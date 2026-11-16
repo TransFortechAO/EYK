@@ -18,6 +18,12 @@ const apiInterno = (() => {
   if (valor) return /^https?:\/\//.test(valor) ? valor : `http://${valor}`;
   return process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000" : "";
 })();
+// Serviço FastAPI separado. Em desenvolvimento, executa-o na porta 8001.
+const quizApiInterno = (() => {
+  const valor = (process.env.QUIZ_API_INTERNO || "").trim().replace(/\/$/, "");
+  if (valor) return /^https?:\/\//.test(valor) ? valor : `http://${valor}`;
+  return process.env.NODE_ENV === "development" ? "http://127.0.0.1:8001" : "";
+})();
 const ROTAS_DJANGO = ["api", "accounts", "aluno", "media", "static", "admin"];
 
 const nextConfig: NextConfig = {
@@ -36,14 +42,18 @@ const nextConfig: NextConfig = {
       // Uploads de vídeos grandes em ligações lentas.
       proxyTimeout: 10 * 60 * 1000,
     },
-    async rewrites() {
-      // `:caminho*` perde a barra final — a regra com "/" no fim vem primeiro.
-      return ROTAS_DJANGO.flatMap((rota) => [
-        { source: `/${rota}/:caminho*/`, destination: `${apiInterno}/${rota}/:caminho*/` },
-        { source: `/${rota}/:caminho*`, destination: `${apiInterno}/${rota}/:caminho*` },
-      ]);
-    },
   }),
+  async rewrites() {
+    const django = apiInterno ? ROTAS_DJANGO.flatMap((rota) => [
+      { source: `/${rota}/:caminho*/`, destination: `${apiInterno}/${rota}/:caminho*/` },
+      { source: `/${rota}/:caminho*`, destination: `${apiInterno}/${rota}/:caminho*` },
+    ]) : [];
+    const quiz = quizApiInterno ? [
+      { source: "/quiz-api/:caminho*", destination: `${quizApiInterno}/api/v1/quiz/:caminho*` },
+      { source: "/quiz-static/:caminho*", destination: `${quizApiInterno}/static/:caminho*` },
+    ] : [];
+    return [...quiz, ...django];
+  },
 };
 
 export default nextConfig;

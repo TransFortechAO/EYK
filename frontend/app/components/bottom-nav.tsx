@@ -16,6 +16,7 @@ import {
   LogOut,
   MoreHorizontal,
   Settings,
+  Sparkles,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
@@ -48,6 +49,7 @@ const MAIS: Item[] = [
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
+  { title: "Quiz LGA", url: "/quiz-lga", icon: Sparkles },
 ];
 
 // Penúltimo do painel "Mais" (antes de "Sair"), como na barra lateral.

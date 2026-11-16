@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   SlidersHorizontal,
   Building2,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
@@ -59,6 +60,7 @@ const secondary = [
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Gamificação", url: "/gamificacao", icon: TrendingUp },
   { title: "Biblioteca LGA", url: "/biblioteca", icon: Hand },
+  { title: "Quiz LGA", url: "/quiz-lga", icon: Sparkles },
 ];
 
 const administracao = [
