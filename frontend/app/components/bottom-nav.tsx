@@ -25,6 +25,7 @@ import {
   UserCog,
   Video,
   type LucideIcon,
+  ClipboardCheck,
 } from "lucide-react";
 import { api, API_BASE_URL } from "@/lib/api";
 import { useAuth } from "@/components/auth-gate";
@@ -64,6 +65,7 @@ const PROFESSOR: Item[] = [
 const ADMINISTRACAO: Item[] = [
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
   ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
+  { title: "Candidaturas", url: "/configuracoes/administracao/candidaturas", icon: ClipboardCheck },
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },

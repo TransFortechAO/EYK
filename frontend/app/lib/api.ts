@@ -144,11 +144,80 @@ export function mensagemDeErro(err: unknown, fallback: string): string {
 
 // --- Tipos de UI (igual aos do mock-data.ts — compatibilidade total) ------------------
 
+export type EstadoCandidatura =
+  | "por_completar"
+  | "submetida"
+  | "em_analise"
+  | "correcao_pedida"
+  | "aprovada"
+  | "rejeitada"
+  | "suspensa";
+
+export type TipoDocumentoCandidatura = "diploma" | "certificado" | "video" | "portefolio" | "outro";
+
+export type DocumentoCandidatura = {
+  id: number;
+  tipo: TipoDocumentoCandidatura;
+  titulo: string;
+  nome: string | null;
+  tamanhoBytes: number;
+  link: string | null;
+  /** Endereço protegido (só o candidato e a equipa EYK o abrem). */
+  url: string | null;
+};
+
+export type Candidatura = {
+  estado: EstadoCandidatura;
+  nome: string;
+  email: string;
+  telefone: string;
+  area: string;
+  apresentacao: string;
+  tipoQualificacao: "formal" | "competencia" | null;
+  experiencia: string;
+  portefolioUrl: string;
+  mensagem: string | null;
+  submetidaEm: string | null;
+  editavel: boolean;
+  documentos: DocumentoCandidatura[];
+};
+
+export type AcaoCandidatura = "em_analise" | "aprovar" | "rejeitar" | "corrigir";
+
+export type LinhaCandidatura = {
+  id: number;
+  nome: string;
+  email: string;
+  area: string;
+  estado: EstadoCandidatura;
+  tipoQualificacao: "formal" | "competencia" | null;
+  submetidaEm: string | null;
+  documentos: number;
+};
+
+export type ListaCandidaturas = {
+  candidaturas: LinhaCandidatura[];
+  contagens: Record<string, number>;
+  areas: string[];
+};
+
+export type CandidaturaAdmin = Candidatura & {
+  id: number;
+  userId: number;
+  criadaEm: string;
+  decididaEm: string | null;
+  decididaPor: string | null;
+  historico: { de: EstadoCandidatura | null; para: EstadoCandidatura; por: string; mensagem: string; em: string }[];
+  notas: { id: number; autor: string; texto: string; em: string }[];
+};
+
 export type AuthUser = {
   id: number;
   name: string;
   username: string;
   email: string;
+  /** Candidatura a professor em curso (null para quem não se candidatou ou já é professor). */
+  candidaturaProfessor?: { estado: EstadoCandidatura; mensagem: string | null } | null;
   bio?: string;
   foto?: string | null;
   initials: string;
@@ -1735,6 +1804,27 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ token }) },
     );
   },
+  /** A candidatura a professor do próprio (Fase 1: completar, juntar documentos, submeter). */
+  candidatura: {
+    obter: async (): Promise<Candidatura | null> =>
+      (await fetchAPI<{ candidatura: Candidatura | null }>('/api/candidatura/')).candidatura,
+    guardar: async (dados: Partial<Pick<Candidatura, 'area' | 'telefone' | 'apresentacao' | 'experiencia' | 'portefolioUrl'>> & { tipoQualificacao?: string }): Promise<Candidatura> =>
+      (await fetchAPI<{ candidatura: Candidatura }>('/api/candidatura/', { method: 'PATCH', body: JSON.stringify(dados) })).candidatura,
+    carregarDocumento: async (dados: { tipo: TipoDocumentoCandidatura; titulo?: string; ficheiro?: File; link?: string }): Promise<DocumentoCandidatura> => {
+      const corpo = new FormData();
+      corpo.append('tipo', dados.tipo);
+      if (dados.titulo) corpo.append('titulo', dados.titulo);
+      if (dados.ficheiro) corpo.append('ficheiro', dados.ficheiro);
+      if (dados.link) corpo.append('link', dados.link);
+      return fetchAPI<DocumentoCandidatura>('/api/candidatura/documentos/', { method: 'POST', body: corpo });
+    },
+    removerDocumento: async (id: number): Promise<void> => {
+      await fetchAPI(`/api/candidatura/documentos/${id}/`, { method: 'DELETE' });
+    },
+    submeter: async (): Promise<Candidatura> =>
+      (await fetchAPI<{ candidatura: Candidatura }>('/api/candidatura/submeter/', { method: 'POST' })).candidatura,
+  },
+
   concluirCandidaturaProfessor: async (token: string, password: string) => {
     return await fetchAPI<{ ok: boolean; user: AuthUser | null }>(
       '/accounts/auth/professor/candidatura/concluir/',
@@ -2163,6 +2253,21 @@ export const api = {
   },
 
   admin: {
+    /** Candidaturas a professor: a equipa EYK analisa e decide (Fase 2). */
+    candidaturas: {
+      listar: async (filtro: { estado?: string; area?: string; q?: string }): Promise<ListaCandidaturas> => {
+        const p = new URLSearchParams();
+        if (filtro.estado) p.set('estado', filtro.estado);
+        if (filtro.area) p.set('area', filtro.area);
+        if (filtro.q) p.set('q', filtro.q);
+        return fetchAPI<ListaCandidaturas>(`/api/admin/candidaturas/?${p.toString()}`);
+      },
+      obter: async (id: number): Promise<CandidaturaAdmin> => fetchAPI<CandidaturaAdmin>(`/api/admin/candidaturas/${id}/`),
+      decidir: async (id: number, acao: AcaoCandidatura, mensagem = ''): Promise<CandidaturaAdmin> =>
+        fetchAPI<CandidaturaAdmin>(`/api/admin/candidaturas/${id}/decidir/`, { method: 'POST', body: JSON.stringify({ acao, mensagem }) }),
+      nota: async (id: number, texto: string): Promise<CandidaturaAdmin> =>
+        fetchAPI<CandidaturaAdmin>(`/api/admin/candidaturas/${id}/notas/`, { method: 'POST', body: JSON.stringify({ texto }) }),
+    },
     // ── Moderação ──────────────────────────────────────────────────────
     filaModeracao: async (estado: 'pendente' | 'resolvida' | 'rejeitada' = 'pendente') => {
       return await fetchAPI<{ itens: ItemFilaModeracao[]; contadores: { pendentes: number; contestacoes: number } }>(

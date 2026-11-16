@@ -30,6 +30,7 @@ const PAGINAS: Record<string, PaginaComPesquisa> = {
   "/professor/cursos": { tipo: "pagina", placeholder: "Pesquisar nos meus cursos…" },
   "/professor/videos": { tipo: "pagina", placeholder: "Pesquisar nos meus vídeos…" },
   "/configuracoes/administracao/utilizadores": { tipo: "pagina", placeholder: "Pesquisar utilizadores por nome ou email…" },
+  "/configuracoes/administracao/candidaturas": { tipo: "pagina", placeholder: "Pesquisar candidaturas por nome, email ou área…" },
   "/configuracoes/administracao/professores": { tipo: "pagina", placeholder: "Pesquisar professores por nome, email ou área…" },
   "/instituicao/turmas": { tipo: "pagina", placeholder: "Pesquisar turmas…" },
   "/instituicao/avisos": { tipo: "pagina", placeholder: "Pesquisar avisos…" },

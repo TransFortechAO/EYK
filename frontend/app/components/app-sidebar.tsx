@@ -23,6 +23,7 @@ import {
   SlidersHorizontal,
   Building2,
   Sparkles,
+  ClipboardCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { api, API_BASE_URL } from "@/lib/api";
@@ -66,6 +67,7 @@ const secondary = [
 const administracao = [
   { title: "Métricas", url: "/configuracoes/administracao/metricas", icon: BarChart3 },
   ...(INSTITUICOES_ATIVAS ? [{ title: "Escolas e instituições", url: "/configuracoes/administracao/instituicoes", icon: Building2 }] : []),
+  { title: "Candidaturas", url: "/configuracoes/administracao/candidaturas", icon: ClipboardCheck },
   { title: "Moderação", url: "/configuracoes/administracao/moderacao", icon: ShieldAlert },
   { title: "Plataforma", url: "/configuracoes/administracao/plataforma", icon: SlidersHorizontal },
   { title: "Professores", url: "/configuracoes/administracao/professores", icon: GraduationCap },

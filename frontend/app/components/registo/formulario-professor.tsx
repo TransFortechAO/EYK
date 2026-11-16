@@ -75,7 +75,7 @@ export function FormularioProfessor() {
         <p className="font-serif text-2xl font-bold text-white">Verifica o teu email.</p>
         <p className="text-sm leading-relaxed text-white/60">
           Enviámos um link para <strong className="text-white/85">{enviadoPara}</strong>. Abre-o para escolheres a tua
-          palavra-passe — a tua conta de professor é criada nesse momento. O link vale 3 dias.
+          palavra-passe — a conta é criada nesse momento e completas a candidatura. O link vale 3 dias.
         </p>
         {aviso && <AuthAlert tipo="sucesso">{aviso}</AuthAlert>}
         {erro && <AuthAlert tipo="erro">{erro}</AuthAlert>}
@@ -131,7 +131,7 @@ export function FormularioProfessor() {
         {isPending ? <AuthSpinner texto="A enviar…" /> : "Enviar pedido"}
       </Button>
       <p className="text-center text-xs leading-relaxed text-white/45">
-        Recebes um email para confirmar o endereço e escolher a palavra-passe; a conta de professor é criada nesse momento.
+        Recebes um email para confirmar o endereço e escolher a palavra-passe. Depois completas a candidatura e a equipa EYK aprova; enquanto esperas, usas a EYK como aluno.
       </p>
     </form>
   );
