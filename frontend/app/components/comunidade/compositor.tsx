@@ -153,7 +153,7 @@ export function CompositorPost({
           <div className="space-y-4 overflow-y-auto p-5">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 shrink-0">
-                <UserInitialsLink />
+                <UserInitialsLink noLink name={user?.name} initials={user?.initials} foto={user?.foto ?? null} />
               </Avatar>
               <p className="text-sm font-medium">{user?.name}</p>
             </div>

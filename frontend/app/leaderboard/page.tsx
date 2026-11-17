@@ -95,7 +95,7 @@ function Lista({ linhas, rotuloValor }: { linhas: Linha[]; rotuloValor: string }
                   userId={l.userId ?? undefined}
                   size={36}
                   backgroundColor="transparent"
-                  className={cn(l.isMe ? "bg-gradient-gold text-primary-foreground" : "bg-secondary")}
+                  className={cn(l.isMe ? "bg-gradient-gold text-primary-foreground" : "bg-secondary text-secondary-foreground")}
                 />
               </Avatar>
               <p className="truncate font-medium">
