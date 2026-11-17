@@ -7,22 +7,17 @@ import { PageHeader } from "@/components/eyk";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  imagemDoQuiz,
+  porValidar,
+  quizLga,
+  type QuizAnswerResult,
+  type QuizCategory,
+  type QuizQuestion,
+} from "@/lib/quiz-lga";
 
-type QuizCategory = { name: string; question_count: number; source_note?: string | null };
-type QuizQuestion = {
-  id: string;
-  category: string;
-  question: string;
-  question_type: string;
-  image_url: string;
-  options: string[];
-  validation_status?: string | null;
-};
-type AnswerResult = {
-  question_id: string;
-  is_correct: boolean;
-  correct_answer: string;
-};
+// Ao fim deste tempo a carregar, avisa que o serviço está a acordar.
+const AVISO_ACORDAR_MS = 5000;
 
 function shuffle<T>(items: T[]): T[] {
   const shuffled = [...items];
@@ -33,31 +28,13 @@ function shuffle<T>(items: T[]): T[] {
   return shuffled;
 }
 
-async function quizRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`/quiz-api${path}`, {
-    ...options,
-    cache: "no-store",
-    headers: { ...(options?.body ? { "Content-Type": "application/json" } : {}), ...options?.headers },
-  });
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { detail?: string } | null;
-    throw new Error(payload?.detail || `A API respondeu com o estado ${response.status}.`);
-  }
-  return response.json() as Promise<T>;
-}
-
-function imagemUrl(path: string): string {
-  if (/^https?:\/\//i.test(path)) return path;
-  return path.replace(/^\/static\//, "/quiz-static/").replace(/^static\//, "/quiz-static/");
-}
-
 export default function QuizLgaPage() {
   const [categories, setCategories] = useState<QuizCategory[]>([]);
   const [category, setCategory] = useState("");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
-  const [result, setResult] = useState<AnswerResult | null>(null);
+  const [result, setResult] = useState<QuizAnswerResult | null>(null);
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
@@ -65,15 +42,18 @@ export default function QuizLgaPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aAcordar, setAAcordar] = useState(false);
   const lastSequence = useRef("");
 
   const loadQuiz = useCallback(async (selectedCategory = "") => {
     setLoading(true);
     setError(null);
+    setAAcordar(false);
+    const aviso = setTimeout(() => setAAcordar(true), AVISO_ACORDAR_MS);
     try {
       const [availableCategories, availableQuestions] = await Promise.all([
-        quizRequest<QuizCategory[]>("/categories"),
-        quizRequest<QuizQuestion[]>(`/questions${selectedCategory ? `?category=${encodeURIComponent(selectedCategory)}` : ""}`),
+        quizLga.categorias(),
+        quizLga.perguntas(selectedCategory || undefined),
       ]);
       setCategories(availableCategories);
       setCategory(selectedCategory || availableCategories[0]?.name || "");
@@ -97,6 +77,8 @@ export default function QuizLgaPage() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível carregar o quiz.");
     } finally {
+      clearTimeout(aviso);
+      setAAcordar(false);
       setLoading(false);
     }
   }, []);
@@ -110,10 +92,7 @@ export default function QuizLgaPage() {
     setSending(true);
     setError(null);
     try {
-      const answer = await quizRequest<AnswerResult>("/answer", {
-        method: "POST",
-        body: JSON.stringify({ question_id: question.id, answer: choice }),
-      });
+      const answer = await quizLga.responder(question.id, choice);
       setResult(answer);
       if (answer.is_correct) {
         setScore((value) => value + 10);
@@ -176,13 +155,13 @@ export default function QuizLgaPage() {
       )}
 
       {loading ? (
-        <Card className="grid min-h-64 place-items-center p-8 text-muted-foreground"><span className="flex items-center gap-2"><LoaderCircle className="h-5 w-5 animate-spin" />A carregar perguntas…</span></Card>
+        <Card className="grid min-h-64 place-items-center p-8 text-muted-foreground"><div className="flex flex-col items-center gap-2 text-center" aria-live="polite"><span className="flex items-center gap-2"><LoaderCircle className="h-5 w-5 animate-spin" />A carregar perguntas…</span>{aAcordar && <span className="max-w-sm text-sm">O serviço do quiz está a acordar. Da primeira vez pode demorar até um minuto.</span>}</div></Card>
       ) : question && !completed ? (
         <Card className="overflow-hidden shadow-soft">
           <div className="grid md:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
             <div className="flex min-h-72 items-center justify-center bg-muted/50 p-6 sm:p-10">
               <Image
-                src={imagemUrl(question.image_url)}
+                src={imagemDoQuiz(question.image_url)}
                 alt="Gesto da pergunta de Língua Gestual Angolana"
                 width={512}
                 height={512}
@@ -194,6 +173,9 @@ export default function QuizLgaPage() {
             <div className="flex flex-col p-6 sm:p-8">
               <div className="mb-5 flex items-center gap-2 text-sm text-muted-foreground"><Hand className="h-4 w-4" />{question.category}</div>
               <h2 className="font-serif text-2xl font-semibold">{question.question}</h2>
+              {porValidar(question) && (
+                <p className="mt-2 text-xs text-muted-foreground">Este gesto ainda está a ser revisto por um especialista em LGA.</p>
+              )}
               <div className="mt-6 grid grid-cols-2 gap-3">
                 {question.options.map((option) => {
                   const isCorrect = result?.correct_answer === option;
@@ -225,6 +207,7 @@ export default function QuizLgaPage() {
                   <p className="mt-2 text-sm text-muted-foreground">
                     {result.is_correct ? "+10 pontos." : "0 pontos nesta pergunta."}
                   </p>
+                  {result.explanation && <p className="mt-1 text-sm text-muted-foreground">{result.explanation}</p>}
                 </div>
               )}
 
