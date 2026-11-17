@@ -649,10 +649,11 @@ function PostOriginal({ original }: { original: NonNullable<Post["repostDe"]> })
       <div className="flex items-center gap-2">
         <Avatar className="h-7 w-7">
           <UserAvatar
-            name={original.author ?? ""}
-            initials={original.initials ?? "??"}
-            foto={original.authorFoto ?? undefined}
+            name={original.author || undefined}
+            initials={original.initials || undefined}
+            foto={original.authorFoto ?? null}
             userId={original.authorId ?? undefined}
+            size={28}
           />
         </Avatar>
         {original.authorId ? (
