@@ -47,7 +47,27 @@ def _marcar_editado(obj, antes, campos, houve_ficheiros=False):
 
 
 def _get_professor(request):
-    return Professor.objects.filter(user=request.user).first()
+    # Suspenso (ativo=False) não usa a área de professor.
+    return Professor.objects.filter(user=request.user, ativo=True).first()
+
+
+def _bloqueio_seguranca(professor, request):
+    """Antes de criar ou alterar: código de conduta aceite e, para conteúdos para crianças,
+    a autorização própria. Devolve a resposta de recusa, ou None."""
+    from .conduta import VERSAO
+    from .seguranca import autorizado_para_menores, quer_para_criancas
+
+    if professor.conduta_versao != VERSAO:
+        return Response(
+            {'detail': 'Aceita o código de conduta dos professores antes de continuar.', 'codigo': 'conduta'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if quer_para_criancas(request) and not autorizado_para_menores(professor):
+        return Response(
+            {'detail': 'Para marcar conteúdos para crianças e adolescentes precisas da autorização própria.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return None
 
 
 def _professor_required_response():
@@ -172,6 +192,8 @@ def professor_cursos(request):
         return _professor_required_response()
 
     if request.method == 'POST':
+        if (recusa := _bloqueio_seguranca(professor, request)):
+            return recusa
         arquivos = request.FILES.getlist('videos')
         if not arquivos:
             return Response(
@@ -228,6 +250,8 @@ def professor_curso_detail(request, curso_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     if request.method == 'PATCH':
+        if (recusa := _bloqueio_seguranca(professor, request)):
+            return recusa
         if request.FILES.getlist('videos'):
             return Response({'detail': MSG_NAO_TROCAR_AULAS}, status=status.HTTP_400_BAD_REQUEST)
         antes = _estado(curso, CAMPOS_CONTEUDO_CURSO)
@@ -360,6 +384,8 @@ def professor_videos(request):
         return _professor_required_response()
 
     if request.method == 'POST':
+        if (recusa := _bloqueio_seguranca(professor, request)):
+            return recusa
         serializer = ProfessorVideoSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         try:
@@ -399,6 +425,8 @@ def professor_video_detail(request, video_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     if request.method == 'PATCH':
+        if (recusa := _bloqueio_seguranca(professor, request)):
+            return recusa
         url_nova = request.data.get('url_externa')
         troca_link = url_nova is not None and (url_nova or '') != (video.url_externa or '')
         if request.FILES.get('arquivo') or troca_link:

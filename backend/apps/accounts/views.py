@@ -477,6 +477,31 @@ def pesquisar_utilizadores(request):
     return JsonResponse({'ok': True, 'utilizadores': resultados})
 
 
+def _seguranca_payload(user: User) -> dict | None:
+    """Para professores: se falta aceitar o código de conduta e o estado da autorização para menores."""
+    if not user.is_teacher:
+        return None
+    from apps.professores.conduta import VERSAO
+    from apps.professores.models import AutorizacaoMenores, Professor
+
+    prof = Professor.objects.filter(user=user).first()
+    if not prof:
+        return None
+    autorizacao = AutorizacaoMenores.objects.filter(professor=prof).values_list('estado', flat=True).first()
+    return {'condutaPendente': prof.conduta_versao != VERSAO, 'autorizacaoMenores': autorizacao or 'nao_pedida'}
+
+
+def _candidatura_payload(user: User) -> dict | None:
+    """Estado da candidatura a professor (None para quem nunca se candidatou ou já é
+    professor por outra via)."""
+    from apps.professores.models import CandidaturaProfessor
+
+    c = CandidaturaProfessor.objects.filter(user=user).values('estado', 'mensagem_decisao').first()
+    if not c or (user.is_teacher and c['estado'] == CandidaturaProfessor.APROVADA):
+        return None
+    return {'estado': c['estado'], 'mensagem': c['mensagem_decisao'] or None}
+
+
 def _user_payload(user: User) -> dict:
     name = user.get_display_name()
     initials = (
@@ -514,6 +539,8 @@ def _user_payload(user: User) -> dict:
         'deveAlterarSenha': bool(user.deve_alterar_senha),
         'perfilCompleto': bool(user.perfil_completo),
         'emailVerificado': bool(user.email_verificado),
+        'candidaturaProfessor': _candidatura_payload(user),
+        'professorSeguranca': _seguranca_payload(user),
         'temaPreferido': user.tema_preferido,
         'notifEmailNovidades': bool(user.notif_email_novidades),
         'notifEmailComunidade': bool(user.notif_email_comunidade),

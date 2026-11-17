@@ -33,6 +33,21 @@ class TestNotificacaoList:
         assert tipos["Novo curso!"] == "course"
         assert tipos["Saque processado."] == "system"
 
+    def test_link_proprio_ou_a_pagina_do_tipo(self, client, aluno_user):
+        Notificacao.objects.create(utilizador=aluno_user, tipo="comunidade", mensagem="Comentário", link="/inicio?post=3")
+        Notificacao.objects.create(utilizador=aluno_user, tipo="conquista", mensagem="Badge")
+        Notificacao.objects.create(utilizador=aluno_user, tipo="lancamento", mensagem="Curso")
+        Notificacao.objects.create(utilizador=aluno_user, tipo="moderacao", mensagem="Denúncia")
+        client.force_login(aluno_user)
+
+        links = {n["title"]: n["link"] for n in client.get(reverse("notificacao-list")).json()}
+        assert links == {
+            "Comentário": "/inicio?post=3",
+            "Badge": "/gamificacao",
+            "Curso": "/cursos",
+            "Denúncia": "/inicio",
+        }
+
 
 @pytest.mark.django_db
 class TestNotificacaoMarcarLida:

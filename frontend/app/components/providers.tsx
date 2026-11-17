@@ -11,6 +11,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { AuthGate } from "@/components/auth-gate";
 import { OfflineBanner } from "@/components/pwa";
 import { EmailVerificationBanner } from "@/components/email-verification-banner";
+import { CandidaturaProfessor } from "@/components/candidatura/candidatura-professor";
 import { AvisoPlataforma } from "@/components/aviso-plataforma";
 import { EscolaGlobal } from "@/components/instituicao/contexto";
 import { SalvosProvider } from "@/components/ds/botao-salvar";
@@ -93,6 +94,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   <AvisoPlataforma />
                   <OfflineBanner />
                   <EmailVerificationBanner />
+                <CandidaturaProfessor />
                   <Topbar />
                   <main className="flex-1 p-4 sm:p-6 md:p-8 movel:pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
                     <PageTransition routeKey={caminho}>

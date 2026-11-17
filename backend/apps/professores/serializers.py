@@ -79,7 +79,7 @@ class ProfessorCursoSerializer(serializers.ModelSerializer):
             'id', 'titulo', 'descricao', 'categoria', 'categoria_nome', 'preco',
             'duracao', 'thumbnail', 'ativo', 'publicado_em', 'criado_em', 'atualizado_em', 'editado_em',
             'total_inscritos', 'total_visualizacoes', 'conclusao_media', 'duracao_total_segundos',
-            'videos', 'recursos', 'oculto', 'uso_ia_lga', 'uso_ia_lga_em', 'uso_ia_lga_versao',
+            'videos', 'recursos', 'oculto', 'uso_ia_lga', 'uso_ia_lga_em', 'uso_ia_lga_versao', 'para_criancas',
         ]
         read_only_fields = [
             'id', 'criado_em', 'atualizado_em', 'editado_em', 'total_inscritos', 'total_visualizacoes',
@@ -149,7 +149,7 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
             'categoria', 'categoria_nome',
             'criado_em', 'atualizado_em', 'editado_em', 'ativo', 'ordem', 'duracao_segundos',
             'total_likes', 'total_visualizacoes', 'total_comentarios', 'recursos',
-            'oculto', 'tem_legenda', 'uso_ia_lga', 'uso_ia_lga_em', 'uso_ia_lga_versao',
+            'oculto', 'tem_legenda', 'uso_ia_lga', 'uso_ia_lga_em', 'uso_ia_lga_versao', 'para_criancas',
         ]
         read_only_fields = [
             'id', 'criado_em', 'atualizado_em', 'editado_em', 'duracao_segundos',

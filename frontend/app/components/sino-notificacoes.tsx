@@ -62,7 +62,7 @@ export function SinoNotificacoes({ naoLidas }: { naoLidas: number }) {
                 {recentes.map((n) => (
                   <li key={n.id}>
                     <Link
-                      href={n.link || "/notificacoes"}
+                      href={n.link}
                       onClick={() => {
                         setAberto(false);
                         if (!n.read) {

@@ -9,7 +9,11 @@ class Professor(models.Model):
     bio = models.TextField(blank=True)
     area = models.CharField(max_length=100, blank=True)
     foto = models.ImageField(upload_to='professores/', blank=True)
+    # Falso enquanto suspenso: perde a área de professor e os conteúdos deixam de se ver.
     ativo = models.BooleanField(default=True)
+    # Código de conduta aceite (ver conduta.VERSAO).
+    conduta_versao = models.CharField(max_length=20, blank=True)
+    conduta_aceite_em = models.DateTimeField(null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     views_creditadas = models.PositiveIntegerField(
         default=0, help_text='Nº de blocos de 20 visualizações já pagos (evita pagar duas vezes o mesmo bloco).',
@@ -19,17 +23,61 @@ class Professor(models.Model):
         return self.nome_publico
 
 
+def _caminho_documento(instancia, nome: str) -> str:
+    import os
+
+    return f'candidaturas/{instancia.candidatura_id}/{os.path.basename(nome)}'
+
+
+def _storage_privado():
+    from apps.instituicoes.armazenamento import storage_privado
+
+    return storage_privado()
+
+
 class CandidaturaProfessor(models.Model):
-    """Pedido de quem quer ser professor, feito na página pública
-    "Quero ser professor". Fica guardado (para consulta e para tratar abusos
-    mais tarde); a conta só é criada quando a pessoa confirma o email e
-    escolhe a sua palavra-passe."""
+    """Pedido de quem quer ser professor (separador "Professor" do registo).
+
+    1. A pessoa deixa nome e email; recebe um link e escolhe a palavra-passe: a conta é
+       criada como aluno e a candidatura fica `por_completar`.
+    2. No primeiro login completa o formulário de competências e submete (`submetida`).
+    3. A equipa EYK decide (Fase 2). Só `aprovada` dá as funções de professor.
+    """
+    POR_COMPLETAR, SUBMETIDA, EM_ANALISE = 'por_completar', 'submetida', 'em_analise'
+    CORRECAO_PEDIDA, APROVADA, REJEITADA, SUSPENSA = 'correcao_pedida', 'aprovada', 'rejeitada', 'suspensa'
+    ESTADOS = [
+        (POR_COMPLETAR, 'Por completar'),
+        (SUBMETIDA, 'Submetida'),
+        (EM_ANALISE, 'Em análise'),
+        (CORRECAO_PEDIDA, 'Correção pedida'),
+        (APROVADA, 'Aprovada'),
+        (REJEITADA, 'Rejeitada'),
+        (SUSPENSA, 'Suspensa'),
+    ]
+    QUALIFICACOES = [('formal', 'Qualificação formal'), ('competencia', 'Competência demonstrada')]
 
     nome = models.CharField(max_length=120)
     email = models.EmailField()
     telefone = models.CharField(max_length=30, blank=True)
     area = models.CharField(max_length=100, blank=True)
     apresentacao = models.TextField(blank=True)
+    estado = models.CharField(max_length=16, choices=ESTADOS, default=POR_COMPLETAR, db_index=True)
+    tipo_qualificacao = models.CharField(max_length=12, choices=QUALIFICACOES, blank=True)
+    experiencia = models.TextField(blank=True)
+    portefolio_url = models.URLField(blank=True)
+    submetida_em = models.DateTimeField(null=True, blank=True)
+    decidida_em = models.DateTimeField(null=True, blank=True)
+    decidida_por = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='candidaturas_decididas',
+    )
+    # Justificação da rejeição ou o que corrigir (mostrado ao candidato).
+    mensagem_decisao = models.TextField(blank=True)
+    # Fase 3: segurança.
+    referencias = models.JSONField(default=list, blank=True)
+    conduta_versao = models.CharField(max_length=20, blank=True)
+    conduta_aceite_em = models.DateTimeField(null=True, blank=True)
+    identidade_verificada_em = models.DateTimeField(null=True, blank=True)
+    referencias_verificadas_em = models.DateTimeField(null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     concluida_em = models.DateTimeField(null=True, blank=True)
@@ -44,6 +92,54 @@ class CandidaturaProfessor(models.Model):
 
     def __str__(self):
         return f'{self.nome} <{self.email}>'
+
+
+class DocumentoCandidatura(models.Model):
+    """Diploma, certificado, vídeo de demonstração ou outra evidência. Ficheiros privados
+    (nunca em /media): só o candidato e a equipa EYK os abrem."""
+    TIPOS = [
+        ('diploma', 'Diploma'),
+        ('certificado', 'Certificado'),
+        ('video', 'Vídeo de demonstração'),
+        ('portefolio', 'Portefólio'),
+        ('identidade', 'Documento de identificação'),
+        ('outro', 'Outra evidência'),
+    ]
+    candidatura = models.ForeignKey(CandidaturaProfessor, on_delete=models.CASCADE, related_name='documentos')
+    tipo = models.CharField(max_length=12, choices=TIPOS)
+    titulo = models.CharField(max_length=150, blank=True)
+    ficheiro = models.FileField(storage=_storage_privado, upload_to=_caminho_documento, max_length=300, blank=True)
+    nome_ficheiro = models.CharField(max_length=255, blank=True)
+    tamanho_bytes = models.BigIntegerField(default=0)
+    link = models.URLField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['criado_em', 'id']
+
+
+class NotaCandidatura(models.Model):
+    """Nota interna da equipa EYK (ex: parecer de um especialista externo). O candidato não a vê."""
+    candidatura = models.ForeignKey(CandidaturaProfessor, on_delete=models.CASCADE, related_name='notas')
+    autor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='+')
+    texto = models.TextField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['criado_em', 'id']
+
+
+class HistoricoCandidatura(models.Model):
+    """Cada mudança de estado: quem, quando, de → para e a mensagem. Nunca se edita."""
+    candidatura = models.ForeignKey(CandidaturaProfessor, on_delete=models.CASCADE, related_name='historico')
+    de = models.CharField(max_length=16, blank=True)
+    para = models.CharField(max_length=16)
+    por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    mensagem = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['criado_em', 'id']
 
 
 class Video(models.Model):
@@ -78,6 +174,8 @@ class Video(models.Model):
     # Ocultado pela moderação — distinto de `ativo`, que o professor controla
     # (o professor não consegue voltar a mostrar um vídeo oculto).
     oculto = models.BooleanField(default=False, db_index=True)
+    # Destinado a crianças e adolescentes: só com AutorizacaoMenores autorizada.
+    para_criancas = models.BooleanField(default=False)
     # Legendas em WebVTT (os .srt são convertidos no upload).
     legenda = models.FileField(upload_to='videos/legendas/', null=True, blank=True)
 
@@ -206,3 +304,38 @@ class Seguidor(models.Model):
 
     def __str__(self):
         return f'{self.utilizador} segue {self.professor}'
+
+
+def _caminho_autorizacao(instancia, nome: str) -> str:
+    import os
+
+    return f'autorizacoes-menores/{instancia.professor_id}/{os.path.basename(nome)}'
+
+
+class AutorizacaoMenores(models.Model):
+    """Autorização para ensinar crianças e adolescentes, separada da aprovação de professor.
+    Só com ela se marca um curso ou vídeo como "Para crianças e adolescentes"."""
+    NAO_PEDIDA, PEDIDA, AUTORIZADA, RECUSADA, RETIRADA = 'nao_pedida', 'pedida', 'autorizada', 'recusada', 'retirada'
+    ESTADOS = [
+        (NAO_PEDIDA, 'Não pedida'),
+        (PEDIDA, 'Pedida'),
+        (AUTORIZADA, 'Autorizada'),
+        (RECUSADA, 'Recusada'),
+        (RETIRADA, 'Retirada'),
+    ]
+    professor = models.OneToOneField(Professor, on_delete=models.CASCADE, related_name='autorizacao_menores')
+    estado = models.CharField(max_length=12, choices=ESTADOS, default=NAO_PEDIDA, db_index=True)
+    # Formação ou experiência em proteção de crianças.
+    formacao = models.TextField(blank=True)
+    # Registo criminal ou declaração equivalente (privado).
+    documento = models.FileField(storage=_storage_privado, upload_to=_caminho_autorizacao, max_length=300, blank=True)
+    nome_documento = models.CharField(max_length=255, blank=True)
+    declaracao_aceite_em = models.DateTimeField(null=True, blank=True)
+    pedida_em = models.DateTimeField(null=True, blank=True)
+    decidida_em = models.DateTimeField(null=True, blank=True)
+    decidida_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    motivo = models.TextField(blank=True)
+
+    def __str__(self):
+        return f'{self.professor} — {self.get_estado_display()}'
+

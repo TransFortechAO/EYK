@@ -31,7 +31,7 @@ def _token_do_email():
 
 @pytest.mark.django_db
 class TestFluxoCompleto:
-    def test_candidatura_confirmacao_e_conta_criada_sem_intervencao(self, client):
+    def test_candidatura_cria_conta_de_aluno_a_aguardar_aprovacao(self, client):
         r = _post(client, "accounts:candidatura-enviar", DADOS)
         assert r.status_code == 200 and r.json()["ok"] is True
         assert len(mail.outbox) == 1
@@ -47,17 +47,18 @@ class TestFluxoCompleto:
         r = _post(client, "accounts:candidatura-concluir", {"token": token, "password": SENHA})
         assert r.status_code == 200
         corpo = r.json()
-        assert corpo["ok"] is True and corpo["user"]["isTeacher"] is True
+        # Ainda não é professor: entra como aluno e completa a candidatura.
+        assert corpo["ok"] is True and corpo["user"]["isTeacher"] is False
+        assert corpo["user"]["candidaturaProfessor"] == {"estado": "por_completar", "mensagem": None}
 
         user = User.objects.get(email=DADOS["email"])
-        assert user.is_teacher and user.email_verificado
+        assert not user.is_teacher and user.email_verificado
         assert user.username == "ana_silva"
         assert user.check_password(SENHA)
-        prof = Professor.objects.get(user=user)
-        assert prof.nome_publico == "Ana Silva"
-        assert prof.area == "Língua gestual"
-        assert prof.bio == "Intérprete há 10 anos."
-        assert CandidaturaProfessor.objects.get(email=DADOS["email"]).concluida_em is not None
+        assert not Professor.objects.filter(user=user).exists()
+        c = CandidaturaProfessor.objects.get(email=DADOS["email"])
+        assert c.concluida_em is not None and c.estado == "por_completar" and c.user == user
+        assert c.area == "Língua gestual" and c.apresentacao == "Intérprete há 10 anos."
 
         # Sessão iniciada: já vê a própria conta.
         me = client.get(reverse("accounts:auth-me")).json()

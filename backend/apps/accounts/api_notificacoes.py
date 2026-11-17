@@ -25,6 +25,21 @@ TIPO_TITLE = {
     'moderacao': 'Moderação',
 }
 
+# Para onde leva uma notificação sem link próprio (as antigas e as genéricas):
+# a página do seu tipo. Assim todas as notificações abrem alguma coisa.
+DESTINO_POR_TIPO = {
+    'conquista': '/gamificacao',
+    'saque': '/gamificacao',
+    'lancamento': '/cursos',
+    'comunidade': '/inicio',
+    'novidade': '/inicio',
+    'moderacao': '/inicio',
+}
+
+
+def destino(n: Notificacao) -> str:
+    return n.link or DESTINO_POR_TIPO.get(n.tipo, '/inicio')
+
 
 def _time_ago(criado_em: datetime) -> str:
     now = timezone.now()
@@ -59,7 +74,7 @@ def _build_notificacao_dict(n: Notificacao) -> dict:
         'body': body,
         'timeAgo': _time_ago(n.criado_em),
         'read': n.lida,
-        'link': n.link or None,
+        'link': destino(n),
     }
 
 

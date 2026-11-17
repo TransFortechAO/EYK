@@ -26,6 +26,7 @@ from apps.gamificacao.api_views import (
     leaderboard_list,
     leaderboard_professores_mensal,
 )
+from apps.professores import api_admin_candidaturas, api_candidatura, api_seguranca
 from apps.professores.api_sugestoes import professores_sugeridos
 from apps.professores.api_views import professor_toggle_seguir
 
@@ -77,6 +78,20 @@ urlpatterns = [
     path('plataforma/', include('apps.plataforma.urls')),
     path('instituicoes/', include('apps.instituicoes.urls')),
     path('professores/sugeridos/', professores_sugeridos, name='api-professores-sugeridos'),
+    path('candidatura/', api_candidatura.minha_candidatura, name='candidatura'),
+    path('admin/candidaturas/', api_admin_candidaturas.lista, name='admin-candidaturas'),
+    path('admin/candidaturas/<int:candidatura_id>/', api_admin_candidaturas.detalhe, name='admin-candidatura'),
+    path('admin/candidaturas/<int:candidatura_id>/decidir/', api_admin_candidaturas.decidir, name='admin-candidatura-decidir'),
+    path('admin/candidaturas/<int:candidatura_id>/notas/', api_admin_candidaturas.notas, name='admin-candidatura-notas'),
+    path('admin/candidaturas/<int:candidatura_id>/verificar/', api_admin_candidaturas.verificar, name='admin-candidatura-verificar'),
+    path('admin/autorizacoes-menores/', api_seguranca.admin_autorizacoes, name='admin-autorizacoes-menores'),
+    path('admin/autorizacoes-menores/<int:autorizacao_id>/', api_seguranca.admin_autorizacao_decidir, name='admin-autorizacao-menores'),
+    path('admin/autorizacoes-menores/<int:autorizacao_id>/documento/', api_seguranca.admin_autorizacao_documento, name='admin-autorizacao-documento'),
+    path('professor-conduta/', api_seguranca.conduta, name='professor-conduta'),
+    path('professor-menores/', api_seguranca.minha_autorizacao, name='professor-menores'),
+    path('candidatura/submeter/', api_candidatura.submeter, name='candidatura-submeter'),
+    path('candidatura/documentos/', api_candidatura.documentos, name='candidatura-documentos'),
+    path('candidatura/documentos/<int:documento_id>/', api_candidatura.documento, name='candidatura-documento'),
     path('professores/<int:professor_id>/seguir/', professor_toggle_seguir, name='api-professor-seguir'),
 
     path('comunidade/posts/', post_list, name='api-post-list'),
