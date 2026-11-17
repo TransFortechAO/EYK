@@ -406,5 +406,5 @@ def responder_contestacao(contestacao: Contestacao, moderador, aceitar: bool, re
     if contestacao.resposta:
         corpo += f'\n\nResposta da equipa: {contestacao.resposta}'
     enviar_email(contestacao.utilizador, 'Resposta à tua contestação', corpo, categoria=None)
-    notificar(contestacao.utilizador, 'moderacao', corpo, enviar_por_email=False)
+    notificar(contestacao.utilizador, 'moderacao', corpo, link=link_contestacao(acao), enviar_por_email=False)
     return contestacao

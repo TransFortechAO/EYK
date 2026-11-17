@@ -388,7 +388,7 @@ def pedido_decidir(request, membro, pedido_id):
         auditar(instituicao, 'pedido_decidido', f'Pedido de {nome} ({ROTULO_PAPEL[pedido.papel]}) {decisao}.', _nome(membro))
     notificar(
         pedido.utilizador, 'novidade',
-        f'O teu pedido para entrar na {instituicao.nome} foi {decisao}.', link='/instituicao' if aprovar else '',
+        f'O teu pedido para entrar na {instituicao.nome} foi {decisao}.', link='/instituicao' if aprovar else '/instituicao/aderir',
     )
     return Response({'ok': True})
 

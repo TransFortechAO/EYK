@@ -693,8 +693,8 @@ export type Notification = {
   body: string;
   timeAgo: string;
   read?: boolean;
-  /** Página a abrir ao clicar (ex: "/inicio?post=3"). */
-  link?: string | null;
+  /** Página a abrir ao clicar (ex: "/inicio?post=3"); sem link próprio, a do tipo. */
+  link: string;
 };
 
 export type LeaderRow = {
@@ -1635,15 +1635,24 @@ function normalizePost(raw: RawPost): Post {
   };
 }
 
+/** Sem link próprio, a notificação abre a página do seu tipo. */
+const DESTINO_NOTIFICACAO: Record<Notification["type"], string> = {
+  gamification: "/gamificacao",
+  course: "/cursos",
+  community: "/inicio",
+  system: "/inicio",
+};
+
 function normalizeNotif(raw: RawNotif): Notification {
+  const type = (raw?.type as Notification["type"]) || "system";
   return {
     id: String(raw?.id ?? "n"),
-    type: (raw?.type as Notification["type"]) || "system",
+    type,
     title: raw?.title || "Notificação",
     body: raw?.body || "",
     timeAgo: raw?.timeAgo || "",
     read: Boolean(raw?.read),
-    link: raw?.link || null,
+    link: raw?.link || DESTINO_NOTIFICACAO[type] || "/inicio",
   };
 }
 

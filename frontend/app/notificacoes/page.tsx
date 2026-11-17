@@ -57,10 +57,14 @@ export default function NotificacoesPage() {
           {items.map((n) => {
             const Icon = icons[n.type];
             return (
-              <div
+              <Link
                 key={n.id}
+                href={n.link}
+                onClick={() => {
+                  if (!n.read) void api.marcarNotificacaoLida(n.id).then(avisarSino);
+                }}
                 className={cn(
-                  "flex items-start gap-4 p-5 transition-colors",
+                  "group flex items-start gap-4 p-5 transition-colors hover:bg-surface/70 focus-visible:bg-surface/70 focus-visible:outline-none",
                   !n.read && "bg-surface/50",
                 )}
               >
@@ -82,20 +86,12 @@ export default function NotificacoesPage() {
                   <p className="mt-1 text-sm text-muted-foreground">{n.body}</p>
                   <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{n.timeAgo}</span>
-                    {n.link && (
-                      <Link
-                        href={n.link}
-                        onClick={() => {
-                          if (!n.read) void api.marcarNotificacaoLida(n.id).then(avisarSino);
-                        }}
-                        className="font-medium text-primary hover:underline underline-offset-2"
-                      >
-                        Abrir
-                      </Link>
-                    )}
+                    <span className="font-medium text-primary underline-offset-2 group-hover:underline">
+                      Abrir
+                    </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </Card>
