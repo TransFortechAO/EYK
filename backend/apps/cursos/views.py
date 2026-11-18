@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from apps.accounts.notificacoes import notificar
+from apps.feed.consultas import fotos_dos_comentarios, preparar_comentarios
 from apps.gamificacao.services import creditar_curso_concluido, creditar_professor_por_views
 from apps.moderacao.filtro import ConteudoRecusado, sinalizar_se_necessario, verificar_publicacao
 from apps.moderacao.servicos import estao_bloqueados, ids_bloqueados
@@ -301,14 +302,16 @@ def video_comentarios(request, pk):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     ocultos = ids_bloqueados(request.user)
-    comentarios = (
+    comentarios = list(preparar_comentarios(
         ComentarioVideo.objects.filter(video=video, parent__isnull=True)
         .filter(Q(oculto=False) | Q(autor=request.user))
         .exclude(autor_id__in=ocultos)
         .select_related('autor')
-        .order_by('-criado_em')
-    )
-    serializer = ComentarioVideoSerializer(comentarios, many=True, context={'request': request, 'ocultos': ocultos})
+        .order_by('-criado_em'),
+        ReacaoComentarioVideo, request.user, ocultos,
+    ))
+    contexto = {'request': request, 'ocultos': ocultos, 'fotos': fotos_dos_comentarios(comentarios)}
+    serializer = ComentarioVideoSerializer(comentarios, many=True, context=contexto)
     return Response(serializer.data)
 
 

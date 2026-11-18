@@ -178,7 +178,8 @@ class ProfessorVideoSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         arquivo = attrs.get('arquivo', getattr(self.instance, 'arquivo', None))
         url_externa = attrs.get('url_externa', getattr(self.instance, 'url_externa', ''))
-        if not arquivo and not url_externa:
+        # Com envio direto, o ficheiro já está no bucket: a view junta-o ao gravar.
+        if not arquivo and not url_externa and not self.context.get('arquivo_envio'):
             raise serializers.ValidationError('Indica um ficheiro de vídeo ou um link externo.')
         return attrs
 

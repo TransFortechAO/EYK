@@ -18,6 +18,8 @@ DATABASES = {
 
 # Celery - Eager mode for tests
 CELERY_TASK_ALWAYS_EAGER = True
+# Emails aos seguidores, capas e durações correm logo (sem threads) nos testes.
+SEGUNDO_PLANO_SINCRONO = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
 # Disable password validation for tests

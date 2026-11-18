@@ -173,6 +173,33 @@ Os vídeos das crianças e os ficheiros das escolas **não podem** ir para o buc
 
 Sem `PRIVADO_BUCKET`, o plano gratuito perde estes ficheiros no reinício seguinte, porque não tem disco.
 
+## Envio direto dos vídeos para o B2 (uploads rápidos)
+
+Os vídeos e PDFs dos professores vão **direto do browser para o bucket público**, com um link assinado
+que o Django gera (`POST /api/professor/envios/`). Não passam pelo Next.js nem pelo Django, e o
+professor vê a percentagem enviada. O Django só confirma no B2 que o ficheiro chegou com o tamanho
+combinado. A duração e a capa são lidas no próprio browser; o servidor só as calcula, em segundo
+plano, se faltarem.
+
+Para funcionar, o bucket tem de aceitar pedidos vindos do site (CORS). Uma vez, depois do deploy:
+
+```bash
+# Na Shell do eyk-api (Render) ou com as mesmas variáveis no teu computador:
+python manage.py configurar_cors_b2 --mostrar   # vê as regras
+python manage.py configurar_cors_b2             # aplica-as
+```
+
+Usa as origens de `NEXT_PUBLIC_URL` (e `CORS_EXTRA`); acrescenta outras com `--origem https://…`.
+Se o B2 recusar porque o bucket já tem regras CORS do painel, apaga-as em **Buckets → CORS Rules**
+ou cria lá uma regra com essas origens e as operações `s3_put`, `s3_get` e `s3_head`.
+
+Até o CORS estar configurado, nada se parte: o browser deteta que o envio direto falhou e volta a
+enviar pelo servidor, como antes (mais devagar). Os envios que nunca chegam a ser usados (página
+fechada a meio) são apagados do bucket ao fim de 24 h pelo agendador.
+
+`AWS_S3_REGION_NAME=auto` (o valor do Cloudflare R2) é corrigido sozinho quando o endpoint é do B2:
+a região passa a ser a do endpoint (ex: `s3.eu-central-003.backblazeb2.com` → `eu-central-003`).
+
 ## Domínio próprio (ex: `eyk.ao`)
 
 1. No `eyk-web`, abre **Settings → Custom Domains** e adiciona `eyk.ao`. Configura o DNS como o Render indicar.

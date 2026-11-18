@@ -339,3 +339,27 @@ class AutorizacaoMenores(models.Model):
     def __str__(self):
         return f'{self.professor} — {self.get_estado_display()}'
 
+
+
+class EnvioDireto(models.Model):
+    """Um ficheiro que o browser envia direto para o bucket (B2), com um link assinado,
+    sem passar pelo servidor. Fica registado para o servidor confirmar, ao criar o vídeo ou
+    o curso, que o ficheiro é deste professor e para esta finalidade; os que nunca chegam
+    a ser usados são apagados pelo agendador."""
+    FINALIDADES = [
+        ('video', 'Vídeo'),
+        ('aula', 'Aula de curso'),
+        ('recurso_curso', 'Recurso de curso (PDF)'),
+        ('recurso_video', 'Recurso de vídeo (PDF)'),
+    ]
+    professor = models.ForeignKey(Professor, on_delete=models.CASCADE, related_name='envios_diretos')
+    finalidade = models.CharField(max_length=20, choices=FINALIDADES)
+    chave = models.CharField(max_length=100, unique=True)
+    nome = models.CharField(max_length=255)
+    tamanho_bytes = models.BigIntegerField()
+    tipo_conteudo = models.CharField(max_length=100)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    usado_em = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    def __str__(self):
+        return f'{self.get_finalidade_display()}: {self.nome}'

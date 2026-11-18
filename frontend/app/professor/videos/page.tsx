@@ -64,6 +64,8 @@ export default function ProfessorVideosPage() {
   const [apagandoRecursoId, setApagandoRecursoId] = useState<number | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [submetendo, setSubmetendo] = useState(false);
+  // Percentagem do envio dos ficheiros (null = nada a enviar).
+  const [progresso, setProgresso] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [reordenando, setReordenando] = useState(false);
   // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
@@ -216,9 +218,9 @@ export default function ProfessorVideosPage() {
       // Ao editar não se envia ficheiro de vídeo: o vídeo não se troca.
       const payload: ProfessorVideoPayload = { ...form, arquivo: editando ? null : videoFile };
       if (editando) {
-        await api.professor.atualizarVideo(editando.id, payload, recursosNovos);
+        await api.professor.atualizarVideo(editando.id, payload, recursosNovos, { aoProgredir: setProgresso });
       } else {
-        await api.professor.criarVideo(payload, recursosNovos);
+        await api.professor.criarVideo(payload, recursosNovos, { aoProgredir: setProgresso });
       }
       setModalAberto(false);
       await carregar();
@@ -226,6 +228,7 @@ export default function ProfessorVideosPage() {
       setErro(err instanceof Error ? err.message : "Erro ao guardar o vídeo.");
     } finally {
       setSubmetendo(false);
+      setProgresso(null);
     }
   };
 
@@ -618,7 +621,7 @@ export default function ProfessorVideosPage() {
                 disabled={submetendo}
                 className="bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
               >
-                {submetendo ? "A guardar…" : editando ? "Guardar alterações" : "Publicar vídeo"}
+                {submetendo ? (progresso !== null && progresso < 100 ? `A enviar… ${progresso}%` : "A guardar…") : editando ? "Guardar alterações" : "Publicar vídeo"}
               </Button>
             </div>
           </DialogFooter>

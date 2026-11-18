@@ -35,6 +35,14 @@ def ciclo_agendador():
         if Anuncio.objects.filter(pk=anuncio_id, estado='agendado').update(estado='pendente'):
             enviar_anuncio.delay(anuncio_id)
 
+    # Ficheiros enviados direto para o bucket que nunca chegaram a ser usados.
+    try:
+        from apps.professores.envio_direto import limpar_abandonados
+
+        limpar_abandonados()
+    except Exception:
+        logger.exception('Falhou a limpeza dos envios abandonados')
+
     # Lembrete de ofensiva: uma vez por dia, a partir da hora definida (se o
     # worker esteve parado à hora certa, envia assim que voltar — no mesmo dia).
     config = ConfiguracaoPlataforma.objects.get(pk=1)

@@ -39,7 +39,16 @@ def _caminho_local(ficheiro):
         yield tmp.name
 
 
-def calcular_duracao_segundos(video):
+@contextmanager
+def _caminho(video, caminho=None):
+    if caminho:
+        yield caminho
+    else:
+        with _caminho_local(video.arquivo) as local:
+            yield local
+
+
+def calcular_duracao_segundos(video, caminho=None):
     """Lê a duração real do ficheiro de vídeo já gravado em disco.
 
     Precisa de correr depois de o ficheiro ser guardado — o OpenCV lê pelo
@@ -53,8 +62,8 @@ def calcular_duracao_segundos(video):
     if not video.arquivo or cv2 is None:
         return 0
     try:
-        with _caminho_local(video.arquivo) as caminho:
-            cap = cv2.VideoCapture(caminho)
+        with _caminho(video, caminho) as local:
+            cap = cv2.VideoCapture(local)
             if not cap.isOpened():
                 return 0
             fps = cap.get(cv2.CAP_PROP_FPS) or 0
@@ -65,7 +74,7 @@ def calcular_duracao_segundos(video):
         return 0
 
 
-def extrair_thumbnail_video(video, tempo_segundos: int = 1) -> bool:
+def extrair_thumbnail_video(video, tempo_segundos: int = 1, caminho=None) -> bool:
     """Extrai uma frame do vídeo (por defeito ao segundo 1) e guarda-a
     como `thumbnail` do modelo `Video`. Devolve `True` se foi bem-sucedido,
     `False` caso contrário (ou se já existia thumbnail)."""
@@ -74,8 +83,8 @@ def extrair_thumbnail_video(video, tempo_segundos: int = 1) -> bool:
         return False
 
     try:
-        with _caminho_local(video.arquivo) as caminho:
-            cap = cv2.VideoCapture(caminho)
+        with _caminho(video, caminho) as local:
+            cap = cv2.VideoCapture(local)
             if not cap.isOpened():
                 return False
 
@@ -109,14 +118,23 @@ def extrair_thumbnail_video(video, tempo_segundos: int = 1) -> bool:
 
 
 def atualizar_duracao(video):
-    duracao = calcular_duracao_segundos(video)
+    """Duração e capa automática. Com a media no bucket, descarrega o vídeo uma só vez
+    para as duas (antes eram duas vezes)."""
+    if not video.arquivo or _cv2() is None:
+        return
+    try:
+        with _caminho_local(video.arquivo) as local:
+            duracao = calcular_duracao_segundos(video, caminho=local)
+            gerou_thumb = extrair_thumbnail_video(video, caminho=local)
+    except Exception:
+        logger.exception('Não consegui ler o vídeo %s', video.pk)
+        return
     atualizar_campos = []
 
     if duracao and video.duracao_segundos != duracao:
         video.duracao_segundos = duracao
         atualizar_campos.append('duracao_segundos')
 
-    gerou_thumb = extrair_thumbnail_video(video)
     if gerou_thumb:
         atualizar_campos.append('thumbnail')
 
@@ -132,3 +150,13 @@ def atualizar_duracao(video):
                 video.thumbnail.file,
                 save=True,
             )
+
+
+def processar_videos(video_ids) -> None:
+    """Corre em segundo plano depois de publicar: só lê o vídeo se faltar a duração (que o
+    browser normalmente já mandou) ou a capa."""
+    from .models import Video
+
+    for video in Video.objects.filter(pk__in=list(video_ids)).select_related('curso'):
+        if video.arquivo and (not video.duracao_segundos or not video.thumbnail):
+            atualizar_duracao(video)

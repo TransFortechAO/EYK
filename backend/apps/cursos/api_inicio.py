@@ -35,15 +35,30 @@ def continuar_aprender(request):
         inscricoes = Inscricao.objects.filter(
             aluno=aluno, concluido=False, curso__ativo=True, curso__oculto=False,
         ).select_related('curso', 'curso__categoria')
+        inscricoes = list(inscricoes)
+        # Tudo de uma vez para todos os cursos (antes eram 4 consultas por curso).
+        aulas_por_curso: dict[int, list] = {}
+        for a in Video.objects.filter(
+            curso_id__in=[i.curso_id for i in inscricoes], ativo=True, oculto=False,
+        ).order_by('ordem', 'criado_em'):
+            aulas_por_curso.setdefault(a.curso_id, []).append(a)
+        todas = [a.id for lista in aulas_por_curso.values() for a in lista]
+        vistas_em = dict(
+            VisualizacaoVideo.objects.filter(utilizador=user, video_id__in=todas)
+            .values('video_id').annotate(t=Max('ultima_visualizacao')).values_list('video_id', 't')
+        )
+        posicoes: dict[int, PosicaoVisualizacao] = {}
+        for p in PosicaoVisualizacao.objects.filter(utilizador=user, video_id__in=todas).order_by('-atualizado_em'):
+            posicoes.setdefault(p.video_id, p)
         for ins in inscricoes:
             curso = ins.curso
-            aulas = list(Video.objects.filter(curso=curso, ativo=True, oculto=False).order_by('ordem', 'criado_em'))
+            aulas = aulas_por_curso.get(curso.id, [])
             if not aulas:
                 continue
             ids = [a.id for a in aulas]
-            vistas = set(VisualizacaoVideo.objects.filter(utilizador=user, video_id__in=ids).values_list('video_id', flat=True))
-            posicao = PosicaoVisualizacao.objects.filter(utilizador=user, video_id__in=ids).order_by('-atualizado_em').first()
-            ultima_vista = VisualizacaoVideo.objects.filter(utilizador=user, video_id__in=ids).aggregate(t=Max('ultima_visualizacao'))['t']
+            vistas = {i for i in ids if i in vistas_em}
+            posicao = max((posicoes[i] for i in ids if i in posicoes), key=lambda p: p.atualizado_em, default=None)
+            ultima_vista = max((vistas_em[i] for i in vistas if vistas_em[i]), default=None)
             momentos = [m for m in (posicao.atualizado_em if posicao else None, ultima_vista, ins.inscrito_em) if m]
             # A última aula mexida; sem nenhuma, a primeira por ver.
             if posicao:

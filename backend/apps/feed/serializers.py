@@ -11,6 +11,48 @@ def _get_initials(nome):
     return nome[:2].upper() if nome else '??'
 
 
+def fotos_de_autores(ids_utilizadores) -> dict:
+    """Foto de cada autor (professor ou aluno) em duas consultas, para as listagens."""
+    from apps.alunos.models import Aluno
+    from apps.professores.models import Professor
+
+    ids = set(ids_utilizadores)
+    fotos = dict.fromkeys(ids)
+    campo_aluno = Aluno._meta.get_field('foto')
+    for profile_id, foto in Aluno.objects.filter(profile_id__in=ids).values_list('profile_id', 'foto'):
+        if foto:
+            fotos[profile_id] = campo_aluno.storage.url(foto)
+    campo_prof = Professor._meta.get_field('foto')
+    professores = Professor.objects.filter(user_id__in=ids, user__is_teacher=True).values_list('user_id', 'foto')
+    for user_id, foto in professores:
+        # Num professor conta a foto de professor (mesmo vazia), como em get_autor_foto.
+        fotos[user_id] = campo_prof.storage.url(foto) if foto else None
+    return fotos
+
+
+def com_contagens(qs, user):
+    """Gostos, comentários visíveis, reposts e "gostei" calculados na própria consulta
+    (antes eram 4 consultas por publicação)."""
+    from django.db.models import Count, Exists, IntegerField, OuterRef, Subquery, Value
+    from django.db.models.functions import Coalesce
+
+    def contar(modelo, campo, **filtro):
+        sub = (
+            modelo.objects.filter(**{campo: OuterRef('pk')}, **filtro)
+            .order_by().values(campo).annotate(c=Count('*')).values('c')
+        )
+        return Coalesce(Subquery(sub, output_field=IntegerField()), Value(0))
+
+    qs = qs.annotate(
+        n_likes=contar(ReacaoPost, 'post', tipo='like'),
+        n_comentarios=contar(Comentario, 'post', oculto=False),
+        n_reposts=contar(Post, 'repost_de'),
+    )
+    if user.is_authenticated:
+        qs = qs.annotate(eu_gostei=Exists(ReacaoPost.objects.filter(post=OuterRef('pk'), utilizador=user)))
+    return qs
+
+
 def _format_time_ago(data):
     ts = timesince(data)
     partes = ts.split(', ')
@@ -61,6 +103,8 @@ class PostSerializer(serializers.ModelSerializer):
         }
 
     def get_reposts(self, obj):
+        if hasattr(obj, 'n_reposts'):
+            return obj.n_reposts
         return obj.reposts.count()
 
     def get_autor_nome(self, obj):
@@ -72,6 +116,10 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_autor_foto(self, obj):
         user = obj.autor
+        # Na listagem, as fotos de todos os autores vêm de uma vez (fotos_de_autores).
+        fotos = self.context.get('fotos')
+        if fotos is not None and user.id in fotos:
+            return fotos[user.id]
         try:
             if getattr(user, 'is_teacher', False):
                 from apps.professores.models import Professor
@@ -91,15 +139,21 @@ class PostSerializer(serializers.ModelSerializer):
         return _format_time_ago(obj.criado_em)
 
     def get_likes(self, obj):
+        if hasattr(obj, 'n_likes'):
+            return obj.n_likes
         return obj.total_likes()
 
     def get_comentarios(self, obj):
+        if hasattr(obj, 'n_comentarios'):
+            return obj.n_comentarios
         return obj.comentarios.filter(oculto=False).count()
 
     def get_liked(self, obj):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
+        if hasattr(obj, 'eu_gostei'):
+            return obj.eu_gostei
         return ReacaoPost.objects.filter(post=obj, utilizador=request.user).exists()
 
 
@@ -131,6 +185,10 @@ class ComentarioSerializer(serializers.ModelSerializer):
 
     def get_autor_foto(self, obj):
         user = obj.autor
+        # Na listagem, as fotos de todos os autores vêm de uma vez (fotos_de_autores).
+        fotos = self.context.get('fotos')
+        if fotos is not None and user.id in fotos:
+            return fotos[user.id]
         try:
             if getattr(user, 'is_teacher', False):
                 from apps.professores.models import Professor
@@ -150,12 +208,16 @@ class ComentarioSerializer(serializers.ModelSerializer):
         return _format_time_ago(obj.criado_em)
 
     def get_total_likes(self, obj):
+        if hasattr(obj, 'n_likes'):
+            return obj.n_likes
         return obj.total_likes()
 
     def get_liked(self, obj):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
+        if hasattr(obj, 'eu_gostei'):
+            return obj.eu_gostei
         return ReacaoComentario.objects.filter(comentario=obj, utilizador=request.user).exists()
 
     def get_pode_editar(self, obj):
@@ -172,6 +234,9 @@ class ComentarioSerializer(serializers.ModelSerializer):
     def get_respostas(self, obj):
         if obj.parent_id is not None:
             return []
+        if hasattr(obj, 'respostas_visiveis'):
+            respostas = obj.respostas_visiveis
+            return self.__class__(respostas, many=True, context=self.context).data
         respostas = obj.respostas.select_related('autor').order_by('criado_em')
         request = self.context.get('request')
         if request and request.user.is_authenticated:

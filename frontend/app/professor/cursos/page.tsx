@@ -73,6 +73,8 @@ export default function ProfessorCursosPage() {
   const [enviandoRecursoAulaId, setEnviandoRecursoAulaId] = useState<number | null>(null);
   const [apagandoRecursoAulaId, setApagandoRecursoAulaId] = useState<number | null>(null);
   const [submetendo, setSubmetendo] = useState(false);
+  // Percentagem do envio dos ficheiros (null = nada a enviar).
+  const [progresso, setProgresso] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const videosInputRef = useRef<HTMLInputElement>(null);
   const recursosInputRef = useRef<HTMLInputElement>(null);
@@ -290,9 +292,9 @@ export default function ProfessorCursosPage() {
     try {
       if (editando) {
         // Ao editar não se enviam vídeos novos: as aulas não se trocam.
-        await api.professor.atualizarCurso(editando.id, form, [], recursosNovos);
+        await api.professor.atualizarCurso(editando.id, form, [], recursosNovos, { aoProgredir: setProgresso });
       } else {
-        await api.professor.criarCurso(form, videosNovos, recursosNovos);
+        await api.professor.criarCurso(form, videosNovos, recursosNovos, { aoProgredir: setProgresso });
       }
       setModalAberto(false);
       await carregar();
@@ -300,6 +302,7 @@ export default function ProfessorCursosPage() {
       setErro(err instanceof Error ? err.message : "Erro ao guardar o curso.");
     } finally {
       setSubmetendo(false);
+      setProgresso(null);
     }
   };
 
@@ -762,7 +765,7 @@ export default function ProfessorCursosPage() {
                 disabled={submetendo}
                 className="bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
               >
-                {submetendo ? "A guardar…" : editando ? "Guardar alterações" : "Criar curso"}
+                {submetendo ? (progresso !== null && progresso < 100 ? `A enviar… ${progresso}%` : "A guardar…") : editando ? "Guardar alterações" : "Criar curso"}
               </Button>
             </div>
           </DialogFooter>

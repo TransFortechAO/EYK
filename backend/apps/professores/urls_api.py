@@ -4,6 +4,7 @@ from . import api_views
 
 urlpatterns = [
     path('perfil/', api_views.professor_perfil, name='api-professor-perfil'),
+    path('envios/', api_views.professor_envios, name='api-professor-envios'),
     path('apagar-conta/', api_views.professor_apagar_conta, name='api-professor-apagar-conta'),
 
     path('cursos/', api_views.professor_cursos, name='api-professor-cursos'),
