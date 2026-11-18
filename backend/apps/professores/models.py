@@ -358,6 +358,8 @@ class EnvioDireto(models.Model):
     nome = models.CharField(max_length=255)
     tamanho_bytes = models.BigIntegerField()
     tipo_conteudo = models.CharField(max_length=100)
+    # Ficheiros grandes vão em partes, em paralelo (envio multipart do S3/B2).
+    upload_id = models.CharField(max_length=255, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     usado_em = models.DateTimeField(null=True, blank=True, db_index=True)
 

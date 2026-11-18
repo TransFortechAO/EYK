@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { _reporEnvioDireto, enviarFicheiros } from "./envio-direto";
+import { _reporEnvioDireto, _semEsperaEntreTentativas, enviarFicheiros } from "./envio-direto";
 
 type Pedido = { metodo: string; url: string; cabecalhos: Record<string, string>; corpo: unknown };
 
@@ -7,6 +7,9 @@ type Pedido = { metodo: string; url: string; cabecalhos: Record<string, string>;
 function xhrFalso(registo: Pedido[], estado: () => number | "rede") {
   return class {
     upload: { onprogress: ((e: { loaded: number }) => void) | null } = { onprogress: null };
+    getResponseHeader(nome: string) {
+      return nome === "ETag" ? `"etag-${registo.length}"` : null;
+    }
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
     status = 0;
@@ -49,6 +52,7 @@ const ficheiro = (nome: string, bytes = 100, tipo = "video/mp4") => new File([ne
 
 beforeEach(() => {
   _reporEnvioDireto();
+  _semEsperaEntreTentativas();
   proximoId = 1;
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -104,5 +108,49 @@ describe("envio direto", () => {
     vi.stubGlobal("fetch", pedidos);
     expect(await enviarFicheiros([])).toEqual([]);
     expect(pedidos.mock.calls.filter(([url]) => String(url).includes("/envios/"))).toHaveLength(0);
+  });
+
+  it("um erro passageiro do bucket repete-se sem falhar o envio", async () => {
+    const registo: Pedido[] = [];
+    const respostas = [503, 200];
+    vi.stubGlobal("fetch", fetchFalso());
+    vi.stubGlobal("XMLHttpRequest", xhrFalso(registo, () => respostas.shift() ?? 200));
+    expect(await enviarFicheiros([{ ficheiro: ficheiro("a.mp4"), finalidade: "video" }])).toEqual([1]);
+    expect(registo).toHaveLength(2);
+  });
+
+  it("ficheiros grandes vão em partes em paralelo e são juntados no fim", async () => {
+    const registo: Pedido[] = [];
+    const conclusoes: unknown[] = [];
+    vi.stubGlobal("XMLHttpRequest", xhrFalso(registo, () => 200));
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      const json = (corpo: unknown, status = 200) =>
+        new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+      if (String(url).includes("/concluir/")) {
+        conclusoes.push(JSON.parse(String(init?.body)));
+        return json({ ok: true });
+      }
+      if (!String(url).includes("/api/professor/envios/")) return json({});
+      return json({
+        direto: true, id: 9,
+        partes: [
+          { numero: 1, inicio: 0, tamanho: 40, url: "https://b2/p1" },
+          { numero: 2, inicio: 40, tamanho: 40, url: "https://b2/p2" },
+          { numero: 3, inicio: 80, tamanho: 20, url: "https://b2/p3" },
+        ],
+      }, 201);
+    }));
+    const progresso: number[] = [];
+    const ids = await enviarFicheiros([{ ficheiro: ficheiro("grande.mp4", 100), finalidade: "video" }], (p) => progresso.push(p));
+    expect(ids).toEqual([9]);
+    expect(registo.map((p) => [p.url, (p.corpo as Blob).size])).toEqual([
+      ["https://b2/p1", 40], ["https://b2/p2", 40], ["https://b2/p3", 20],
+    ]);
+    // As partes não levam Content-Type (não foi assinado nelas).
+    expect(registo.every((p) => Object.keys(p.cabecalhos).length === 0)).toBe(true);
+    const fim = conclusoes[0] as { partes: { numero: number; etag: string }[] };
+    expect(fim.partes.map((p) => p.numero).sort()).toEqual([1, 2, 3]);
+    expect(fim.partes.every((p) => p.etag.startsWith('"etag-'))).toBe(true);
+    expect(progresso.at(-1)).toBe(100);
   });
 });

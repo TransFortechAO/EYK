@@ -23,7 +23,13 @@ from .models import EnvioDireto
 
 logger = logging.getLogger(__name__)
 
-VALIDADE_LINK_SEG = 2 * 60 * 60
+VALIDADE_LINK_SEG = 6 * 60 * 60
+# A partir deste tamanho o ficheiro vai em partes, por várias ligações em paralelo: com a
+# latência alta (Angola → B2 na Europa), uma só ligação não aproveita a largura de banda,
+# e uma falha só obriga a repetir a parte, não o vídeo todo.
+LIMIAR_PARTES = 16 * 1024 * 1024
+TAMANHO_PARTE = 10 * 1024 * 1024  # o B2 aceita partes a partir de 5 MB
+MAX_PARTES = 10_000
 # Envios nunca usados (o professor fechou a página a meio) são apagados ao fim disto.
 PRAZO_ABANDONO = timedelta(hours=24)
 
@@ -90,8 +96,13 @@ def validar(finalidade: str, nome: str, tamanho: int) -> None:
         raise EnvioInvalido(mensagem())
 
 
-def preparar(professor, finalidade: str, nome: str, tamanho: int, tipo: str) -> tuple[EnvioDireto, str]:
-    """Regista o envio e devolve o link PUT assinado."""
+def tamanho_da_parte(tamanho: int) -> int:
+    return max(TAMANHO_PARTE, -(-tamanho // MAX_PARTES))
+
+
+def preparar(professor, finalidade: str, nome: str, tamanho: int, tipo: str) -> tuple[EnvioDireto, dict]:
+    """Regista o envio e devolve como o browser o envia: um link PUT, ou (ficheiros
+    grandes) um link por parte."""
     validar(finalidade, nome, tamanho)
     pasta = FINALIDADES[finalidade][0]
     prefixo = f'{pasta}{uuid.uuid4().hex[:16]}-'
@@ -102,6 +113,8 @@ def preparar(professor, finalidade: str, nome: str, tamanho: int, tipo: str) -> 
         professor=professor, finalidade=finalidade, chave=chave,
         nome=os.path.basename(nome)[:255], tamanho_bytes=tamanho, tipo_conteudo=tipo,
     )
+    if tamanho >= LIMIAR_PARTES:
+        return envio, _preparar_partes(envio)
     url = _cliente().generate_presigned_url(
         'put_object',
         Params={
@@ -113,7 +126,72 @@ def preparar(professor, finalidade: str, nome: str, tamanho: int, tipo: str) -> 
         },
         ExpiresIn=VALIDADE_LINK_SEG,
     )
-    return envio, url
+    return envio, {'url': url, 'metodo': 'PUT', 'cabecalhos': {'Content-Type': tipo}}
+
+
+def _preparar_partes(envio: EnvioDireto) -> dict:
+    cliente, chave = _cliente(), _chave_no_bucket(envio.chave)
+    upload_id = cliente.create_multipart_upload(Bucket=_bucket(), Key=chave, ContentType=envio.tipo_conteudo)['UploadId']
+    envio.upload_id = upload_id
+    envio.save(update_fields=['upload_id'])
+    parte = tamanho_da_parte(envio.tamanho_bytes)
+    partes = []
+    for numero, inicio in enumerate(range(0, envio.tamanho_bytes, parte), start=1):
+        tamanho = min(parte, envio.tamanho_bytes - inicio)
+        url = cliente.generate_presigned_url(
+            'upload_part',
+            Params={
+                'Bucket': _bucket(), 'Key': chave, 'UploadId': upload_id,
+                'PartNumber': numero, 'ContentLength': tamanho,
+            },
+            ExpiresIn=VALIDADE_LINK_SEG,
+        )
+        partes.append({'numero': numero, 'inicio': inicio, 'tamanho': tamanho, 'url': url})
+    return {'partes': partes}
+
+
+def _partes_no_bucket(envio: EnvioDireto) -> dict[int, tuple[str, int]]:
+    """Número da parte → (ETag, tamanho), como o B2 as tem (não depende do browser)."""
+    cliente, partes, marcador = _cliente(), {}, 0
+    while True:
+        r = cliente.list_parts(
+            Bucket=_bucket(), Key=_chave_no_bucket(envio.chave), UploadId=envio.upload_id,
+            MaxParts=1000, PartNumberMarker=marcador,
+        )
+        for parte in r.get('Parts', []):
+            partes[int(parte['PartNumber'])] = (parte['ETag'], int(parte['Size']))
+        if not r.get('IsTruncated'):
+            return partes
+        marcador = int(r['NextPartNumberMarker'])
+
+
+def concluir(professor, envio_id, partes=None) -> EnvioDireto:
+    """Junta as partes que o browser enviou num só ficheiro. Confirma no B2 que estão lá
+    todas, com o tamanho combinado."""
+    envio = EnvioDireto.objects.filter(pk=envio_id, professor=professor, usado_em__isnull=True).first()
+    if not envio or not envio.upload_id:
+        raise EnvioInvalido('Envio de ficheiro inválido. Escolhe o ficheiro de novo.')
+    parte = tamanho_da_parte(envio.tamanho_bytes)
+    esperadas = {
+        numero: min(parte, envio.tamanho_bytes - inicio)
+        for numero, inicio in enumerate(range(0, envio.tamanho_bytes, parte), start=1)
+    }
+    try:
+        no_bucket = _partes_no_bucket(envio)
+    except Exception:
+        logger.exception('Não consegui listar as partes do envio %s', envio.pk)
+        raise EnvioInvalido(f'Não foi possível confirmar o envio de "{envio.nome}". Tenta de novo.') from None
+    if {n: t for n, (_e, t) in no_bucket.items()} != esperadas:
+        raise EnvioInvalido(f'O ficheiro "{envio.nome}" chegou incompleto. Tenta enviá-lo de novo.')
+    try:
+        _cliente().complete_multipart_upload(
+            Bucket=_bucket(), Key=_chave_no_bucket(envio.chave), UploadId=envio.upload_id,
+            MultipartUpload={'Parts': [{'PartNumber': n, 'ETag': no_bucket[n][0]} for n in sorted(no_bucket)]},
+        )
+    except Exception:
+        logger.exception('O B2 não juntou as partes do envio %s', envio.pk)
+        raise EnvioInvalido(f'Não foi possível juntar as partes de "{envio.nome}". Tenta enviá-lo de novo.') from None
+    return envio
 
 
 def _tamanho_no_bucket(chave: str) -> int | None:
@@ -153,6 +231,14 @@ def limpar_abandonados() -> int:
     total = 0
     for envio in antigos[:500]:
         try:
+            if envio.upload_id:
+                # Partes de um envio a meio: o B2 guarda-as (e cobra-as) até se abortar.
+                try:
+                    _cliente().abort_multipart_upload(
+                        Bucket=_bucket(), Key=_chave_no_bucket(envio.chave), UploadId=envio.upload_id,
+                    )
+                except Exception:
+                    pass
             default_storage.delete(envio.chave)
         except Exception:
             logger.exception('Não consegui apagar o envio abandonado %s', envio.chave)

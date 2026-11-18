@@ -14,38 +14,99 @@ export type FinalidadeEnvio = "video" | "aula" | "recurso_curso" | "recurso_vide
 /** Percentagem (0–100) do total de bytes já enviados. */
 export type AoProgredir = (percentagem: number) => void;
 
+type ParteDeEnvio = { numero: number; inicio: number; tamanho: number; url: string };
+
 type LinkDeEnvio = {
   direto: boolean;
   id?: number;
+  /** Ficheiro pequeno: um só PUT. */
   url?: string;
   metodo?: string;
   cabecalhos?: Record<string, string>;
+  /** Ficheiro grande: um PUT por parte, em paralelo. */
+  partes?: ParteDeEnvio[];
 };
 
 // Uma vez que o bucket recuse (CORS por configurar), não se volta a tentar nesta página.
 let diretoIndisponivel = false;
 const ENVIOS_EM_SIMULTANEO = 3;
+// Partes do mesmo ficheiro em paralelo: várias ligações aproveitam melhor a largura de
+// banda quando a latência até ao bucket é alta (Angola → Europa).
+const PARTES_EM_SIMULTANEO = 4;
+const TENTATIVAS = 3;
 
 class SemEnvioDireto extends Error {}
+/** Falha passageira (rede, 5xx): vale a pena repetir. */
+class FalhaPassageira extends Error {}
 
-function enviarParaLink(link: LinkDeEnvio, ficheiro: File, aoEnviar: (bytes: number) => void): Promise<void> {
+let esperaEntreTentativasMs = 1000;
+/** Só para os testes. */
+export function _semEsperaEntreTentativas() {
+  esperaEntreTentativasMs = 0;
+}
+
+async function comRepeticao<T>(fazer: () => Promise<T>): Promise<T> {
+  let ultimo: unknown;
+  for (let tentativa = 0; tentativa < TENTATIVAS; tentativa++) {
+    try {
+      return await fazer();
+    } catch (erro) {
+      if (!(erro instanceof FalhaPassageira)) throw erro;
+      ultimo = erro;
+      if (esperaEntreTentativasMs) await new Promise((r) => setTimeout(r, esperaEntreTentativasMs * 2 ** tentativa));
+    }
+  }
+  throw ultimo;
+}
+
+/** Um PUT com progresso. Devolve o ETag (precisa dele para juntar as partes). */
+function put(url: string, corpo: Blob, cabecalhos: Record<string, string>, aoEnviar: (bytes: number) => void, nome: string): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open(link.metodo || "PUT", link.url!);
-    Object.entries(link.cabecalhos || {}).forEach(([nome, valor]) => xhr.setRequestHeader(nome, valor));
+    xhr.open("PUT", url);
+    Object.entries(cabecalhos).forEach(([n, v]) => xhr.setRequestHeader(n, v));
     xhr.upload.onprogress = (e) => aoEnviar(e.loaded);
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        aoEnviar(ficheiro.size);
-        resolve();
+        aoEnviar(corpo.size);
+        resolve(xhr.getResponseHeader("ETag"));
+      } else if (xhr.status >= 500 || xhr.status === 408 || xhr.status === 429) {
+        aoEnviar(0);
+        reject(new FalhaPassageira(`O armazenamento falhou ao receber "${nome}" (erro ${xhr.status}).`));
       } else {
-        reject(new Error(`Não foi possível enviar "${ficheiro.name}" para o armazenamento (erro ${xhr.status}). Tenta de novo.`));
+        reject(new Error(`Não foi possível enviar "${nome}" para o armazenamento (erro ${xhr.status}). Tenta de novo.`));
       }
     };
-    // Sem resposta nenhuma: quase sempre o CORS do bucket por configurar.
-    xhr.onerror = () => reject(new SemEnvioDireto());
-    xhr.send(ficheiro);
+    // Sem resposta nenhuma: rede em baixo ou o CORS do bucket por configurar.
+    xhr.onerror = () => {
+      aoEnviar(0);
+      reject(new FalhaPassageira(`Falhou a ligação ao enviar "${nome}".`));
+    };
+    xhr.send(corpo);
   });
+}
+
+async function enviarPartes(link: LinkDeEnvio, ficheiro: File, aoEnviar: (bytes: number) => void): Promise<void> {
+  const partes = link.partes!;
+  const enviados = partes.map(() => 0);
+  const etags: { numero: number; etag: string }[] = [];
+  let proxima = 0;
+  const trabalhador = async () => {
+    while (proxima < partes.length) {
+      const i = proxima++;
+      const parte = partes[i];
+      const etag = await comRepeticao(() =>
+        put(parte.url, ficheiro.slice(parte.inicio, parte.inicio + parte.tamanho), {}, (b) => {
+          enviados[i] = b;
+          aoEnviar(enviados.reduce((a, x) => a + x, 0));
+        }, ficheiro.name),
+      );
+      // O servidor confirma as partes no próprio B2 (ListParts); o ETag é só informativo.
+      etags.push({ numero: parte.numero, etag: etag || "" });
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PARTES_EM_SIMULTANEO, partes.length) }, trabalhador));
+  await fetchAPI(`/api/professor/envios/${link.id}/concluir/`, { method: "POST", body: JSON.stringify({ partes: etags }) });
 }
 
 async function pedirLink(ficheiro: File, finalidade: FinalidadeEnvio): Promise<LinkDeEnvio> {
@@ -62,8 +123,12 @@ async function pedirLink(ficheiro: File, finalidade: FinalidadeEnvio): Promise<L
 
 async function enviarUm(ficheiro: File, finalidade: FinalidadeEnvio, aoEnviar: (bytes: number) => void): Promise<number> {
   const link = await pedirLink(ficheiro, finalidade);
-  if (!link.direto || !link.url || !link.id) throw new SemEnvioDireto();
-  await enviarParaLink(link, ficheiro, aoEnviar);
+  if (!link.direto || !link.id || (!link.url && !link.partes)) throw new SemEnvioDireto();
+  if (link.partes) {
+    await enviarPartes(link, ficheiro, aoEnviar);
+  } else {
+    await comRepeticao(() => put(link.url!, ficheiro, link.cabecalhos || {}, aoEnviar, ficheiro.name));
+  }
   return link.id;
 }
 
@@ -90,7 +155,7 @@ export async function enviarFicheiros(
     // O primeiro diz se o envio direto funciona; os outros seguem em paralelo.
     ids[0] = await enviarUm(itens[0].ficheiro, itens[0].finalidade, avisar(0));
   } catch (erro) {
-    if (erro instanceof SemEnvioDireto) {
+    if (erro instanceof SemEnvioDireto || erro instanceof FalhaPassageira) {
       diretoIndisponivel = true;
       return null;
     }
@@ -104,7 +169,7 @@ export async function enviarFicheiros(
       try {
         ids[indice] = await enviarUm(itens[indice].ficheiro, itens[indice].finalidade, avisar(indice));
       } catch (erro) {
-        if (erro instanceof SemEnvioDireto) {
+        if (erro instanceof SemEnvioDireto || erro instanceof FalhaPassageira) {
           throw new Error(`Falhou a ligação ao enviar "${itens[indice].ficheiro.name}". Verifica a internet e tenta de novo.`);
         }
         throw erro;
@@ -127,7 +192,7 @@ export type InfoVideo = { duracao: number; capa: File | null };
  * não precisa de descarregar o vídeo do armazenamento para as saber. Se o browser não
  * conseguir ler o formato, devolve {0, null} e o servidor trata disso.
  */
-export function lerVideo(ficheiro: File, comCapa = true, limiteMs = 8000): Promise<InfoVideo> {
+export function lerVideo(ficheiro: File, comCapa = true, limiteMs = 5000): Promise<InfoVideo> {
   if (typeof document === "undefined") return Promise.resolve({ duracao: 0, capa: null });
   return new Promise((resolve) => {
     const url = URL.createObjectURL(ficheiro);
