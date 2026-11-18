@@ -191,7 +191,7 @@ def professor_envios(request):
     except (TypeError, ValueError):
         return Response({'detail': 'Tamanho do ficheiro inválido.'}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        envio, url = envio_direto.preparar(
+        envio, como = envio_direto.preparar(
             professor,
             str(request.data.get('finalidade') or ''),
             str(request.data.get('nome') or ''),
@@ -200,10 +200,21 @@ def professor_envios(request):
         )
     except EnvioInvalido as erro:
         return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
-    return Response(
-        {'direto': True, 'id': envio.id, 'url': url, 'metodo': 'PUT', 'cabecalhos': {'Content-Type': envio.tipo_conteudo}},
-        status=status.HTTP_201_CREATED,
-    )
+    return Response({'direto': True, 'id': envio.id, **como}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def professor_envio_concluir(request, envio_id):
+    """Fim de um envio em partes: o B2 junta-as num só ficheiro."""
+    professor = _get_professor(request)
+    if not professor:
+        return _professor_required_response()
+    try:
+        envio_direto.concluir(professor, envio_id, request.data.get('partes'))
+    except EnvioInvalido as erro:
+        return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'ok': True})
 
 
 # ── PERFIL ───────────────────────────────────────────────────────────────────

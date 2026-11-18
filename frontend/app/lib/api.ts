@@ -2762,12 +2762,13 @@ export const api = {
       const formData = new FormData();
       _appendCursoPayload(formData, payload);
       if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
-      // Duração e capa de cada aula lidas aqui: o servidor não descarrega os vídeos.
-      for (const [i, v] of videos.entries()) {
-        const info = await lerVideo(v);
-        formData.append('videos_duracoes', String(info.duracao));
-        if (info.capa) formData.append(`videos_capas_${i}`, info.capa);
-      }
+      // Duração e capa de cada aula lidas aqui (o servidor não descarrega os vídeos), ao
+      // mesmo tempo que o envio, para não o atrasar.
+      const infos = (async () => {
+        const lidas = [];
+        for (const v of videos) lidas.push(await lerVideo(v));
+        return lidas;
+      })();
       const envios = await enviarFicheiros(
         [
           ...videos.map((ficheiro) => ({ ficheiro, finalidade: 'aula' as const })),
@@ -2775,6 +2776,10 @@ export const api = {
         ],
         opcoes.aoProgredir,
       );
+      (await infos).forEach((info, i) => {
+        formData.append('videos_duracoes', String(info.duracao));
+        if (info.capa) formData.append(`videos_capas_${i}`, info.capa);
+      });
       if (envios) {
         envios.slice(0, videos.length).forEach((n) => formData.append('videos_envios', String(n)));
         envios.slice(videos.length).forEach((n) => formData.append('recursos_envios', String(n)));
@@ -2832,12 +2837,8 @@ export const api = {
         const formData = new FormData();
         _appendVideoPayload(formData, resto);
         let capa = thumbnail ?? null;
-        if (arquivo) {
-          // Duração e capa lidas aqui: o servidor não descarrega o vídeo para as saber.
-          const info = await lerVideo(arquivo, !capa);
-          if (info.duracao) formData.append('duracao_segundos', String(info.duracao));
-          capa = capa ?? info.capa;
-        }
+        // Duração e capa lidas aqui (o servidor não descarrega o vídeo), durante o envio.
+        const info = arquivo ? lerVideo(arquivo, !capa) : null;
         const envios = await enviarFicheiros(
           [
             ...(arquivo ? [{ ficheiro: arquivo, finalidade: 'video' as const }] : []),
@@ -2845,6 +2846,11 @@ export const api = {
           ],
           opcoes.aoProgredir,
         );
+        if (info) {
+          const lido = await info;
+          if (lido.duracao) formData.append('duracao_segundos', String(lido.duracao));
+          capa = capa ?? lido.capa;
+        }
         if (envios) {
           const [primeiro, ...outros] = envios;
           if (arquivo) formData.append('arquivo_envio', String(primeiro));

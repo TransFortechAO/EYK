@@ -28,6 +28,30 @@ class BucketFalso:
             raise KeyError(Key)
         return {'ContentLength': self.objetos[Key]}
 
+    # Envio em partes (multipart)
+    def create_multipart_upload(self, Bucket, Key, ContentType):
+        self.multipart = {'Key': Key, 'ContentType': ContentType}
+        self.abortados = []
+        return {'UploadId': 'up-1'}
+
+    def complete_multipart_upload(self, Bucket, Key, UploadId, MultipartUpload):
+        self.juntadas = MultipartUpload['Parts']
+        tamanhos = {a['PartNumber']: a['ContentLength'] for a in self.assinados if a['operacao'] == 'upload_part'}
+        self.objetos[Key] = sum(tamanhos[p['PartNumber']] for p in MultipartUpload['Parts'])
+
+    def abort_multipart_upload(self, Bucket, Key, UploadId):
+        self.abortados.append(UploadId)
+
+    def list_parts(self, Bucket, Key, UploadId, MaxParts, PartNumberMarker):
+        # As partes que o browser "enviou" (por omissão, todas as assinadas).
+        enviadas = getattr(self, 'partes_enviadas', None)
+        assinadas = [a for a in self.assinados if a['operacao'] == 'upload_part']
+        partes = [
+            {'PartNumber': a['PartNumber'], 'ETag': f'"e{a["PartNumber"]}"', 'Size': a['ContentLength']}
+            for a in assinadas if enviadas is None or a['PartNumber'] in enviadas
+        ]
+        return {'Parts': partes, 'IsTruncated': False}
+
 
 @pytest.fixture
 def bucket(monkeypatch):
@@ -238,3 +262,59 @@ def test_regras_cors_do_b2():
     regra = regras(['https://eyk.ao'])[0]
     assert regra['AllowedOrigins'] == ['https://eyk.ao']
     assert 'PUT' in regra['AllowedMethods'] and 'content-type' in regra['AllowedHeaders']
+
+
+
+MB = 1024 * 1024
+
+
+@pytest.mark.django_db
+class TestEnvioEmPartes:
+    def test_ficheiro_grande_vai_em_partes_e_e_juntado(self, client, professor_user, professor, bucket):
+        client.force_login(professor_user)
+        r = _pedir(client, tamanho=25 * MB)
+        assert r.status_code == 201
+        corpo = r.json()
+        assert 'url' not in corpo
+        partes = corpo['partes']
+        assert [(p['numero'], p['inicio'], p['tamanho']) for p in partes] == [
+            (1, 0, 10 * MB), (2, 10 * MB, 10 * MB), (3, 20 * MB, 5 * MB),
+        ]
+        assinadas = [a for a in bucket.assinados if a['operacao'] == 'upload_part']
+        assert [a['ContentLength'] for a in assinadas] == [10 * MB, 10 * MB, 5 * MB]
+        assert all(a['UploadId'] == 'up-1' for a in assinadas)
+
+        etags = [{'numero': p['numero'], 'etag': f'"e{p["numero"]}"'} for p in reversed(partes)]
+        fim = client.post(reverse('api-professor-envio-concluir', args=[corpo['id']]), data={'partes': etags}, content_type='application/json')
+        assert fim.status_code == 200, fim.json()
+        assert [p['PartNumber'] for p in bucket.juntadas] == [1, 2, 3]
+
+        v = client.post(reverse('api-professor-videos'), data={'titulo': 'Grande', 'arquivo_envio': corpo['id']}, content_type='application/json')
+        assert v.status_code == 201, v.json()
+
+    def test_partes_em_falta(self, client, professor_user, professor, bucket):
+        client.force_login(professor_user)
+        corpo = _pedir(client, tamanho=25 * MB).json()
+        bucket.partes_enviadas = {1, 3}
+        r = client.post(
+            reverse('api-professor-envio-concluir', args=[corpo['id']]),
+            data={'partes': [{'numero': 1}, {'numero': 3}]}, content_type='application/json',
+        )
+        assert r.status_code == 400 and 'incompleto' in r.json()['detail']
+
+    def test_so_o_dono_conclui(self, client, professor_user, professor, bucket, django_user_model):
+        client.force_login(professor_user)
+        corpo = _pedir(client, tamanho=25 * MB).json()
+        outro = django_user_model.objects.create_user(username='outro2', password='x', is_teacher=True)
+        Professor.objects.create(user=outro, nome_publico='Outro')
+        client.force_login(outro)
+        partes = [{'numero': p['numero'], 'etag': 'x'} for p in corpo['partes']]
+        r = client.post(reverse('api-professor-envio-concluir', args=[corpo['id']]), data={'partes': partes}, content_type='application/json')
+        assert r.status_code == 400
+
+    def test_limpeza_aborta_partes_a_meio(self, client, professor_user, professor, bucket):
+        client.force_login(professor_user)
+        envio_id = _pedir(client, tamanho=25 * MB).json()['id']
+        EnvioDireto.objects.filter(pk=envio_id).update(criado_em=timezone.now() - timedelta(days=2))
+        assert envio_direto.limpar_abandonados() == 1
+        assert bucket.abortados == ['up-1']
