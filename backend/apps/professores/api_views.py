@@ -11,8 +11,11 @@ from rest_framework.response import Response
 from apps.accounts.notificacoes import notificar
 from apps.cursos.models import Curso, EngajamentoCurso, Inscricao, RecursoCurso
 from apps.moderacao.filtro import ConteudoRecusado, verificar_publicacao
+from apps.plataforma.segundo_plano import executar_depois
 from apps.plataforma.servicos import configuracao, limite_aula_bytes, limite_pdf_bytes, limite_video_bytes
 
+from . import envio_direto
+from .envio_direto import EnvioInvalido
 from .models import Professor, ReacaoVideo, RecursoVideo, Seguidor, Video
 from .serializers import (
     ProfessorCursoSerializer,
@@ -20,7 +23,7 @@ from .serializers import (
     ProfessorVideoSerializer,
     ReacaoVideoSerializer,
 )
-from .video_processing import atualizar_duracao
+from .video_processing import processar_videos
 
 TAMANHO_MAX_LEGENDA_BYTES = 1024 * 1024  # 1MB — uma legenda de 2h tem ~150KB
 
@@ -102,9 +105,37 @@ def _validar_tamanho_video(arquivo, aula=False):
         raise ValueError(f'Cada vídeo pode ter no máximo {configuracao().limite_video_mb}MB.')
 
 
+def _lista(request, campo: str) -> list:
+    """Valores repetidos de um campo, em multipart (getlist) ou em JSON (lista)."""
+    dados = request.data
+    if hasattr(dados, 'getlist'):
+        valores = dados.getlist(campo)
+    else:
+        valor = dados.get(campo)
+        valores = valor if isinstance(valor, (list, tuple)) else ([] if valor in (None, '') else [valor])
+    return [v for v in valores if str(v).strip()]
+
+
+def _duracao_indicada(valor) -> int:
+    """Duração que o browser leu do vídeo (poupa ao servidor descarregá-lo para a saber)."""
+    try:
+        segundos = int(float(valor))
+    except (TypeError, ValueError):
+        return 0
+    return segundos if 0 < segundos <= 24 * 3600 else 0
+
+
 def _notificar_seguidores(professor, mensagem: str, link: str):
     """Lançamento (curso/vídeo novo) → quem segue o professor. O email
-    respeita o interruptor "Novidades da plataforma"."""
+    respeita o interruptor "Novidades da plataforma". Em segundo plano: com
+    muitos seguidores, os emails um a um faziam esperar o professor."""
+    executar_depois(_enviar_aos_seguidores, professor.pk, mensagem, link)
+
+
+def _enviar_aos_seguidores(professor_id: int, mensagem: str, link: str):
+    professor = Professor.objects.filter(pk=professor_id).first()
+    if not professor:
+        return
     for seguidor in professor.seguidores.select_related('utilizador'):
         notificar(
             seguidor.utilizador, 'lancamento', mensagem, link=link,
@@ -112,7 +143,7 @@ def _notificar_seguidores(professor, mensagem: str, link: str):
         )
 
 
-def _criar_recursos(model_cls, fk_campo, fk_valor, arquivos):
+def _criar_recursos(model_cls, fk_campo, fk_valor, arquivos, envios=(), finalidade=None, professor=None):
     """Cria um RecursoCurso/RecursoVideo por ficheiro. Lança ValueError (com
     a mensagem já pronta a devolver ao cliente) se algum ficheiro for inválido
     — quem chama corre isto dentro de uma transação, para não deixar recursos
@@ -129,7 +160,50 @@ def _criar_recursos(model_cls, fk_campo, fk_valor, arquivos):
             arquivo=arquivo,
             tamanho_bytes=arquivo.size,
         ))
+    for envio_id in envios:
+        envio = envio_direto.confirmar(professor, envio_id, finalidade)
+        criados.append(model_cls.objects.create(
+            **{fk_campo: fk_valor},
+            nome=envio.nome,
+            tipo='pdf',
+            arquivo=envio.chave,
+            tamanho_bytes=envio.tamanho_bytes,
+        ))
     return criados
+
+
+# ── ENVIO DIRETO PARA O BUCKET ───────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def professor_envios(request):
+    """Link assinado para o browser enviar o ficheiro direto para o B2. Sem bucket
+    (desenvolvimento) responde {direto: false} e o ficheiro segue pelo servidor."""
+    professor = _get_professor(request)
+    if not professor:
+        return _professor_required_response()
+    if (recusa := _bloqueio_seguranca(professor, request)):
+        return recusa
+    if not envio_direto.disponivel():
+        return Response({'direto': False})
+    try:
+        tamanho = int(request.data.get('tamanho'))
+    except (TypeError, ValueError):
+        return Response({'detail': 'Tamanho do ficheiro inválido.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        envio, url = envio_direto.preparar(
+            professor,
+            str(request.data.get('finalidade') or ''),
+            str(request.data.get('nome') or ''),
+            tamanho,
+            str(request.data.get('tipo') or ''),
+        )
+    except EnvioInvalido as erro:
+        return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(
+        {'direto': True, 'id': envio.id, 'url': url, 'metodo': 'PUT', 'cabecalhos': {'Content-Type': envio.tipo_conteudo}},
+        status=status.HTTP_201_CREATED,
+    )
 
 
 # ── PERFIL ───────────────────────────────────────────────────────────────────
@@ -172,10 +246,26 @@ def professor_apagar_conta(request):
 
 # ── CURSOS ───────────────────────────────────────────────────────────────────
 
-def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
+CAPA_MAX_BYTES = 5 * 1024 * 1024
+
+
+def _capa_valida(ficheiro):
+    """Capa que o browser tirou do vídeo (JPEG pequeno); outra coisa é ignorada."""
+    if ficheiro and (ficheiro.content_type or '').startswith('image/') and ficheiro.size <= CAPA_MAX_BYTES:
+        return ficheiro
+    return None
+
+
+def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0, envios=(), duracoes=(), capas=None):
+    """Cria as aulas (ficheiros enviados pelo servidor ou já no bucket) e devolve os ids,
+    para o que faltar (capa, duração) se tratar em segundo plano. `capas` dá a capa de
+    cada aula pelo índice (tirada pelo browser)."""
+    capas = capas or {}
     for arquivo in arquivos:
         _validar_tamanho_video(arquivo, aula=True)
-    for indice, arquivo in enumerate(arquivos):
+    ficheiros = list(arquivos) + [envio_direto.confirmar(professor, e, 'aula').chave for e in envios]
+    ids = []
+    for indice, arquivo in enumerate(ficheiros):
         video = Video.objects.create(
             professor=professor,
             curso=curso,
@@ -187,8 +277,15 @@ def _criar_videos_curso(professor, curso, arquivos, ordem_inicial=0):
             uso_ia_lga=curso.uso_ia_lga,
             uso_ia_lga_em=curso.uso_ia_lga_em,
             uso_ia_lga_versao=curso.uso_ia_lga_versao,
+            duracao_segundos=duracoes[indice] if indice < len(duracoes) else 0,
+            thumbnail=capas.get(indice),
         )
-        atualizar_duracao(video)
+        ids.append(video.id)
+        # Sem capa escolhida, o curso fica com a da primeira aula (como fazia o servidor).
+        if indice == 0 and video.thumbnail and not curso.thumbnail:
+            curso.thumbnail = video.thumbnail.name
+            curso.save(update_fields=['thumbnail'])
+    return ids
 
 
 @api_view(['GET', 'POST'])
@@ -202,7 +299,8 @@ def professor_cursos(request):
         if (recusa := _bloqueio_seguranca(professor, request)):
             return recusa
         arquivos = request.FILES.getlist('videos')
-        if not arquivos:
+        envios_aulas = _lista(request, 'videos_envios')
+        if not arquivos and not envios_aulas:
             return Response(
                 {'detail': 'Envia pelo menos um vídeo para criar o curso.'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -213,10 +311,21 @@ def professor_cursos(request):
         try:
             with transaction.atomic():
                 curso = serializer.save(professor=professor)
-                _criar_videos_curso(professor, curso, arquivos)
-                _criar_recursos(RecursoCurso, 'curso', curso, request.FILES.getlist('recursos'))
+                ids_aulas = _criar_videos_curso(
+                    professor, curso, arquivos, envios=envios_aulas,
+                    duracoes=[_duracao_indicada(d) for d in _lista(request, 'videos_duracoes')],
+                    capas={
+                        i: capa for i in range(len(arquivos) + len(envios_aulas))
+                        if (capa := _capa_valida(request.FILES.get(f'videos_capas_{i}')))
+                    },
+                )
+                _criar_recursos(
+                    RecursoCurso, 'curso', curso, request.FILES.getlist('recursos'),
+                    envios=_lista(request, 'recursos_envios'), finalidade='recurso_curso', professor=professor,
+                )
         except ValueError as erro:
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
+        executar_depois(processar_videos, ids_aulas)
 
         curso.refresh_from_db()
         if curso.ativo:
@@ -259,12 +368,13 @@ def professor_curso_detail(request, curso_id):
     if request.method == 'PATCH':
         if (recusa := _bloqueio_seguranca(professor, request)):
             return recusa
-        if request.FILES.getlist('videos'):
+        if request.FILES.getlist('videos') or _lista(request, 'videos_envios'):
             return Response({'detail': MSG_NAO_TROCAR_AULAS}, status=status.HTTP_400_BAD_REQUEST)
         antes = _estado(curso, CAMPOS_CONTEUDO_CURSO)
         serializer = ProfessorCursoSerializer(curso, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         novos_recursos = request.FILES.getlist('recursos')
+        novos_envios = _lista(request, 'recursos_envios')
         alterou_consentimento_ia = 'uso_ia_lga' in request.data
         try:
             with transaction.atomic():
@@ -275,12 +385,15 @@ def professor_curso_detail(request, curso_id):
                         uso_ia_lga_em=curso.uso_ia_lga_em,
                         uso_ia_lga_versao=curso.uso_ia_lga_versao,
                     )
-                if novos_recursos:
-                    _criar_recursos(RecursoCurso, 'curso', curso, novos_recursos)
+                if novos_recursos or novos_envios:
+                    _criar_recursos(
+                        RecursoCurso, 'curso', curso, novos_recursos,
+                        envios=novos_envios, finalidade='recurso_curso', professor=professor,
+                    )
         except ValueError as erro:
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
 
-        _marcar_editado(curso, antes, CAMPOS_CONTEUDO_CURSO, houve_ficheiros=bool(novos_recursos))
+        _marcar_editado(curso, antes, CAMPOS_CONTEUDO_CURSO, houve_ficheiros=bool(novos_recursos or novos_envios))
         curso.refresh_from_db()
         return Response(ProfessorCursoSerializer(curso, context={'request': request}).data)
 
@@ -393,16 +506,27 @@ def professor_videos(request):
     if request.method == 'POST':
         if (recusa := _bloqueio_seguranca(professor, request)):
             return recusa
-        serializer = ProfessorVideoSerializer(data=request.data, context={'request': request})
+        envio_arquivo = request.data.get('arquivo_envio')
+        serializer = ProfessorVideoSerializer(
+            data=request.data, context={'request': request, 'arquivo_envio': bool(envio_arquivo)},
+        )
         serializer.is_valid(raise_exception=True)
         try:
             _validar_tamanho_video(request.FILES.get('arquivo'))
             with transaction.atomic():
-                video = serializer.save(professor=professor)
-                _criar_recursos(RecursoVideo, 'video', video, request.FILES.getlist('recursos'))
+                extra = {}
+                if envio_arquivo:
+                    extra['arquivo'] = envio_direto.confirmar(professor, envio_arquivo, 'video').chave
+                if (duracao := _duracao_indicada(request.data.get('duracao_segundos'))):
+                    extra['duracao_segundos'] = duracao
+                video = serializer.save(professor=professor, **extra)
+                _criar_recursos(
+                    RecursoVideo, 'video', video, request.FILES.getlist('recursos'),
+                    envios=_lista(request, 'recursos_envios'), finalidade='recurso_video', professor=professor,
+                )
         except ValueError as erro:
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
-        atualizar_duracao(video)
+        executar_depois(processar_videos, [video.id])
         if video.ativo:
             _notificar_seguidores(professor, f'{professor.nome_publico} publicou um vídeo novo: "{video.titulo}"', f'/videos/{video.id}')
         return Response(
@@ -436,20 +560,24 @@ def professor_video_detail(request, video_id):
             return recusa
         url_nova = request.data.get('url_externa')
         troca_link = url_nova is not None and (url_nova or '') != (video.url_externa or '')
-        if request.FILES.get('arquivo') or troca_link:
+        if request.FILES.get('arquivo') or request.data.get('arquivo_envio') or troca_link:
             return Response({'detail': MSG_NAO_TROCAR_VIDEO}, status=status.HTTP_400_BAD_REQUEST)
         antes = _estado(video, CAMPOS_CONTEUDO_VIDEO)
         serializer = ProfessorVideoSerializer(video, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         novos_recursos = request.FILES.getlist('recursos')
+        novos_envios = _lista(request, 'recursos_envios')
         try:
             with transaction.atomic():
                 video = serializer.save()
-                if novos_recursos:
-                    _criar_recursos(RecursoVideo, 'video', video, novos_recursos)
+                if novos_recursos or novos_envios:
+                    _criar_recursos(
+                        RecursoVideo, 'video', video, novos_recursos,
+                        envios=novos_envios, finalidade='recurso_video', professor=professor,
+                    )
         except ValueError as erro:
             return Response({'detail': str(erro)}, status=status.HTTP_400_BAD_REQUEST)
-        _marcar_editado(video, antes, CAMPOS_CONTEUDO_VIDEO, houve_ficheiros=bool(novos_recursos))
+        _marcar_editado(video, antes, CAMPOS_CONTEUDO_VIDEO, houve_ficheiros=bool(novos_recursos or novos_envios))
         return Response(ProfessorVideoSerializer(video, context={'request': request}).data)
 
     serializer = ProfessorVideoSerializer(video, context={'request': request})

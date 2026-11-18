@@ -1425,6 +1425,7 @@ import {
   mockLeaderboard, mockBadges, mockWallet, courseCategories,
 } from "@/lib/mock-data";
 import { limparCacheApiOffline } from "@/lib/offline";
+import { enviarFicheiros, lerVideo, type AoProgredir } from "@/lib/envio-direto";
 import { thumbnailFor } from "@/lib/capas";
 
 // Os mocks de Video/Post (usados só como fallback antes de a BD ter dados)
@@ -2750,16 +2751,37 @@ export const api = {
     getCursos: async (): Promise<ProfessorCurso[]> => {
       return await fetchAPI('/api/professor/cursos/');
     },
+    // Os vídeos e PDFs vão direto para o armazenamento (B2) com progresso; o pedido ao
+    // servidor leva só os números dos envios. Sem envio direto, seguem pelo servidor.
     criarCurso: async (
       payload: ProfessorCursoPayload,
       videos: File[],
       recursos: File[] = [],
+      opcoes: { aoProgredir?: AoProgredir } = {},
     ): Promise<ProfessorCurso> => {
       const formData = new FormData();
       _appendCursoPayload(formData, payload);
       if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
-      videos.forEach((v) => formData.append('videos', v));
-      recursos.forEach((r) => formData.append('recursos', r));
+      // Duração e capa de cada aula lidas aqui: o servidor não descarrega os vídeos.
+      for (const [i, v] of videos.entries()) {
+        const info = await lerVideo(v);
+        formData.append('videos_duracoes', String(info.duracao));
+        if (info.capa) formData.append(`videos_capas_${i}`, info.capa);
+      }
+      const envios = await enviarFicheiros(
+        [
+          ...videos.map((ficheiro) => ({ ficheiro, finalidade: 'aula' as const })),
+          ...recursos.map((ficheiro) => ({ ficheiro, finalidade: 'recurso_curso' as const })),
+        ],
+        opcoes.aoProgredir,
+      );
+      if (envios) {
+        envios.slice(0, videos.length).forEach((n) => formData.append('videos_envios', String(n)));
+        envios.slice(videos.length).forEach((n) => formData.append('recursos_envios', String(n)));
+      } else {
+        videos.forEach((v) => formData.append('videos', v));
+        recursos.forEach((r) => formData.append('recursos', r));
+      }
       return await fetchAPI('/api/professor/cursos/', { method: 'POST', body: formData });
     },
     atualizarCurso: async (
@@ -2767,6 +2789,7 @@ export const api = {
       payload: Partial<ProfessorCursoPayload>,
       novosVideos: File[] = [],
       novosRecursos: File[] = [],
+      opcoes: { aoProgredir?: AoProgredir } = {},
     ): Promise<ProfessorCurso> => {
       if (novosVideos.length === 0 && novosRecursos.length === 0 && !payload.thumbnail) {
         return await fetchAPI(`/api/professor/cursos/${id}/`, {
@@ -2778,7 +2801,12 @@ export const api = {
       _appendCursoPayload(formData, payload);
       if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
       novosVideos.forEach((v) => formData.append('videos', v));
-      novosRecursos.forEach((r) => formData.append('recursos', r));
+      const envios = await enviarFicheiros(
+        novosRecursos.map((ficheiro) => ({ ficheiro, finalidade: 'recurso_curso' as const })),
+        opcoes.aoProgredir,
+      );
+      if (envios) envios.forEach((n) => formData.append('recursos_envios', String(n)));
+      else novosRecursos.forEach((r) => formData.append('recursos', r));
       return await fetchAPI(`/api/professor/cursos/${id}/`, { method: 'PATCH', body: formData });
     },
     apagarCurso: async (id: number): Promise<void> => {
@@ -2794,14 +2822,38 @@ export const api = {
     getVideos: async (): Promise<ProfessorVideo[]> => {
       return await fetchAPI('/api/professor/videos/');
     },
-    criarVideo: async (payload: ProfessorVideoPayload, recursos: File[] = []): Promise<ProfessorVideo> => {
+    criarVideo: async (
+      payload: ProfessorVideoPayload,
+      recursos: File[] = [],
+      opcoes: { aoProgredir?: AoProgredir } = {},
+    ): Promise<ProfessorVideo> => {
       const { arquivo, thumbnail, ...resto } = payload;
       if (arquivo || thumbnail || recursos.length > 0) {
         const formData = new FormData();
         _appendVideoPayload(formData, resto);
-        if (arquivo) formData.append('arquivo', arquivo);
-        if (thumbnail) formData.append('thumbnail', thumbnail);
-        recursos.forEach((r) => formData.append('recursos', r));
+        let capa = thumbnail ?? null;
+        if (arquivo) {
+          // Duração e capa lidas aqui: o servidor não descarrega o vídeo para as saber.
+          const info = await lerVideo(arquivo, !capa);
+          if (info.duracao) formData.append('duracao_segundos', String(info.duracao));
+          capa = capa ?? info.capa;
+        }
+        const envios = await enviarFicheiros(
+          [
+            ...(arquivo ? [{ ficheiro: arquivo, finalidade: 'video' as const }] : []),
+            ...recursos.map((ficheiro) => ({ ficheiro, finalidade: 'recurso_video' as const })),
+          ],
+          opcoes.aoProgredir,
+        );
+        if (envios) {
+          const [primeiro, ...outros] = envios;
+          if (arquivo) formData.append('arquivo_envio', String(primeiro));
+          (arquivo ? outros : envios).forEach((n) => formData.append('recursos_envios', String(n)));
+        } else {
+          if (arquivo) formData.append('arquivo', arquivo);
+          recursos.forEach((r) => formData.append('recursos', r));
+        }
+        if (capa) formData.append('thumbnail', capa);
         return await fetchAPI('/api/professor/videos/', { method: 'POST', body: formData });
       }
       return await fetchAPI('/api/professor/videos/', { method: 'POST', body: JSON.stringify(resto) });
@@ -2810,6 +2862,7 @@ export const api = {
       id: number,
       payload: Partial<ProfessorVideoPayload>,
       novosRecursos: File[] = [],
+      opcoes: { aoProgredir?: AoProgredir } = {},
     ): Promise<ProfessorVideo> => {
       const { arquivo, thumbnail, ...resto } = payload;
       if (arquivo || thumbnail || novosRecursos.length > 0) {
@@ -2817,7 +2870,12 @@ export const api = {
         _appendVideoPayload(formData, resto);
         if (arquivo) formData.append('arquivo', arquivo);
         if (thumbnail) formData.append('thumbnail', thumbnail);
-        novosRecursos.forEach((r) => formData.append('recursos', r));
+        const envios = await enviarFicheiros(
+          novosRecursos.map((ficheiro) => ({ ficheiro, finalidade: 'recurso_video' as const })),
+          opcoes.aoProgredir,
+        );
+        if (envios) envios.forEach((n) => formData.append('recursos_envios', String(n)));
+        else novosRecursos.forEach((r) => formData.append('recursos', r));
         return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: formData });
       }
       return await fetchAPI(`/api/professor/videos/${id}/`, { method: 'PATCH', body: JSON.stringify(resto) });

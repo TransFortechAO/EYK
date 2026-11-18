@@ -1,4 +1,5 @@
 import os
+import re
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -102,6 +103,10 @@ if AWS_STORAGE_BUCKET_NAME:
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', '')
     AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL') or None  # R2: https://<conta>.r2.cloudflarestorage.com
     AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME') or None   # R2: auto
+    # No B2 a região da assinatura tem de ser a do endpoint (s3.<região>.backblazeb2.com).
+    _regiao_b2 = re.search(r's3\.([a-z0-9-]+)\.backblazeb2\.com', AWS_S3_ENDPOINT_URL or '')
+    if _regiao_b2 and AWS_S3_REGION_NAME in (None, 'auto'):
+        AWS_S3_REGION_NAME = _regiao_b2.group(1)
     # Domínio público do bucket (ex: media.eyk.ao). Sem ele, os URLs são
     # assinados e expiram ao fim de AWS_QUERYSTRING_EXPIRE segundos.
     AWS_S3_CUSTOM_DOMAIN = os.getenv('AWS_S3_CUSTOM_DOMAIN') or None
@@ -110,6 +115,8 @@ if AWS_STORAGE_BUCKET_NAME:
     AWS_DEFAULT_ACL = None
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'public, max-age=2592000'}
+    # O B2 só aceita assinaturas v4 (também nos links de envio direto do browser).
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
     STORAGES['default'] = {'BACKEND': 'storages.backends.s3.S3Storage'}
     SERVIR_MEDIA = False
 else:

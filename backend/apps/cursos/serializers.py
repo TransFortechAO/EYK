@@ -312,6 +312,9 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
 
     def get_autor_foto(self, obj):
         user = obj.autor
+        fotos = self.context.get('fotos')
+        if fotos is not None and user.id in fotos:
+            return fotos[user.id]
         try:
             if getattr(user, 'is_teacher', False):
                 from apps.professores.models import Professor
@@ -331,12 +334,16 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
         return _tempo_desde(obj.criado_em)
 
     def get_total_likes(self, obj):
+        if hasattr(obj, 'n_likes'):
+            return obj.n_likes
         return obj.total_likes()
 
     def get_liked(self, obj):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
+        if hasattr(obj, 'eu_gostei'):
+            return obj.eu_gostei
         return obj.reacoes.filter(utilizador=request.user).exists()
 
     def get_pode_editar(self, obj):
@@ -353,6 +360,8 @@ class ComentarioVideoSerializer(serializers.ModelSerializer):
     def get_respostas(self, obj):
         if obj.parent_id is not None:
             return []
+        if hasattr(obj, 'respostas_visiveis'):
+            return self.__class__(obj.respostas_visiveis, many=True, context=self.context).data
         respostas = obj.respostas.select_related('autor').order_by('criado_em')
         request = self.context.get('request')
         if request and request.user.is_authenticated:

@@ -10,8 +10,9 @@ from apps.gamificacao.services import creditar_moedas, verificar_badges
 from apps.moderacao.filtro import ConteudoRecusado, sinalizar_se_necessario, verificar_publicacao
 from apps.moderacao.servicos import estao_bloqueados, ids_bloqueados
 
+from .consultas import fotos_dos_comentarios, preparar_comentarios
 from .models import Comentario, Post, ReacaoComentario, ReacaoPost
-from .serializers import ComentarioSerializer, PostSerializer
+from .serializers import ComentarioSerializer, PostSerializer, com_contagens, fotos_de_autores
 
 MOEDAS_POR_POST = 2
 TAMANHO_FEED = 50
@@ -87,14 +88,18 @@ def post_list(request):
 
     # Feed aleatório entre todas as publicações, antigas e recentes, para quem entra
     # não sentir que perdeu nada. `?post=ID` (link partilhado, notificação) vem primeiro.
-    visiveis = _visiveis(Post.objects.select_related('autor'), request)
+    visiveis = com_contagens(_visiveis(Post.objects.select_related('autor', 'repost_de__autor'), request), request.user)
     posts = list(visiveis.order_by('?')[:TAMANHO_FEED])
     destaque = request.query_params.get('post', '')
     if destaque.isdigit():
         alvo = visiveis.filter(pk=destaque).first()
         if alvo:
             posts = [alvo, *[p for p in posts if p.pk != alvo.pk]]
-    serializer = PostSerializer(posts, many=True, context=_contexto(request))
+    contexto = _contexto(request)
+    contexto['fotos'] = fotos_de_autores(
+        {p.autor_id for p in posts} | {p.repost_de.autor_id for p in posts if p.repost_de_id and p.repost_de},
+    )
+    serializer = PostSerializer(posts, many=True, context=contexto)
     return Response(serializer.data)
 
 
@@ -280,12 +285,13 @@ def comentario_list(request, post_id):
         serializer = ComentarioSerializer(comentario, context=_contexto(request))
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    comentarios = (
-        _visiveis(post.comentarios.filter(parent__isnull=True), request)
-        .select_related('autor')
-        .order_by('criado_em')
-    )
-    serializer = ComentarioSerializer(comentarios, many=True, context=_contexto(request))
+    contexto = _contexto(request)
+    comentarios = list(preparar_comentarios(
+        _visiveis(post.comentarios.filter(parent__isnull=True), request).select_related('autor').order_by('criado_em'),
+        ReacaoComentario, request.user, contexto['ocultos'],
+    ))
+    contexto['fotos'] = fotos_dos_comentarios(comentarios)
+    serializer = ComentarioSerializer(comentarios, many=True, context=contexto)
     return Response(serializer.data)
 
 
