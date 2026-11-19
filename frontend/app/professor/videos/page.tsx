@@ -66,6 +66,8 @@ export default function ProfessorVideosPage() {
   const [submetendo, setSubmetendo] = useState(false);
   // Percentagem do envio dos ficheiros (null = nada a enviar).
   const [progresso, setProgresso] = useState<number | null>(null);
+  // Percentagem da compressão do vídeo no browser, antes do envio.
+  const [compressao, setCompressao] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [reordenando, setReordenando] = useState(false);
   // Pesquisa da página (?q=): na barra do topo no computador, aqui no telemóvel/tablet.
@@ -220,7 +222,7 @@ export default function ProfessorVideosPage() {
       if (editando) {
         await api.professor.atualizarVideo(editando.id, payload, recursosNovos, { aoProgredir: setProgresso });
       } else {
-        await api.professor.criarVideo(payload, recursosNovos, { aoProgredir: setProgresso });
+        await api.professor.criarVideo(payload, recursosNovos, { aoProgredir: setProgresso, aoComprimir: setCompressao });
       }
       setModalAberto(false);
       await carregar();
@@ -229,6 +231,7 @@ export default function ProfessorVideosPage() {
     } finally {
       setSubmetendo(false);
       setProgresso(null);
+      setCompressao(null);
     }
   };
 
@@ -621,7 +624,7 @@ export default function ProfessorVideosPage() {
                 disabled={submetendo}
                 className="bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
               >
-                {submetendo ? (progresso !== null && progresso < 100 ? `A enviar… ${progresso}%` : "A guardar…") : editando ? "Guardar alterações" : "Publicar vídeo"}
+                {submetendo ? (progresso !== null && progresso < 100 ? `A enviar… ${progresso}%` : compressao !== null && compressao < 100 && progresso === null ? `A preparar o vídeo… ${compressao}%` : "A guardar…") : editando ? "Guardar alterações" : "Publicar vídeo"}
               </Button>
             </div>
           </DialogFooter>

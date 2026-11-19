@@ -1426,6 +1426,7 @@ import {
 } from "@/lib/mock-data";
 import { limparCacheApiOffline } from "@/lib/offline";
 import { enviarFicheiros, lerVideo, type AoProgredir } from "@/lib/envio-direto";
+import { comprimirVideo, type AoComprimir } from "@/lib/comprimir-video";
 import { thumbnailFor } from "@/lib/capas";
 
 // Os mocks de Video/Post (usados só como fallback antes de a BD ter dados)
@@ -2755,20 +2756,26 @@ export const api = {
     // servidor leva só os números dos envios. Sem envio direto, seguem pelo servidor.
     criarCurso: async (
       payload: ProfessorCursoPayload,
-      videos: File[],
+      originais: File[],
       recursos: File[] = [],
-      opcoes: { aoProgredir?: AoProgredir } = {},
+      opcoes: { aoProgredir?: AoProgredir; aoComprimir?: AoComprimir } = {},
     ): Promise<ProfessorCurso> => {
       const formData = new FormData();
       _appendCursoPayload(formData, payload);
       if (payload.thumbnail) formData.append('thumbnail', payload.thumbnail);
       // Duração e capa de cada aula lidas aqui (o servidor não descarrega os vídeos), ao
-      // mesmo tempo que o envio, para não o atrasar.
+      // mesmo tempo que a compressão e o envio, para não os atrasar.
       const infos = (async () => {
         const lidas = [];
-        for (const v of videos) lidas.push(await lerVideo(v));
+        for (const v of originais) lidas.push(await lerVideo(v));
         return lidas;
       })();
+      // Cada aula é comprimida no browser (720p) antes de enviar: muito menos bytes.
+      const videos: File[] = [];
+      for (const [i, v] of originais.entries()) {
+        const aoComprimir = opcoes.aoComprimir;
+        videos.push(await comprimirVideo(v, aoComprimir && ((p) => aoComprimir(Math.round((i * 100 + p) / originais.length)))));
+      }
       const envios = await enviarFicheiros(
         [
           ...videos.map((ficheiro) => ({ ficheiro, finalidade: 'aula' as const })),
@@ -2830,15 +2837,18 @@ export const api = {
     criarVideo: async (
       payload: ProfessorVideoPayload,
       recursos: File[] = [],
-      opcoes: { aoProgredir?: AoProgredir } = {},
+      opcoes: { aoProgredir?: AoProgredir; aoComprimir?: AoComprimir } = {},
     ): Promise<ProfessorVideo> => {
-      const { arquivo, thumbnail, ...resto } = payload;
-      if (arquivo || thumbnail || recursos.length > 0) {
+      const { arquivo: original, thumbnail, ...resto } = payload;
+      if (original || thumbnail || recursos.length > 0) {
         const formData = new FormData();
         _appendVideoPayload(formData, resto);
         let capa = thumbnail ?? null;
-        // Duração e capa lidas aqui (o servidor não descarrega o vídeo), durante o envio.
-        const info = arquivo ? lerVideo(arquivo, !capa) : null;
+        // Duração e capa lidas aqui (o servidor não descarrega o vídeo), durante a
+        // compressão e o envio.
+        const info = original ? lerVideo(original, !capa) : null;
+        // Comprimido no browser (720p) antes de enviar: muito menos bytes a atravessar a rede.
+        const arquivo = original ? await comprimirVideo(original, opcoes.aoComprimir) : null;
         const envios = await enviarFicheiros(
           [
             ...(arquivo ? [{ ficheiro: arquivo, finalidade: 'video' as const }] : []),

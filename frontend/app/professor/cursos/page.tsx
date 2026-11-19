@@ -75,6 +75,8 @@ export default function ProfessorCursosPage() {
   const [submetendo, setSubmetendo] = useState(false);
   // Percentagem do envio dos ficheiros (null = nada a enviar).
   const [progresso, setProgresso] = useState<number | null>(null);
+  // Percentagem da compressão do vídeo no browser, antes do envio.
+  const [compressao, setCompressao] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const videosInputRef = useRef<HTMLInputElement>(null);
   const recursosInputRef = useRef<HTMLInputElement>(null);
@@ -294,7 +296,7 @@ export default function ProfessorCursosPage() {
         // Ao editar não se enviam vídeos novos: as aulas não se trocam.
         await api.professor.atualizarCurso(editando.id, form, [], recursosNovos, { aoProgredir: setProgresso });
       } else {
-        await api.professor.criarCurso(form, videosNovos, recursosNovos, { aoProgredir: setProgresso });
+        await api.professor.criarCurso(form, videosNovos, recursosNovos, { aoProgredir: setProgresso, aoComprimir: setCompressao });
       }
       setModalAberto(false);
       await carregar();
@@ -303,6 +305,7 @@ export default function ProfessorCursosPage() {
     } finally {
       setSubmetendo(false);
       setProgresso(null);
+      setCompressao(null);
     }
   };
 
@@ -765,7 +768,7 @@ export default function ProfessorCursosPage() {
                 disabled={submetendo}
                 className="bg-gradient-gold text-primary-foreground hover:opacity-95 shadow-gold"
               >
-                {submetendo ? (progresso !== null && progresso < 100 ? `A enviar… ${progresso}%` : "A guardar…") : editando ? "Guardar alterações" : "Criar curso"}
+                {submetendo ? (progresso !== null && progresso < 100 ? `A enviar… ${progresso}%` : compressao !== null && compressao < 100 && progresso === null ? `A preparar o vídeo… ${compressao}%` : "A guardar…") : editando ? "Guardar alterações" : "Criar curso"}
               </Button>
             </div>
           </DialogFooter>
