@@ -20,6 +20,8 @@ DATABASES = {
 CELERY_TASK_ALWAYS_EAGER = True
 # Emails aos seguidores, capas e durações correm logo (sem threads) nos testes.
 SEGUNDO_PLANO_SINCRONO = True
+# Os testes da Fase 3 verificam as exigências da candidatura (ver base.py).
+EXIGIR_VERIFICACAO_PROFESSORES = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
 # Disable password validation for tests

@@ -1,5 +1,6 @@
 """Fase 2: a equipa EYK analisa as candidaturas a professor e decide.
 Aprovar dá as funções de professor; rejeitar e pedir correção dizem sempre porquê."""
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -178,7 +179,7 @@ def decidir(request, candidatura_id):
         return _erro('Diz ao candidato o que deve completar ou corrigir.')
     if acao == 'suspender' and not mensagem:
         return _erro('Indica o motivo da suspensão: o professor vai recebê-lo.')
-    if acao == 'aprovar' and not c.identidade_verificada_em:
+    if acao == 'aprovar' and settings.EXIGIR_VERIFICACAO_PROFESSORES and not c.identidade_verificada_em:
         return _erro('Confirma primeiro a identidade do candidato (documento de identificação).')
     if acao == 'reativar' and c.estado != C.SUSPENSA:
         return _erro('Só se reativa um professor suspenso.')

@@ -106,6 +106,11 @@ REST_FRAMEWORK = {
     ],
 }
 
+# Candidatura a professor: documento de identificação, referências e código de conduta
+# obrigatórios (Fase 3). Desligado enquanto o formulário do frontend não os pedir —
+# senão ninguém conseguia enviar a candidatura. Ligar com EXIGIR_VERIFICACAO_PROFESSORES=1.
+EXIGIR_VERIFICACAO_PROFESSORES = os.getenv('EXIGIR_VERIFICACAO_PROFESSORES', '').strip().lower() in ('1', 'true', 'sim')
+
 NEXT_PUBLIC_URL = (os.getenv('NEXT_PUBLIC_URL') or os.getenv('NEXT_PUBLIC_APP_URL') or 'http://localhost:3000').rstrip('/')
 
 def _split_origins(*values):

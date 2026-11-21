@@ -1,5 +1,6 @@
 """A candidatura do próprio: completar o formulário de competências, juntar documentos e
 submeter. A decisão é da equipa EYK (Fase 2)."""
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
@@ -184,10 +185,11 @@ def _o_que_falta(c: CandidaturaProfessor) -> str | None:
         return 'Escolhe o tipo de qualificação: formal ou competência demonstrada.'
     if c.tipo_qualificacao == 'formal' and not any(d.tipo in ('diploma', 'certificado') for d in docs):
         return 'Junta pelo menos um diploma ou certificado.'
-    if not any(d.tipo == 'identidade' for d in docs):
-        return 'Junta o teu documento de identificação (só a equipa EYK o vê).'
-    if not c.referencias:
-        return 'Indica pelo menos uma referência (alguém que confirme o teu trabalho).'
+    if settings.EXIGIR_VERIFICACAO_PROFESSORES:
+        if not any(d.tipo == 'identidade' for d in docs):
+            return 'Junta o teu documento de identificação (só a equipa EYK o vê).'
+        if not c.referencias:
+            return 'Indica pelo menos uma referência (alguém que confirme o teu trabalho).'
     if c.tipo_qualificacao == 'competencia':
         if not c.experiencia.strip():
             return 'Descreve a tua experiência: o que já ensinaste ou fizeste nesta área.'
@@ -205,12 +207,14 @@ def submeter(request):
         return recusa
     if (falta := _o_que_falta(c)):
         return _erro(falta)
-    if not request.data.get('aceitarConduta'):
+    aceitou = bool(request.data.get('aceitarConduta'))
+    if settings.EXIGIR_VERIFICACAO_PROFESSORES and not aceitou:
         return _erro('Aceita o código de conduta dos professores para enviar a candidatura.')
     with transaction.atomic():
-        c.conduta_versao = CONDUTA_VERSAO
-        c.conduta_aceite_em = timezone.now()
-        c.save(update_fields=['conduta_versao', 'conduta_aceite_em', 'atualizado_em'])
+        if aceitou:
+            c.conduta_versao = CONDUTA_VERSAO
+            c.conduta_aceite_em = timezone.now()
+            c.save(update_fields=['conduta_versao', 'conduta_aceite_em', 'atualizado_em'])
         try:
             mudar_estado(c, CandidaturaProfessor.SUBMETIDA, request.user, 'Candidatura enviada pelo candidato.')
         except TransicaoInvalida as erro:
